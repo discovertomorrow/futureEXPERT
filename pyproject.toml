@@ -1,0 +1,30 @@
+[tool.isort]
+line_length = 120
+multi_line_output = 1
+
+[tool.pylint.messages_control]
+max-line-length = 120
+
+[tool.autopep8]
+max_line_length = 120
+
+[tool.mypy]
+warn_unused_configs = true
+warn_redundant_casts = true
+ignore_missing_imports = true
+warn_unused_ignores = true
+disallow_subclassing_any = true
+warn_return_any = true
+check_untyped_defs = true
+strict_equality = true
+implicit_reexport = false
+no_implicit_optional = true
+plugins = "numpy.typing.mypy_plugin"
+
+[[tool.mypy.overrides]]
+module = "futureexpert.*"
+disallow_any_generics = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true                           
+disallow_incomplete_defs = true
+disallow_untyped_decorators = true

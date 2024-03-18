@@ -1,0 +1,59 @@
+{
+    "performedTasks": {
+        "removedCols": [],
+        "removedRows": []
+    },
+    "performedTasksLog": [],
+    "meta": {
+        "delimiter": ";",
+        "decimal": ".",
+        "thousands": null,
+        "naValues": [
+            "nan"
+        ]
+    },
+    "columnDefinition": {
+        "dateColumns": [
+            {
+                "name": "Date",
+                "format": "%Y-%m-%d"
+            }
+        ],
+        "valueColumns": [
+            {
+                "name": "value"
+            }
+        ],
+        "groupColumns": [
+            {
+                "name": "Name"
+            }
+        ]
+    },
+    "rawDataReviewResults": {
+        "Date": {},
+        "value": {},
+        "Name": {}
+    },
+    "timeSeriesDatasetParameter": {
+        "date": {
+            "timeGranularity": "daily",
+            "startDate": null,
+            "endDate": null
+        },
+        "grouping": {
+            "dataLevel": [
+                "Name"
+            ],
+            "filter": []
+        },
+        "values": [],
+        "valueColumnsToSave": [
+            "value"
+        ],
+        "aggregation": {
+            "operator": "sum",
+            "option": "setToZero"
+        }
+    }
+}

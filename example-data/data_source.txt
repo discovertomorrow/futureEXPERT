@@ -1,0 +1,4 @@
+Datasource for bicycle_data.csv and bicycle_data_single.csv:
+- provider: Stadt Würzburg, published on _opendata.wuerzburg.de_;
+- data set identifier: „fahrradzaehlung-daten“;
+- data license: Data licence Germany – attribution – version 2.0, https://www.govdata.de/dl-de/by-2-0;

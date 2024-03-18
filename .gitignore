@@ -1,0 +1,10 @@
+build
+dist
+futureexpert.egg-info/
+__pycache__
+.scannerwork/
+.ipynb_checkpoints/
+.mypy_cache/
+.*_cache/
+.yml/
+.env
