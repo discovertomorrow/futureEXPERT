@@ -44,7 +44,7 @@ class PreprocessingConfig(BaseConfig):
     ] = False
     use_season_detection: Annotated[
         bool, _description('If true, then the season length is determined from the data.')
-    ] = False
+    ] = True
     # empty lists and None are treated the same in apollon
     seasonalities_to_test: Annotated[
         Optional[list[ValidatedPositiveInt]],
@@ -151,8 +151,9 @@ class ReportConfig(BaseConfig):
     title: str
 
     max_ts_len: Annotated[
-        int, pydantic.Field(ge=1, description='At most this number of most recent observations is used.')
-    ] = 84
+        Optional[int], pydantic.Field(
+            ge=1, le=1500, description='At most this number of most recent observations is used. Check the variable MAX_TS_LEN_CONFIG for allowed configuration.')
+    ] = None
 
     preprocessing: Annotated[PreprocessingConfig, _description("Preprocessing configuration.")] = PreprocessingConfig()
     forecasting: Annotated[ForecastingConfig, _description("Forecasting configuration.")]
@@ -160,6 +161,8 @@ class ReportConfig(BaseConfig):
         Optional[MethodSelectionConfig],
         _description('Backtesting configuration. If not supplied, then a granularity dependent default is used.')
     ] = None
+    db_name:  Annotated[Optional[str], _description('Name of the database to use for storing the results. Only accessible for internal use.')
+                        ] = None
 
     @pydantic.model_validator(mode="after")
     def backtesting_step_weights_refer_to_valid_forecast_steps(self) -> Self:
@@ -211,3 +214,44 @@ def create_forecast_payload(version: str, config: ReportConfig) -> Any:
     payload = {'payload': config_dict}
 
     return payload
+
+
+MAX_TS_LEN_CONFIG = {
+    'halfhourly': {'default_len': 2*24*7,
+                   'max_allowed_len': 1500},
+    'hourly': {'default_len': 24*7*3,
+               'max_allowed_len': 1500},
+    'daily': {'default_len': 365,
+              'max_allowed_len': 365*3},
+    'weekly': {'default_len': 52*3,
+               'max_allowed_len': 52*6},
+    'monthly': {'default_len': 12*6,
+                'max_allowed_len': 12*10},
+    'quarterly': {'default_len': 4*12,
+                  'max_allowed_len': 1500},
+    'yearly': {'default_len': 1500,
+               'max_allowed_len': 1500},
+}
+
+
+def calculate_max_ts_len(max_ts_len: Optional[int], granularity: str) -> Optional[int]:
+    """Calculates the max_ts_len.
+
+    Parameters
+    ----------
+    max_ts_len
+        At most this number of most recent observations is used.
+    granularity
+       Granularity of the time series.
+    """
+
+    config = MAX_TS_LEN_CONFIG.get(granularity, None)
+    assert config, 'For the given granularity no max_ts_len configuration exists.'
+    default_len, max_allowed_len = config['default_len'], config['max_allowed_len']
+
+    if max_ts_len is None:
+        return default_len
+    if max_ts_len > max_allowed_len:
+        raise ValueError(
+            f'Given max_ts_len {max_ts_len} is not allowed for granularity {granularity}. Check the variable MAX_TS_LEN_CONFIG for allowed configuration.')
+    return max_ts_len

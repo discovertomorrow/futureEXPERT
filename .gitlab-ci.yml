@@ -72,7 +72,6 @@ notebook execution (required):
   variables:
     FUTURE_PW: $CI_TEST_PW
     FUTURE_USER: $CI_TEST_USER
-    FUTURE_GROUP: $CI_TEST_GROUP
     FUTURE_ENVIRONMENT: development
   script:
     - pip install jupyter==1.0.0 nbconvert==7.2.6 .

@@ -19,28 +19,28 @@ progColor = pd.DataFrame({
 
 # set the font globally
 # plt.rcParams.update({'font.sans-serif':'Regular'})
-mpl.rcParams['axes.titlesize'] = 16
+mpl.rcParams['axes.titlesize'] = 12
 plt.style.use('seaborn-v0_8-whitegrid')
 
 
-def plot_forecast(fc_and_ac: dict[str, Any]) -> Any:
+def plot_forecast(forecasts: dict[str, Any]) -> Any:
     """plots actuals and forecast from a single time series.
 
     Parameters
     ----------
-    fc_and_ac
-        forecasting results of a single time series.
+    forecasts
+        forecasting results of a single time series and model.
 
     """
 
-    fc_date = [fc['time_stamp_utc'] for fc in fc_and_ac['forecast']]
+    fc_date = [fc['time_stamp_utc'] for fc in forecasts['forecasts']]
     # forecast values
-    fc_value = [fc['point_forecast_value'] for fc in fc_and_ac['forecast']]
+    fc_value = [fc['point_forecast_value'] for fc in forecasts['forecasts']]
     # forecast intervals
-    fc_upper_value = [fc['upper_limit_value'] for fc in fc_and_ac['forecast']]
-    fc_lower_value = [fc['lower_limit_value'] for fc in fc_and_ac['forecast']]
-    ac_date = [fc['time_stamp_utc'] for fc in fc_and_ac['actuals']]
-    ac_value = [fc['value'] for fc in fc_and_ac['actuals']]
+    fc_upper_value = [fc['upper_limit_value'] for fc in forecasts['forecasts']]
+    fc_lower_value = [fc['lower_limit_value'] for fc in forecasts['forecasts']]
+    ac_date = [fc['time_stamp_utc'] for fc in forecasts['actuals']]
+    ac_value = [fc['value'] for fc in forecasts['actuals']]
 
     df_ac = pd.DataFrame({'date': ac_date, 'actuals': ac_value})
     df_fc = pd.DataFrame({'date': fc_date, 'fc': fc_value, 'upper': fc_upper_value, 'lower': fc_lower_value})
@@ -51,15 +51,18 @@ def plot_forecast(fc_and_ac: dict[str, Any]) -> Any:
     df_concat.loc[len(ac_date)-1, 'lower'] = df_concat.loc[len(ac_date)-1, 'actuals']
     df_concat.date = pd.to_datetime(df_concat.date)
 
-    name = fc_and_ac['name']
+    name = forecasts['ts_name']
+    model_name = forecasts['model_name']
+    model_rank = forecasts['model_rank']
 
     fig, ax = plt.subplots()
     fig.set_size_inches(12, 6)
-    ax.set_title(f'Forecast for {name}')
+    fig.suptitle(f'Forecast for {name}', fontsize=16)
+    ax.set_title(f'using {model_name} (Rank {model_rank})')
 
     # plot
     ax.plot(df_concat.date, df_concat.actuals, color=progColor.loc[0, 'darkblue'], label='Time Series')
-    ax.plot(df_concat.date, df_concat.fc, color=progColor.loc[0, 'cyan'], label='Forecast')
+    ax.plot(df_concat.date, df_concat.fc, color=progColor.loc[0, 'cyan'], label=f'Forecast')
 
     if not any(v is None for v in df_concat.lower):
         ax.fill_between(df_concat.date, df_concat.lower, df_concat.upper,
@@ -78,20 +81,20 @@ def plot_forecast(fc_and_ac: dict[str, Any]) -> Any:
     plt.show()
 
 
-def plot_backtesting(backtesting: dict[str, Any], iteration: int = 1) -> Any:
+def plot_backtesting(forecasts: dict[str, Any], iteration: int = 1) -> Any:
     """Plots actuals and backtesting results from a single time series.
 
     Parameters
     ----------
-    backtesting
-        backtesting results of a single time series.
+    forecasts
+        forecasting and backtesting results of a single time series and model.
     iteration
         iteration of the backtesting forecast.
 
     """
 
-    actuals = backtesting['actuals']
-    forecast = backtesting['forecast']
+    actuals = forecasts['actuals']
+    forecast = forecasts['backtesting']
 
     word_len_dict = defaultdict(list)
 
@@ -113,7 +116,10 @@ def plot_backtesting(backtesting: dict[str, Any], iteration: int = 1) -> Any:
 
     fig, ax = plt.subplots()
     fig.set_size_inches(12, 6)
-    ax.set_title(f"Backtesting of {backtesting['name']} Iteration: {iteration}")
+    fig.suptitle(f"Backtesting of {forecasts['ts_name']} Iteration: {iteration}", fontsize=16)
+    model_name = forecasts['model_name']
+    model_rank = forecasts['model_rank']
+    ax.set_title(f'using {model_name} (Rank {model_rank})')
 
     # plot
     ax.plot(actual_dates, actual_values, color=progColor.loc[0, "darkblue"],  label='Time Series')

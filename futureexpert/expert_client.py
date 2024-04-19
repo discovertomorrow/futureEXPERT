@@ -8,7 +8,7 @@ from typing import Any, Literal, Optional, Union, cast
 import pandas as pd
 import pydantic
 
-from futureexpert.batch_forecast import ReportConfig, create_forecast_payload
+from futureexpert.batch_forecast import ReportConfig, calculate_max_ts_len, create_forecast_payload
 from futureexpert.checkin import (DataDefinition,
                                   FileSpecification,
                                   TsCreationConfig,
@@ -69,7 +69,7 @@ class ForecastStatus(pydantic.BaseModel):
 
 class ForecastIdentifier(pydantic.BaseModel):
     report_id: int
-    settings_id: int
+    settings_id: Optional[int]
 
 
 class ExpertClient:
@@ -106,11 +106,13 @@ class ExpertClient:
         self.client = FutureApiClient(user=future_user, password=future_password, environment=future_env)
 
         authorized_groups = self.client.userinfo['groups']
-        if future_group is None and len(authorized_groups) == 1:
+        if future_group is None and len(authorized_groups) != 1:
             raise ValueError(
                 f'You have access to multiple groups. Please select one of the following: {authorized_groups}')
         self.switch_group(new_group=future_group or authorized_groups[0],
                           verbose=future_group is not None)
+        self.is_analyst = 'analyst' in self.client.user_roles
+        self.forecast_core_id = 'forecast-batch-internal' if self.is_analyst else 'forecast-batch'
 
     def switch_group(self, new_group: str, verbose: bool = True) -> None:
         """Switches the current group.
@@ -291,12 +293,19 @@ class ExpertClient:
         -------
         The identifier of the forecasting report.
         """
+
+        version_data = self.client.get_ts_version(self.group, version)
+        config.max_ts_len = calculate_max_ts_len(max_ts_len=config.max_ts_len,
+                                                 granularity=version_data['customer_specific']['granularity'])
         logger.info('Preparing data for forecast...')
+
+        if not self.is_analyst and config.db_name is not None:
+            raise ValueError('Only users with the role analyst are allowed to use this parameter.')
         payload = create_forecast_payload(version, config)
         logger.info('Finished data preparation for forecast.')
         logger.info('Started creating forecasting report with futureFORECAST...')
         result = self.client.execute_action(group_id=self.group,
-                                            core_id='forecast-batch',
+                                            core_id=self.forecast_core_id,
                                             payload=payload,
                                             interval_status_check_in_seconds=2)
         logger.info('Finished report creation. Forecasts are running...')
@@ -310,8 +319,8 @@ class ExpertClient:
         id
             Forecast identifier or plain report ID.
         """
-        report_id = id.report_id if isinstance(id, ForecastIdentifier) else id
-        report_status = self.client.get_report_status(group_id=self.group, report_id=report_id)['status_summary']
+        fc_identifier = id if isinstance(id, ForecastIdentifier) else ForecastIdentifier(report_id=id, settings_id=None)
+        report_status = self.client.get_report_status(group_id=self.group, report_id=fc_identifier.report_id)['status_summary']
 
         created = report_status.get('Created', 0)
         successful = report_status.get('Successful', 0)
@@ -323,36 +332,41 @@ class ExpertClient:
         results = ForecastStatusResults(successful=successful,
                                         no_evaluation=noeval,
                                         error=error)
-        return ForecastStatus(id=id, progress=summary, results=results)
+        return ForecastStatus(id=fc_identifier, progress=summary, results=results)
 
-    def get_results(self, id: Union[ForecastIdentifier, int], forecast_and_actuals: bool = True, backtesting: bool = False, preprocessing: bool = False) -> Any:
+    def get_fc_results(self, id: Union[ForecastIdentifier, int], include_k_best_models: int = 1, include_forecasts: bool = True, include_backtesting: bool = False, include_preprocessing: bool = False) -> Any:
         """Gets the results from the given report.
 
         Parameters
         ----------
         id
             Forecast identifier or plain report ID.
-        forecast_and_actuals
-            should forecast results be returned or not.
-        backtesting
-            should backtesting results be returned or not.
-        preprocessing
-            should preprocessing results be returned or not.
+        include_k_best_models
+            Number of k best models for which results are to be returned.    
+        include_forecasts
+            Determines whether forecast results should be returned or not.
+        include_backtesting
+            Determines whether backtesting results should be returned or not.
+        include_preprocessing
+            Determines whether preprocessing results should be returned or not.
         """
-        fc = bt = pp = None
+
+        if include_k_best_models < 1:
+            raise ValueError('At least one model is needed.')
+
+        fc = pp = None
         report_id = id.report_id if isinstance(id, ForecastIdentifier) else id
 
-        if forecast_and_actuals:
-            fc = self.client.get_forecasts_and_actuals(group_id=self.group, report_id=report_id)
+        fc = self.client.get_fc_results(group_id=self.group,
+                                        report_id=report_id,
+                                        include_k_best_models=include_k_best_models,
+                                        include_forecasts=include_forecasts,
+                                        include_backtesting=include_backtesting)
 
-        if backtesting:
-            bt = self.client.get_backtesting_results(group_id=self.group, report_id=report_id)
-
-        if preprocessing:
+        if include_preprocessing:
             pp = self.client.get_preprocessing_results(group_id=self.group, report_id=report_id)
 
-        return {'forecast_and_actuals': fc,
-                'backtesting': bt,
+        return {'forecasts': fc,
                 'preprocessing': pp}
 
     def create_forecast_from_raw_data(self,

@@ -1,5 +1,9 @@
 from futureexpert.__about__ import __version__
-from futureexpert.batch_forecast import ForecastingConfig, MethodSelectionConfig, PreprocessingConfig, ReportConfig
+from futureexpert.batch_forecast import (MAX_TS_LEN_CONFIG,
+                                         ForecastingConfig,
+                                         MethodSelectionConfig,
+                                         PreprocessingConfig,
+                                         ReportConfig)
 from futureexpert.checkin import (DataDefinition,
                                   DateColumn,
                                   FileSpecification,
@@ -24,4 +28,5 @@ __all__ = [
     'ReportConfig',
     'TsCreationConfig',
     'ValueColumn',
+    'MAX_TS_LEN_CONFIG'
 ]

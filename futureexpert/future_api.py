@@ -124,13 +124,24 @@ class FutureApiClient:
         """Gets the keycloak userinfo."""
         return self.keycloak_openid.userinfo(self.token['access_token'])
 
-    def _api_get_request(self, path: str, timeout: int | None = None) -> requests.Response:
+    @property
+    def user_roles(self) -> Any:
+        """Gets user role for the frontend."""
+        KEYCLOAK_PUBLIC_KEY = "-----BEGIN PUBLIC KEY-----\n" + self.keycloak_openid.public_key() + "\n-----END PUBLIC KEY-----"
+        options = {"verify_signature": False, "verify_aud": False, "verify_exp": False}
+        decoded_token = self.keycloak_openid.decode_token(
+            self.token['access_token'], key=KEYCLOAK_PUBLIC_KEY, options=options)
+        return decoded_token['resource_access']['frontend']['roles']
+
+    def _api_get_request(self, path: str, params: Optional[dict[str, Any]] = None, timeout: int | None = None) -> requests.Response:
         """Runs a GET request against the future api.
 
         Parameters
         ----------
         path
             Path of the endpoint.
+        params
+           Parameter to be send.
         timeout
             Optional timeout of the request.
 
@@ -141,6 +152,7 @@ class FutureApiClient:
         request_url = urljoin(base=self.future_config.api_url, url=path)
         logger.debug(f'Sending GET request to {request_url}...')
         return requests.get(request_url,
+                            params=params,
                             headers={
                                 'Authorization': f'Bearer {self.token["access_token"]}'},
                             timeout=timeout)
@@ -209,6 +221,21 @@ class FutureApiClient:
 
         return initial_response.json()
 
+    def get_ts_version(self, group_id: str, version_id: str) -> Any:
+        """Get version data.
+
+        Parameters
+        ----------
+        group_id
+            The ID of the relevant group.
+        version_id
+            version of time series.
+
+        Returns
+        -------
+        """
+        return get_json(self._api_get_request(f'groups/{group_id}/ts/versions/{version_id}'))
+
     def get_report_status(self, group_id: str, report_id: int) -> Any:
         """Gets the report status of the given report id.
 
@@ -225,38 +252,29 @@ class FutureApiClient:
         """
         return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/status'))
 
-    def get_forecasts_and_actuals(self, group_id: str, report_id: int) -> Any:
+    def get_fc_results(self, group_id: str, report_id: int, include_k_best_models: int, include_forecasts: bool, include_backtesting: bool) -> Any:
         """Collects forecasts and actuals from the database.
 
         Parameters
         ----------
         group_id
-            The ID of the relevant group.        
+            The ID of the relevant group.
         report_id
             ID of the Report
+        include_k_best_models
+            Number of k best models for which results are to be returned.
+        include_forecasts
+            Should forecast results be returned or not.
+        include_backtesting
+           Should backtesting results be returned or not.
          Returns
         -------
             Actuals and Forecasts for each time series of the given report
         """
 
-        return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/forecasts'))
-
-    def get_backtesting_results(self, group_id: str, report_id: int) -> Any:
-        """Collects backtesting results from the database.
-
-        Parameters
-        ----------
-        group_id
-            The ID of the relevant group.        
-        report_id
-            ID of the Report
-
-         Returns
-        -------
-            Backtesting results for each time series of the given report
-        """
-
-        return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/backtesting'))
+        return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/results', params={'include_k_best_models': include_k_best_models,
+                                                                                                        'include_backtesting': include_backtesting,
+                                                                                                        'include_forecasts': include_forecasts}))
 
     def get_preprocessing_results(self, group_id: str, report_id: int) -> Any:
         """Collects preprocessing results from the database.
