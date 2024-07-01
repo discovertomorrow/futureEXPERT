@@ -47,7 +47,7 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['python-keycloak == 3.3.0',   # MIT License
+    install_requires=['python-keycloak == 3.12.0',  # MIT License
                       'tenacity >= 8.2.0',          # Apache Software License
                       'requests >= 2.31.0',         # Apache Software License
                       'matplotlib >= 3.8.0',        # Python Software Foundation License
@@ -63,6 +63,7 @@ setup(
     extras_require={
         "dev": ['pytest',
                 'ipytest',
+                'isort',
                 'mypy == 1.0.*',
                 'autopep8',
                 'cloudpickle',

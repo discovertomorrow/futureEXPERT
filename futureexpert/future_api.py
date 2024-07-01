@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_json(response: requests.Response) -> Any:
-    """Gets JSON from a success response object or raises an error.
+    """Gets JSON from a successful response object or raises an error.
 
     Parameters
     ----------
@@ -67,11 +67,11 @@ def urljoin(base: str, url: str) -> str:
 
 
 class NonTransientError(Exception):
-    """Raised in case of an error that cannot be retried."""
+    """Raised in the case of an error that cannot be retried."""
 
 
 class FutureApiClient:
-    """Future API client."""
+    """_future_ API client."""
     def __thread_refresh(future_api: FutureApiClient) -> None:
         """Refreshes the access token."""
         time.sleep(int(future_api.token['expires_in']*.1))
@@ -86,13 +86,13 @@ class FutureApiClient:
         Parameters
         ----------
         user
-            The username to be used to connect to the future api.
+            The username to be used to connect to the _future_ API.
         password
-            The users password.        
+            The user's password.        
         totp
             Optional OTP token of the user.
         environment
-            Which environment to use for the calculation, defaults to production.
+            Which environment to use for the calculation; defaults to production.
         auto_refresh
             If enabled, automatically refreshes the access token in the background in a daemon thread.
         """
@@ -134,14 +134,14 @@ class FutureApiClient:
         return decoded_token['resource_access']['frontend']['roles']
 
     def _api_get_request(self, path: str, params: Optional[dict[str, Any]] = None, timeout: int | None = None) -> requests.Response:
-        """Runs a GET request against the future api.
+        """Submits a GET request to the _future_ API.
 
         Parameters
         ----------
         path
             Path of the endpoint.
         params
-           Parameter to be send.
+            Parameter to be send.
         timeout
             Optional timeout of the request.
 
@@ -158,14 +158,14 @@ class FutureApiClient:
                             timeout=timeout)
 
     def _api_post_request(self, path: str, json: Any, timeout: int | None = None) -> requests.Response:
-        """Runs a POST request against the future api.
+        """Submits a POST request to the _future_ API.
 
         Parameters
         ----------
         path
             Path of the endpoint.
         json
-            JSON data to be send.
+            JSON data to be sent.
         timeout
             Optional timeout of the request.
 
@@ -203,7 +203,7 @@ class FutureApiClient:
 
         Returns
         -------
-            id of the user inputs
+            ID of the user inputs.
         """
         path = f'/groups/{group_id}/userinputs'
         payload: dict[str, Union[Any,  Tuple[str, Any]]]
@@ -229,15 +229,15 @@ class FutureApiClient:
         group_id
             The ID of the relevant group.
         version_id
-            version of time series.
+            The version of time series.
 
         Returns
         -------
         """
         return get_json(self._api_get_request(f'groups/{group_id}/ts/versions/{version_id}'))
 
-    def get_report_status(self, group_id: str, report_id: int) -> Any:
-        """Gets the report status of the given report id.
+    def get_report_status(self, group_id: str, report_id: int, include_error_reason: bool) -> Any:
+        """Gets the report status of the given report ID.
 
         Parameters
         ----------
@@ -245,15 +245,17 @@ class FutureApiClient:
             The ID of the relevant group.
         report_id
             ID of the Report
+        include_error_reason
+            Determines whether log messages are to be included in the result.
 
         Returns
         -------
             Amount of each run status.
         """
-        return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/status'))
+        return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/status', params={'include_error_reason': include_error_reason}))
 
-    def get_fc_results(self, group_id: str, report_id: int, include_k_best_models: int, include_forecasts: bool, include_backtesting: bool) -> Any:
-        """Collects forecasts and actuals from the database.
+    def get_fc_results(self, group_id: str, report_id: int, include_k_best_models: int, include_backtesting: bool) -> Any:
+        """Retrieves forecasts and actuals from the database.
 
         Parameters
         ----------
@@ -262,40 +264,37 @@ class FutureApiClient:
         report_id
             ID of the Report
         include_k_best_models
-            Number of k best models for which results are to be returned.
-        include_forecasts
-            Should forecast results be returned or not.
+            Number of k best models for which results are to be returned.        
         include_backtesting
-           Should backtesting results be returned or not.
+           Should backtesting results are to be returned.
          Returns
         -------
-            Actuals and Forecasts for each time series of the given report
+        Actuals and forecasts for each time series in the given report.
         """
 
-        return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/results', params={'include_k_best_models': include_k_best_models,
-                                                                                                        'include_backtesting': include_backtesting,
-                                                                                                        'include_forecasts': include_forecasts}))
+        return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/results/fc', params={'include_k_best_models': include_k_best_models,
+                                                                                                           'include_backtesting': include_backtesting
+                                                                                                           }))
 
-    def get_preprocessing_results(self, group_id: str, report_id: int) -> Any:
-        """Collects preprocessing results from the database.
+    def get_matcher_results(self, group_id: str, report_id: int) -> Any:
+        """Collects covariate matcher results from the database.
 
         Parameters
         ----------
         group_id
-            The ID of the relevant group.        
+            The ID of the relevant group.
         report_id
-            ID of the Report
-
+            ID of the report.
          Returns
         -------
-            Preprocessing results for each time series of the given report
+        Actuals and covariate ranking.
         """
 
-        return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/preprocessing'))
+        return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/results/cov-selection'))
 
     @staticmethod
     def _request_or_raise(request: Callable[[], Response]) -> Callable[[], requests.Response]:
-        """Wrapper of an request to be used with tenacity retry handling.
+        """Wraps a request to be used with tenacity retry handling.
 
         request
             Callable of the request to be performed.
@@ -318,25 +317,25 @@ class FutureApiClient:
                        payload: dict[str, Any],
                        interval_status_check_in_seconds: int,
                        timeout_in_seconds: int = 3600) -> Any:
-        """Executes and monitors a future core action.
+        """Executes and monitors a futureCORE action.
 
         Parameters
         ----------
         group_id
             The ID of the relevant group.
         core_id
-            The ID of the future core to be executed.
+            The ID of the futureCORE to be executed.
         payload
-            The payload of the request. This is not the payload of the future core.
+            The payload of the request. This is not the payload of the futureCORE.
         interval_status_check_in_seconds
-            Interval in seconds between status requests while the future core action is running.
+            Interval in seconds between status requests while the futureCORE action is running.
         timeout_in_seconds
-            Overall timeout waiting for the future core action to have finished.
+            Overall timeout waiting for the futureCORE action to have finished.
             The actual running time might be longer due to retrying requests.
 
         Returns
         -------
-        The JSON result payload of the future core action.
+        The JSON result payload of the futureCORE action.
         """
         path = f'/groups/{group_id}/cores/{core_id}/actions'
         logger.debug(f'Request payload:\n{payload}')
@@ -358,14 +357,18 @@ class FutureApiClient:
                 status_response = retryer(self._request_or_raise(
                     lambda: self._api_get_request(action_status_path, timeout=30)))
                 logger.debug(
-                    f'Got status response with status code {status_response.status_code} and content:\n{str(status_response.content)}')
+                    f'Got response with status code {status_response.status_code} and content:\n{str(status_response.content)}')
                 status_response_payload = status_response.json()['payload']
                 if status_response_payload['status'] == 'finished':
                     # stop status requests
                     break
                 if status_response_payload['status'] not in ['created', 'pending', 'running']:
+
+                    response = retryer(self._request_or_raise(
+                        request=lambda: self._api_get_request(action_path, timeout=30)))
+
                     raise NonTransientError(
-                        f"Job failed with status response '{status_response_payload}'.")
+                        f"Job failed with status response'{status_response_payload}' and job response:\n{str(response.json()['payload'])}.")
                 time.sleep(interval_status_check_in_seconds)
 
             # Even if the status was not successful (timeout exceeded), try to get the result

@@ -1,4 +1,4 @@
-"""Contains the models with the configuration for the checkin."""
+"""Contains the models with the configuration for futureCHECK-IN."""
 import json
 from typing import Any, Literal, Optional
 
@@ -6,16 +6,16 @@ from pydantic import BaseModel
 
 
 class FileSpecification(BaseModel):
-    """Specify the format of the csv file.
+    """Specify the format of the CSV file.
 
     Parameters
     ----------
     delimiter
         The delimiter used to separate values.
     decimal
-        The decimal character that is used in numbers.
+        The decimal character used in decimal numbers.
     thousands
-        The thousands character that is used in numbers.
+        The thousands separator used in numbers.
     """
     delimiter: Optional[str] = ','
     decimal: Optional[str] = '.'
@@ -30,11 +30,11 @@ class Column(BaseModel):
     ----------
     name
         The original name of the column.
-    nameNew
+    name_new
         The new name of the column.
     """
     name: str
-    nameNew: Optional[str] = None
+    name_new: Optional[str] = None
 
 
 class DateColumn(Column):
@@ -57,14 +57,14 @@ class ValueColumn(Column):
         The set minimum value of the column.
     max
         The set maximum value of the column.
-    dtypeStr
+    dtype_str
         The data type of the column.
     unit
         The unit of the column.
     """
     min: Optional[int] = None
     max: Optional[int] = None
-    dtypeStr: Optional[Literal['Numeric', 'Integer']] = None
+    dtype_str: Optional[Literal['Numeric', 'Integer']] = None
     unit: Optional[str] = None
 
 
@@ -73,27 +73,28 @@ class GroupColumn(Column):
 
     Parameters
     ----------
-    dtypeStr
+    dtype_str
         The data type of the column.
     """
-    dtypeStr: Optional[Literal['Character']] = None
+    dtype_str: Optional[Literal['Character']] = None
 
 
 class DataDefinition(BaseModel):
-    """Model for the input parameter needed for the first checkin step.
+    """Model for the input parameter needed for the first futureCHECK-IN step.
 
     Parameters
     ----------
     remove_rows
-        index of the rows that get deleted before any validation
+        Indexes of the rows to be removed before validation. Note: If the raw data was committed as pandas data frame 
+        the header is the first row (row index 0).
     remove_columns
-        index of the columns that get deleted before any validation
+        Indexes of the columns to be removed before validation.
     date_columns
-        definition of the date column
+        Definition of the date column.
     value_columns
-        definitions of the value columns
+        Definitions of the value columns.
     group_columns
-        definitions of the group columns
+        Definitions of the group columns.
     """
     remove_rows: Optional[list[int]] = []
     remove_columns: Optional[list[int]] = []
@@ -103,18 +104,18 @@ class DataDefinition(BaseModel):
 
 
 def create_checkin_payload_1(user_input_id: str, file_uuid: str, data_definition: DataDefinition, file_specification: FileSpecification = FileSpecification()) -> Any:
-    """Creates the payload for the checkin stage prepareDataset.
+    """Creates the payload for the futureCHECK-IN stage prepareDataset.
 
     Parameters
     ----------
     user_input_id
-        UUID of the user input
+        UUID of the user input.
     file_uuid
-        UUID of the file
+        UUID of the file.
     data_definition
-        Defines Column and row and column removal.
+        Specifies the data, value and group columns and which rows and columns are to be removed first.
     file_specification
-        Specify the format of the csv file. Only relevant if a csv was given as input.
+        Specify the format of the CSV file. Only relevant if a CSV was given as input.
     """
 
     return {'userInputId': user_input_id,
@@ -127,24 +128,24 @@ def create_checkin_payload_1(user_input_id: str, file_uuid: str, data_definition
                     'removedCols': data_definition.remove_columns
                 },
                 'columnDefinition': {
-                    'dateColumns': [data_definition.date_columns.model_dump(exclude_none=True)],
-                    'valueColumns': [d.model_dump(exclude_none=True) for d in data_definition.value_columns],
-                    'groupColumns': [d.model_dump(exclude_none=True) for d in data_definition.group_columns]
+                    'dateColumns': [{snake_to_camel(key): value for key, value in data_definition.date_columns.model_dump(exclude_none=True).items()}],
+                    'valueColumns': [{snake_to_camel(key): value for key, value in d.model_dump(exclude_none=True).items()} for d in data_definition.value_columns],
+                    'groupColumns': [{snake_to_camel(key): value for key, value in d.model_dump(exclude_none=True).items()} for d in data_definition.group_columns]
                 }
             }}
 
 
 def build_payload_from_ui_config(user_input_id: str, file_uuid: str, path: str) -> Any:
-    """Creates the payload for the checkin stage createDataset.
+    """Creates the payload for the futureCHECK-IN stage createDataset.
 
     Parameters
     ----------
     user_input_id
-        UUID of the user input
+        UUID of the user input.
     file_uuid
-        UUID of the file
+        UUID of the file.
     path
-        path to the json file
+        Path to the JSON file.
     """
 
     with open(path) as file:
@@ -165,11 +166,11 @@ class FilterSettings(BaseModel):
     Parameters
     ----------
     type
-        The type of filter. `exclusion` or `inclusion`
+        The type of filter: `exclusion` or `inclusion`.
     variable
-        The columns name that will be used for filtering.
+        The columns name to be used for filtering.
     items
-        The list of values that will be used for filtering.
+        The list of values to be used for filtering.
     """
     type: Literal['exclusion', 'inclusion']
     variable: str
@@ -181,62 +182,64 @@ class NewValue(BaseModel):
 
     Parameters
     ----------
-    firstVariable
+    first_variable
         The first variable name.
     operator
         The operator that will be used to do the math operation
         between the first and second variable.
-    secondVariable
+    second_variable
         The second variable name.
-    newVariable
+    new_variable
         The new variable name.
     unit
         The unit.        
     """
-    firstVariable: str
+    first_variable: str
     operator: Literal['x', '+', '-']
-    secondVariable: str
-    newVariable: str
+    second_variable: str
+    new_variable: str
     unit: Optional[str] = None
 
 
 class TsCreationConfig(BaseModel):
-    """Model for the Time Series creation config.
+    """Model for the time series creation configuration.
 
     Parameters
     ----------
-    timeGranularity
+    time_granularity
         Target granularity of the time series.
-    startDate
-        Dates before this date are cut off.
-    endDate
-        Dates after this date are cut off.
-    grouppinglevel
-        Name of group columns that should be used as grouping level.
-    newVariables
+    start_date
+        Dates before this date are excluded.
+    end_date
+        Dates after this date are excluded.
+    grouping_level
+        Names of group columns that should be used as the grouping level.
+    filter
+        Settings for including or excluding values during time series creation.
+    new_variables
         New value column that is a combination of two other value columns.
-    valueColumnsToSave
+    value_columns_to_save
         Value columns that should be saved.
-    missingValueHandler
-        Strategy how to handle missing values during time series creation.            
+    missing_value_handler
+        Strategy how to handle missing values during time series creation.
     """
-    timeGranularity: Literal['yearly', 'monthly', 'weekly', 'daily']
-    startDate: Optional[str] = None
-    endDate: Optional[str] = None
-    grouppinglevel: list[str] = []
+    time_granularity: Literal['yearly', 'monthly', 'weekly', 'daily', 'hourly']
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    grouping_level: list[str] = []
     filter: list[FilterSettings] = []
-    newVariables: list[NewValue] = []
-    valueColumnsToSave: list[str] = []
-    missingValueHandler: Literal['keepNaN', 'setToZero'] = 'keepNaN'
+    new_variables: list[NewValue] = []
+    value_columns_to_save: list[str] = []
+    missing_value_handler: Literal['keepNaN', 'setToZero'] = 'keepNaN'
 
 
 def create_checkin_payload_2(payload: dict[str, Any], config: TsCreationConfig) -> Any:
-    """Creates the payload for the checkin stage createDataset.
+    """Creates the payload for the futureCHECK-IN stage createDataset.
 
     Parameters
     ----------
     payload
-        payload used in create_checkin_payload_1
+        Payload used in `create_checkin_payload_1`.
     config
         Configuration for time series creation.
     """
@@ -244,19 +247,32 @@ def create_checkin_payload_2(payload: dict[str, Any], config: TsCreationConfig) 
     payload['payload']['rawDataReviewResults'] = {}
     payload['payload']['timeSeriesDatasetParameter'] = {
         'aggregation': {'operator': 'sum',
-                        'option': config.missingValueHandler},
+                        'option': config.missing_value_handler},
         'date': {
-            'timeGranularity': config.timeGranularity,
-            'startDate': config.startDate,
-            'endDate': config.endDate
+            'timeGranularity': config.time_granularity,
+            'startDate': config.start_date,
+            'endDate': config.end_date
         },
         'grouping': {
-            'dataLevel': config.grouppinglevel,
+            'dataLevel': config.grouping_level,
             'filter':  [d.model_dump() for d in config.filter]
         },
-        'values': [d.model_dump() for d in config.newVariables],
-        'valueColumnsToSave': config.valueColumnsToSave
+        'values': [{snake_to_camel(key): value for key, value in d.model_dump().items()} for d in config.new_variables],
+        'valueColumnsToSave': config.value_columns_to_save
     }
     payload['payload']['stage'] = 'createDataset'
 
     return payload
+
+
+
+def snake_to_camel(snake_string: str) -> str:
+    """Converts snake case to lower camel case.
+
+    Parameters
+    ----------
+    snake_string
+        string im snake case format.
+    """
+    title_string = snake_string.title().replace('_', '')
+    return title_string[:1].lower() + title_string[1:]

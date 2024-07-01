@@ -23,10 +23,6 @@ ValidatedPositiveInt = Annotated[PositiveInt,
                                  pydantic.WithJsonSchema({'type': 'int', 'minimum': 1})]
 
 
-def _description(text: str) -> Any:
-    return pydantic.Field(description=text)
-
-
 class BaseConfig(pydantic.BaseModel):
 
     model_config = pydantic.ConfigDict(allow_inf_nan=False,
@@ -35,67 +31,87 @@ class BaseConfig(pydantic.BaseModel):
 
 
 class PreprocessingConfig(BaseConfig):
+    """
+
+    Parameters
+    ----------
+    model_config
+       Preprocessing configuration.
+    remove_leading_zeros
+       If true, then leading zeros are removed from the time series before forecasting.
+    use_season_detection
+       If true, then the season length is determined from the data.
+    seasonalities_to_test
+       Season lengths to be tested. If not defined, a suitable set for the given granularity is used.
+       Note that 1 must be in the list if the non-seasonal case should be considered, too.
+    fixed_seasonalities
+       Season lengths used without checking. Allowed only if `use_season_detection` is false.
+    detect_outliers
+       If true, then identifies outliers in the data.
+    replace_outliers
+       If true, then identified outliers are replaced.
+    detect_changepoints
+       If true, then change points such as level shifts are identified.
+    detect_quantization
+       If true, then a quantization algorithm is applied to the time series.
+
+    """
 
     # is merged with the inherited settings
     model_config = pydantic.ConfigDict(title='Preprocessing configuration.')
 
-    remove_leading_zeros: Annotated[
-        bool, _description('If true, then leading zeros are removed from the time series before forecasting.')
-    ] = False
-    use_season_detection: Annotated[
-        bool, _description('If true, then the season length is determined from the data.')
-    ] = True
+    remove_leading_zeros: bool = False
+    use_season_detection: bool = True
     # empty lists and None are treated the same in apollon
-    seasonalities_to_test: Annotated[
-        Optional[list[ValidatedPositiveInt]],
-        _description('Season lengths to be tested.'
-                     ' If not defined, a suitable set for the given granularity is used.'
-                     ' Note that 1 needs to be included here if the non-seasonal case should be considered, too.')
-    ] = None
-    fixed_seasonalities: Annotated[
-        Optional[list[ValidatedPositiveInt]],
-        _description('Season lengths used without checking. Allowed only if use_season_detection is false.')
-    ] = None
-    detect_outliers: Annotated[
-        bool, _description('If true, then identifies outliers in the data.')
-    ] = False
-    replace_outliers: Annotated[
-        bool, _description('If true, then identified outliers are replaced.')
-    ] = False
-    detect_changepoints: Annotated[
-        bool, _description('If true, then change points such as level shifts are identified.')
-    ] = False
-    detect_quantization: Annotated[
-        bool, _description('If true, then a quantization algorithm is applied to the time series.')
-    ] = False
+    seasonalities_to_test: Optional[list[ValidatedPositiveInt]] = None
+    fixed_seasonalities: Optional[list[ValidatedPositiveInt]] = None
+    detect_outliers: bool = False
+    replace_outliers: bool = False
+    detect_changepoints: bool = False
+    detect_quantization: bool = False
 
     @pydantic.model_validator(mode='after')
     def has_no_fixed_seasonalities_if_uses_season_detection(self) -> Self:
         if self.use_season_detection and self.fixed_seasonalities:
-            raise ValueError('If fixed seasonalities should be used, then season detection must be off.')
+            raise ValueError('If fixed seasonalities is enabled, then season detection must be off.')
 
         return self
 
 
 class ForecastingConfig(BaseConfig):
+    """
+
+    Parameters
+    ----------
+    model_config
+       Preprocessing configuration.
+    fc_horizon
+       Forecast horizon.
+    lower_bound
+       Lower bound applied to the time series and forecasts.
+    upper_bound
+       Upper bound applied to the time series and forecasts.
+    confidence_level
+       Confidence level for prediction intervals.
+    round_forecast_to_integer
+       If true, then forecasts are rounded to the nearest integer (also applied during backtesting).
+    use_ensemble
+       If true, then identified outliers are replaced.
+    detect_changepoints
+       If true, then calculate ensemble forecasts. Automatically makes a smart decision on which
+       methods to use based on their backtesting performance.
+
+    """
 
     # is merged with the inherited settings
     model_config = pydantic.ConfigDict(title='Forecasting configuration.')
 
-    fc_horizon: Annotated[ValidatedPositiveInt, _description('Forecast horizon.')]
-
-    lower_bound: Annotated[
-        Union[float, None], _description('Lower bound applied to the time series and forecasts.')
-    ] = None
-    upper_bound: Annotated[
-        Union[float, None], _description('Upper bound applied to the time series and forecasts.')
-    ] = None
-    confidence_level: Annotated[
-        float, pydantic.Field(gt=.0, lt=1., description='Confidence level for prediction intervals.')
-    ] = 0.75
-    round_forecast_to_integer: Annotated[
-        bool, _description('If true, then forecasts are rounded to integer (also applied during backtesting).')
-    ] = False
+    fc_horizon: ValidatedPositiveInt
+    lower_bound: Union[float, None] = None
+    upper_bound: Union[float, None] = None
+    confidence_level: float = 0.75
+    round_forecast_to_integer: bool = False
+    use_ensemble: bool = False
 
     @property
     def numeric_bounds(self) -> tuple[float, float]:
@@ -106,33 +122,43 @@ class ForecastingConfig(BaseConfig):
 
 
 class MethodSelectionConfig(BaseConfig):
+    """
+
+    Parameters
+    ----------
+    model_config
+       Preprocessing configuration.
+    number_iterations
+       Number of backtesting iterations. At least 8 iterations are needed for empirical prediction intervals.
+    shift_len
+       Number of time points by which the test window is shifted between backtesting iterations.
+    refit
+       If true, then models are re-fitted for each backtesting iteration.
+    default_error_metric
+       Error metric applied to the backtesting error for non-sporadic time series.
+    sporadic_error_metric
+       Error metric applied to the backtesting errors for sporadic time series.
+    step_weights
+       Mapping from forecast steps to weights associated with forecast errors for the given forecasting step.
+       Only positive weights are allowed. Leave a forecast step out to assign a zero weight.
+       Used only for non-sporadic time series.
+    detect_changepoints
+       If true, then calculate ensemble forecasts. Automatically makes a smart decision on which 
+       methods to use based on their backtesting performance.
+
+    """
 
     # is merged with the inherited settings
     model_config = pydantic.ConfigDict(title='Method selection configuration.')
 
-    number_iterations: Annotated[
-        ValidatedPositiveInt, _description('Number of backtesting iterations.'
-                                           ' At least 8 iterations are needed for empirical prediction intervals.')
-    ] = PositiveInt(12)
-    shift_len: Annotated[
-        ValidatedPositiveInt,
-        _description('Number of time points by which the test window is shifted between backtesting iterations.')
-    ] = PositiveInt(1)
-    refit: Annotated[bool, _description('If true, then models are re-fitted for each backtesting iteration.')] = False
-    default_error_metric: Annotated[
-        Literal['me', 'mpe', 'mse', 'mae', 'mase', 'mape', 'smape'],
-        _description('Error metric applied to the backtesting error for non-sporadic time series.')
-    ] = 'mse'
-    sporadic_error_metric: Annotated[
-        Literal['pis', 'sapis', 'acr', 'mar', 'msr'],
-        _description('Error metric applied to the backtesting errors for sporadic time series.')
-    ] = 'pis'
-    step_weights: Annotated[
-        Optional[dict[ValidatedPositiveInt, pydantic.PositiveFloat]],
-        _description('Mapping from forecast steps to weights associated to forecast errors for that forecasting step.'
-                     ' Only positive weights are allowed. Leave a forecast step out to assign a zero weight.'
-                     ' Used only for non-sporadic time series.')
-    ] = None
+    number_iterations: ValidatedPositiveInt = PositiveInt(12)
+    shift_len: ValidatedPositiveInt = PositiveInt(1)
+    refit: bool = False
+    default_error_metric: Literal['me', 'mpe', 'mse', 'mae', 'mase', 'mape', 'smape'] = 'mse'
+    sporadic_error_metric: Literal['pis', 'sapis', 'acr', 'mar', 'msr'] = 'pis'
+    additional_accuracy_measures: list[Literal['me', 'mpe', 'mse', 'mae',
+                                               'mase', 'mape', 'smape', 'pis', 'sapis', 'acr', 'mar', 'msr']] = []
+    step_weights: Optional[dict[ValidatedPositiveInt, pydantic.PositiveFloat]] = None
 
 
 class PipelineKwargs(TypedDict):
@@ -142,34 +168,58 @@ class PipelineKwargs(TypedDict):
 
 
 class ReportConfig(BaseConfig):
+    """
+
+    Parameters
+    ----------
+    model_config
+       Preprocessing configuration.
+    matcher_report_id
+       Report ID of the covariate matcher.
+    covs_version
+       Version of the covariates.
+    covs_lag
+       Lag for the covariate.
+    title
+       Title of the report.
+    max_ts_len
+       At most this number of most recent observations is used. Check the environment variable MAX_TS_LEN_CONFIG 
+       for allowed configuration.
+    preprocessing
+       Preprocessing configuration.
+    forecasting
+       Forecasting configuration.
+    backtesting
+       Backtesting configuration. If not supplied, then a granularity dependent default is used
+    db_name
+       Only accessible for internal use. Name of the database to use for storing the results
+    priority
+       Only accessible for internal use. Higher value indicate higher priority
+
+    """
 
     # is merged with the inherited settings
-    model_config = pydantic.ConfigDict(title='Forecasting run configuration.')
-
+    model_config = pydantic.ConfigDict(title='Forecast run configuration.')
+    matcher_report_id: Optional[int] = None
     covs_version: Optional[str] = None
     covs_lag: Optional[int] = None
     title: str
 
     max_ts_len: Annotated[
-        Optional[int], pydantic.Field(
-            ge=1, le=1500, description='At most this number of most recent observations is used. Check the variable MAX_TS_LEN_CONFIG for allowed configuration.')
-    ] = None
+        Optional[int], pydantic.Field(ge=1, le=1500)] = None
 
-    preprocessing: Annotated[PreprocessingConfig, _description("Preprocessing configuration.")] = PreprocessingConfig()
-    forecasting: Annotated[ForecastingConfig, _description("Forecasting configuration.")]
-    backtesting: Annotated[
-        Optional[MethodSelectionConfig],
-        _description('Backtesting configuration. If not supplied, then a granularity dependent default is used.')
-    ] = None
-    db_name:  Annotated[Optional[str], _description('Name of the database to use for storing the results. Only accessible for internal use.')
-                        ] = None
+    preprocessing: PreprocessingConfig = PreprocessingConfig()
+    forecasting: ForecastingConfig
+    backtesting: Optional[MethodSelectionConfig] = None
+    db_name:  Optional[str] = None
+    priority: Annotated[Optional[int], pydantic.Field(ge=0, le=10)] = None
 
     @pydantic.model_validator(mode="after")
     def backtesting_step_weights_refer_to_valid_forecast_steps(self) -> Self:
         if (self.backtesting
             and self.backtesting.step_weights
                 and max(self.backtesting.step_weights.keys()) > self.forecasting.fc_horizon):
-            raise ValueError('Step weights must not refer to forecast steps exceeding fc_horizon.')
+            raise ValueError('Step weights must not refer to forecast steps beyond the fc_horizon.')
 
         return self
 
@@ -198,18 +248,20 @@ def create_forecast_payload(version: str, config: ReportConfig) -> Any:
     Parameters
     ----------
     version
-
+      Version of the time series that should get forecasts.
     config
-       Configuration of the forecast run.    
+      Configuration of the forecast run.
     """
 
     config_dict = config.model_dump()
     config_dict['actuals_version'] = version
     config_dict['report_note'] = config_dict['title']
+    config_dict['cov_selection_report_id'] = config_dict['matcher_report_id']
     config_dict['forecasting']['n_ahead'] = config_dict['forecasting']['fc_horizon']
 
     config_dict.pop('title')
     config_dict['forecasting'].pop('fc_horizon')
+    config_dict.pop('matcher_report_id')
 
     payload = {'payload': config_dict}
 
@@ -240,7 +292,7 @@ def calculate_max_ts_len(max_ts_len: Optional[int], granularity: str) -> Optiona
     Parameters
     ----------
     max_ts_len
-        At most this number of most recent observations is used.
+        At most the number of most recent observations is used.
     granularity
        Granularity of the time series.
     """
@@ -253,5 +305,96 @@ def calculate_max_ts_len(max_ts_len: Optional[int], granularity: str) -> Optiona
         return default_len
     if max_ts_len > max_allowed_len:
         raise ValueError(
-            f'Given max_ts_len {max_ts_len} is not allowed for granularity {granularity}. Check the variable MAX_TS_LEN_CONFIG for allowed configuration.')
+            f'Given max_ts_len {max_ts_len} is not allowed for granularity {granularity}. Check the environment variable MAX_TS_LEN_CONFIG for allowed configuration.')
     return max_ts_len
+
+
+class MatcherConfig(BaseConfig):
+    """Configuration for a futureMATCHER run.
+
+    Parameters
+    ----------
+    title
+      Title of the report.
+    actuals_version
+      Version of the 
+    covs_version
+      Version of the covariates.
+    lag_selection_min_lag
+      Minimal lag that is tested in the lag selection. For example, a lag 3 means the covariate is shifted 3 data points into the future.
+    lag_selection_max_lag
+      Maximal lag that is tested in the lag selection. For example, a lag 12 means the covariate is shifted 12 data points into the future.
+
+    """
+    title: str
+    actuals_version: str
+    covs_version: str
+    lag_selection_min_lag: Optional[int] = None
+    lag_selection_max_lag: Optional[int] = None
+
+    @pydantic.model_validator(mode='after')
+    def check_lag_selection_range(self) -> Self:
+
+        min_lag = self.lag_selection_min_lag
+        max_lag = self.lag_selection_max_lag
+
+        if (min_lag is None) ^ (max_lag is None):
+            raise ValueError(
+                'If one of `lag_selection_min_lag` and `lag_selection_max_lag` is set the other one also needs to be set.')
+        if min_lag and max_lag:
+            if max_lag < min_lag:
+                raise ValueError('lag_selection_max_lag needs to be higher as lag_selection_min_lag.')
+            range = abs(max_lag - min_lag)
+            if range > 15:
+                raise ValueError(f'Only a range of 15 lags is allowed to test. The current range is {range}.')
+
+        return self
+
+
+def create_matcher_payload(config: MatcherConfig) -> Any:
+
+    config_dict: dict[str, Any] = {
+        'report_description': config.title,
+        'data_config': {
+            'actuals_version': config.actuals_version,
+            'actuals_filter': {},
+            'covs_version': config.covs_version,
+        },
+        "compute_config": {
+            "evaluation_start_date": None,
+            "evaluation_end_date": None,
+            "base_report_id": None,
+            "base_report_requested_run_status": None,
+            "report_update_strategy": "KEEP_OWN_RUNS",
+            "cov_names": {
+                'cov_name_prefix': '',
+                'cov_name_field': 'name',
+                'cov_name_suffix': '',
+            },
+            "preselection": {
+                "min_num_actuals_obs": 78,
+                "num_obs_short_term_class": 36,
+                "max_publication_lag": 2,
+                "min_num_cov_obs": 96
+            },
+            "postselection": {
+                "num_obs_short_term_correlation": 60,
+                "clustering_run_id": None,
+                "post_selection_queries": [],
+                "post_selection_concatenation_operator": "&",
+                "protected_selections_queries": [],
+                "protected_selections_concatenation_operator": "&"
+            }
+        }
+    }
+
+    if config.lag_selection_min_lag and config.lag_selection_max_lag:
+        config_dict['compute_config']['lighthouse_config'] = {
+            # The interchange and inversion of min_lag and max_lag is intended. Lags in Lighthouse configuration have the opposite meaning.
+            'lag_selection_min_lag': -config.lag_selection_max_lag,
+            'lag_selection_max_lag': -config.lag_selection_min_lag
+        }
+
+    payload = {'payload': config_dict}
+
+    return payload

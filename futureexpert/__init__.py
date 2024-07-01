@@ -1,6 +1,7 @@
 from futureexpert.__about__ import __version__
 from futureexpert.batch_forecast import (MAX_TS_LEN_CONFIG,
                                          ForecastingConfig,
+                                         MatcherConfig,
                                          MethodSelectionConfig,
                                          PreprocessingConfig,
                                          ReportConfig)
@@ -22,6 +23,7 @@ __all__ = [
     'FilterSettings',
     'ForecastingConfig',
     'GroupColumn',
+    'MatcherConfig',
     'MethodSelectionConfig',
     'NewValue',
     'PreprocessingConfig',

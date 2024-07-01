@@ -3,12 +3,17 @@ from __future__ import annotations
 import logging
 import os
 import pprint
+from datetime import datetime
 from typing import Any, Literal, Optional, Union, cast
 
 import pandas as pd
 import pydantic
 
-from futureexpert.batch_forecast import ReportConfig, calculate_max_ts_len, create_forecast_payload
+from futureexpert.batch_forecast import (MatcherConfig,
+                                         ReportConfig,
+                                         calculate_max_ts_len,
+                                         create_forecast_payload,
+                                         create_matcher_payload)
 from futureexpert.checkin import (DataDefinition,
                                   FileSpecification,
                                   TsCreationConfig,
@@ -16,6 +21,7 @@ from futureexpert.checkin import (DataDefinition,
                                   create_checkin_payload_1,
                                   create_checkin_payload_2)
 from futureexpert.future_api import FutureApiClient
+from futureexpert.result_models import ForecastResult, MatcherResult
 
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -24,31 +30,32 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class ForecastStatusProgress(pydantic.BaseModel):
+class ReportStatusProgress(pydantic.BaseModel):
     """Progress of a forecasting report."""
     requested: int
     pending: int
     finished: int
 
 
-class ForecastStatusResults(pydantic.BaseModel):
+class ReportStatusResults(pydantic.BaseModel):
     """Result status of a forecasting report.
 
-    This does only include already finished runs."""
+    This only includes runs that are already finished."""
     successful: int
     no_evaluation: int
     error: int
 
 
-class ForecastStatus(pydantic.BaseModel):
-    """Status of a forecasting report."""
-    id: ForecastIdentifier
-    progress: ForecastStatusProgress
-    results: ForecastStatusResults
+class ReportStatus(pydantic.BaseModel):
+    """Status of a forecast or matcher report."""
+    id: ReportIdentifier
+    progress: ReportStatusProgress
+    results: ReportStatusResults
+    error_reasons: Optional[Any] = None
 
     @property
     def is_finished(self) -> bool:
-        """Indicates whether a forecasting report is finished or not."""
+        """Indicates whether a forecasting report is finished."""
         return self.progress.pending == 0
 
     def print(self) -> None:
@@ -61,19 +68,19 @@ class ForecastStatus(pydantic.BaseModel):
 
         pct_txt = f'{round(self.progress.finished/self.progress.requested*100)} % are finished'
         overall = f'{self.progress.requested} time series requested for calculation'
-        finished_txt = f'{self.progress.finished} time series are finished'
-        noeval_txt = f'{self.results.no_evaluation} time series are no evaluation'
-        error_txt = f'{self.results.error} time series calculation run into an error'
+        finished_txt = f'{self.progress.finished} time series finished'
+        noeval_txt = f'{self.results.no_evaluation} time series no evaluation'
+        error_txt = f'{self.results.error} time series ran into an error'
         print(f'{title}\n {pct_txt} \n {overall} \n {finished_txt} \n {noeval_txt} \n {error_txt}')
 
 
-class ForecastIdentifier(pydantic.BaseModel):
+class ReportIdentifier(pydantic.BaseModel):
     report_id: int
     settings_id: Optional[int]
 
 
 class ExpertClient:
-    """Future expert client."""
+    """FutureEXPERT client."""
 
     def __init__(self,
                  user: Optional[str] = None,
@@ -85,17 +92,17 @@ class ExpertClient:
         Parameters
         ----------
         user
-            The user name for future.
-            If not provided, the user is read from environment variable FUTURE_USER.
+            The username for the _future_ platform.
+            If not provided, the username is read from environment variable FUTURE_USER.
         password
-            The password for future.
+            The password for the _future_ platform.
             If not provided, the password is read from environment variable FUTURE_PW.
         group
-            Optionally the name of the future group. Only relevant if the user has access to multiple groups.
-            If not provided, the group is tried to get from the environment variable FUTURE_GROUP.
+            Optionally the name of the futureEXPERT group. Only relevant if the user has access to multiple groups.
+            If not provided, the group is read from the environment variable FUTURE_GROUP.
         environment
-            Optionally the future environment to be used, defaults to production environment.
-            If not provided, the environment is tried to get from the environment variable FUTURE_ENVIRONMENT.
+            Optionally the _future_ environment to be used, defaults to production environment.
+            If not provided, the environment is read from the environment variable FUTURE_ENVIRONMENT.
         """
         future_user = user or os.environ['FUTURE_USER']
         future_password = password or os.environ['FUTURE_PW']
@@ -131,12 +138,12 @@ class ExpertClient:
         logger.info(f'Successfully logged in{verbose_text}.')
 
     def upload_data(self, source: Union[pd.DataFrame, str]) -> Any:
-        """Uploads your raw data for further processing.
+        """Uploads the given raw data for further processing.
 
         Parameters
         ----------
         source
-            path to a csv file or a pandas data frame
+            Path to a CSV file or a pandas data frame.
 
         Returns
         -------
@@ -147,7 +154,8 @@ class ExpertClient:
             file_specs = FileSpecification()
             csv = source.to_csv(index=False, sep=file_specs.delimiter,
                                 decimal=file_specs.decimal, encoding='utf-8-sig')
-            df_file = (f'{self.group}_from_df.csv', csv)
+            time_stamp = datetime.now().strftime('%Y-%m-%d-%H%M%S')
+            df_file = (f'expert-{time_stamp}.csv', csv)
             path = None
         else:
             path = source
@@ -170,14 +178,12 @@ class ExpertClient:
         file_uuid
             UUID of the file.
         data_definition
-            Defines Columns and row and column removal.
+            Specifies the data, value and group columns and which rows and columns are to be removed first.
         file_specification
-            needed if a csv is used with e.g. german format.
+            Needed if a CSV is used with e.g. German format.
         """
         payload = create_checkin_payload_1(
             user_input_id, file_uuid, data_definition, file_specification)
-
-        self.payload_checkin = payload
 
         logger.info('Started data definition using futureCHECK-IN...')
         result = self.client.execute_action(group_id=self.group,
@@ -192,31 +198,47 @@ class ExpertClient:
         logger.info('Finished data definition.')
         return result
 
-    def create_time_series(self, config_obj: Optional[TsCreationConfig] = None, json_config_file: Optional[str] = None) -> Any:
-        """Second step of the checkin process which creates the time series.
+    def create_time_series(self, user_input_id: str, file_uuid: str, data_definition: Optional[DataDefinition] = None, config_ts_creation: Optional[TsCreationConfig] = None, config_checkin: Optional[str] = None, file_specification: FileSpecification = FileSpecification()) -> Any:
+        """Last step of the futureCHECK-IN process which creates the time series.
 
-        Aggregates the data and safes them to the database.
+        Aggregates the data and saves them to the database.
 
         Parameters
         ----------
-        config_obj
+        user_input_id
+            UUID of the user input.
+        file_uuid
+            UUID of the file.
+        data_definition
+            Specifies the data, value and group columns and which rows and columns are to be removed first.
+        file_specification
+            Needed if a CSV is used with e.g. German format.
+        config_ts_creation
             Configuration for the time series creation.
-        json_config_file
-            Path to the json file with the checkin configuration.
+        config_checkin
+            Path to the JSON file with the futureCHECK-IN configuration. `config_ts_creation` and `config_checkin` 
+            cannot be set simultaneously. The configuration may be obtained from the last step of 
+            futureCHECK-IN using the _future_ frontend (future.prognostica.de).
         """
         logger.info('Transforming input data...')
 
-        if config_obj is None and json_config_file is None:
+        if config_ts_creation is None and config_checkin is None:
             raise ValueError('No configuration source is provided.')
 
-        if config_obj is not None and json_config_file is not None:
+        if config_ts_creation is not None and config_checkin is not None:
             raise ValueError('Only one configuration source can be processed.')
 
-        if config_obj is not None:
-            payload = create_checkin_payload_2(self.payload_checkin, config_obj)
-        if json_config_file is not None:
+        if config_checkin is None and (data_definition is None or config_ts_creation is None):
+            raise ValueError(
+                'For checkin configuration via python `data_defintion`and `config_ts_cration` must be provided.')
+
+        if config_ts_creation is not None and data_definition is not None:
+            payload_1 = create_checkin_payload_1(
+                user_input_id, file_uuid, data_definition, file_specification)
+            payload = create_checkin_payload_2(payload_1, config_ts_creation)
+        if config_checkin is not None:
             payload = build_payload_from_ui_config(
-                user_input_id=self.payload_checkin['userInputId'], file_uuid=self.payload_checkin['payload']['fileUuid'], path=json_config_file)
+                user_input_id=user_input_id, file_uuid=file_uuid, path=config_checkin)
 
         logger.info('Creating time series using futureCHECK-IN...')
         result = self.client.execute_action(group_id=self.group,
@@ -231,26 +253,28 @@ class ExpertClient:
 
         return result
 
-    def checkin_time_series(self,
-                            raw_data_source: Union[pd.DataFrame, str],
-                            data_definition: Optional[DataDefinition] = None,
-                            config_ts_creation: Optional[TsCreationConfig] = None,
-                            config_from_json: Optional[str] = None,
-                            file_specification: FileSpecification = FileSpecification()) -> Any:
+    def check_in_time_series(self,
+                             raw_data_source: Union[pd.DataFrame, str],
+                             data_definition: Optional[DataDefinition] = None,
+                             config_ts_creation: Optional[TsCreationConfig] = None,
+                             config_checkin: Optional[str] = None,
+                             file_specification: FileSpecification = FileSpecification()) -> Any:
         """Checks in time series data that can be used as actuals or covariate data.
 
         Parameters
         ----------
         raw_data_source
-            data frame that contains the raw data or  path to where the csv file with the data is stored.           
+            Data frame that contains the raw data or path to where the CSV file with the data is stored. 
         data_definition
-            Defines Column and row and column removal.
+            Specifies the data, value and group columns and which rows and columns are to be removed.
         config_ts_creation
             Defines filter and aggreagtion level of the time series.
-        config_from_json
-            Path to the json file with the checkin configuration.       
+        config_checkin
+            Path to the JSON file with the futureCHECK-IN configuration. `config_ts_creation` and `config_checkin` 
+            cannot be set simultaneously. The configuration may be obtained from the last step of 
+            futureCHECK-IN using the future frontend (future.prognostica.de).
         file_specification
-            needed if a csv is used with e.g. german format.
+            Needed if a CSV is used with e.g. German format.
 
         Returns
         -------
@@ -261,17 +285,12 @@ class ExpertClient:
         user_input_id = upload_feedback['uuid']
         file_id = upload_feedback['files'][0]['uuid']
 
-        if data_definition is not None:
-            self.check_data_definition(user_input_id=user_input_id,
-                                       file_uuid=file_id,
-                                       data_definition=data_definition,
-                                       file_specification=file_specification)
-        else:
-            self.payload_checkin = {'userInputId': user_input_id,
-                                    'payload': {'fileUuid': file_id}}
-
-        response = self.create_time_series(config_obj=config_ts_creation,
-                                           json_config_file=config_from_json)
+        response = self.create_time_series(user_input_id=user_input_id,
+                                           file_uuid=file_id,
+                                           data_definition=data_definition,
+                                           config_ts_creation=config_ts_creation,
+                                           config_checkin=config_checkin,
+                                           file_specification=file_specification)
 
         if len(response['result']['timeSeries']) > 7:
             logger.warning(
@@ -279,13 +298,13 @@ class ExpertClient:
 
         return response['result']['tsVersion']['_id']
 
-    def start_forecast(self, version: str, config: ReportConfig) -> ForecastIdentifier:
+    def start_forecast(self, version: str, config: ReportConfig) -> ReportIdentifier:
         """Starts a forecasting report.
 
         Parameters
         ----------
         version
-            ID of a time series version
+            ID of a time series version.
         config
             Configuration of the forecasting report.
 
@@ -299,8 +318,8 @@ class ExpertClient:
                                                  granularity=version_data['customer_specific']['granularity'])
         logger.info('Preparing data for forecast...')
 
-        if not self.is_analyst and config.db_name is not None:
-            raise ValueError('Only users with the role analyst are allowed to use this parameter.')
+        if not self.is_analyst and (config.db_name is not None or config.priority is not None):
+            raise ValueError('Only users with the role analyst are allowed to use the parameters db_name and priority.')
         payload = create_forecast_payload(version, config)
         logger.info('Finished data preparation for forecast.')
         logger.info('Started creating forecasting report with futureFORECAST...')
@@ -309,32 +328,38 @@ class ExpertClient:
                                             payload=payload,
                                             interval_status_check_in_seconds=2)
         logger.info('Finished report creation. Forecasts are running...')
-        return ForecastIdentifier.model_validate(result)
+        return ReportIdentifier.model_validate(result)
 
-    def get_forecast_status(self, id: Union[ForecastIdentifier, int]) -> ForecastStatus:
-        """Gets the current status of the forecast run.
+    def get_report_status(self, id: Union[ReportIdentifier, int], include_error_reason: bool = True) -> ReportStatus:
+        """Gets the current status of a forecast or matcher report.
 
         Parameters
         ----------
         id
-            Forecast identifier or plain report ID.
-        """
-        fc_identifier = id if isinstance(id, ForecastIdentifier) else ForecastIdentifier(report_id=id, settings_id=None)
-        report_status = self.client.get_report_status(group_id=self.group, report_id=fc_identifier.report_id)['status_summary']
+            Report identifier or plain report ID.
+        include_error_reason
+            Determines whether log messages are to be included in the result.
 
+        """
+        fc_identifier = id if isinstance(id, ReportIdentifier) else ReportIdentifier(report_id=id, settings_id=None)
+        raw_result = self.client.get_report_status(
+            group_id=self.group, report_id=fc_identifier.report_id, include_error_reason=include_error_reason)
+
+        report_status = raw_result['status_summary']
         created = report_status.get('Created', 0)
         successful = report_status.get('Successful', 0)
         noeval = report_status.get('NoEvaluation', 0)
         error = report_status.get('Error', 0)
-        summary = ForecastStatusProgress(requested=created,
-                                         pending=created - successful - noeval - error,
-                                         finished=successful + noeval + error)
-        results = ForecastStatusResults(successful=successful,
-                                        no_evaluation=noeval,
-                                        error=error)
-        return ForecastStatus(id=fc_identifier, progress=summary, results=results)
+        summary = ReportStatusProgress(requested=created,
+                                       pending=created - successful - noeval - error,
+                                       finished=successful + noeval + error)
+        results = ReportStatusResults(successful=successful,
+                                      no_evaluation=noeval,
+                                      error=error)
 
-    def get_fc_results(self, id: Union[ForecastIdentifier, int], include_k_best_models: int = 1, include_forecasts: bool = True, include_backtesting: bool = False, include_preprocessing: bool = False) -> Any:
+        return ReportStatus(id=fc_identifier, progress=summary, results=results, error_reasons=raw_result.get('customer_specific', {}).get('log_messages', None))
+
+    def get_fc_results(self, id: Union[ReportIdentifier, int], include_k_best_models: int = 1, include_backtesting: bool = False) -> Any:
         """Gets the results from the given report.
 
         Parameters
@@ -342,56 +367,64 @@ class ExpertClient:
         id
             Forecast identifier or plain report ID.
         include_k_best_models
-            Number of k best models for which results are to be returned.    
-        include_forecasts
-            Determines whether forecast results should be returned or not.
+            Number of k best models for which results are to be returned.           
         include_backtesting
-            Determines whether backtesting results should be returned or not.
-        include_preprocessing
-            Determines whether preprocessing results should be returned or not.
+            Determines whether backtesting results are to be returned.
         """
 
         if include_k_best_models < 1:
             raise ValueError('At least one model is needed.')
 
-        fc = pp = None
-        report_id = id.report_id if isinstance(id, ForecastIdentifier) else id
+        report_id = id.report_id if isinstance(id, ReportIdentifier) else id
 
-        fc = self.client.get_fc_results(group_id=self.group,
-                                        report_id=report_id,
-                                        include_k_best_models=include_k_best_models,
-                                        include_forecasts=include_forecasts,
-                                        include_backtesting=include_backtesting)
+        results = self.client.get_fc_results(group_id=self.group,
+                                             report_id=report_id,
+                                             include_k_best_models=include_k_best_models,
+                                             include_backtesting=include_backtesting)
 
-        if include_preprocessing:
-            pp = self.client.get_preprocessing_results(group_id=self.group, report_id=report_id)
+        return [ForecastResult(**result) for result in results]
 
-        return {'forecasts': fc,
-                'preprocessing': pp}
+    def get_matcher_results(self, id: Union[ReportIdentifier, int]) -> Any:
+        """Gets the results from the given report.
+
+        Parameters
+        ----------
+        id
+            Report identifier or plain report ID.
+        """
+
+        report_id = id.report_id if isinstance(id, ReportIdentifier) else id
+
+        results = self.client.get_matcher_results(group_id=self.group,
+                                                  report_id=report_id)
+
+        return [MatcherResult(**result) for result in results]
 
     def create_forecast_from_raw_data(self,
                                       raw_data_source: Union[pd.DataFrame, str],
                                       config_fc: ReportConfig,
                                       data_definition: Optional[DataDefinition] = None,
                                       config_ts_creation: Optional[TsCreationConfig] = None,
-                                      config_from_json: Optional[str] = None,
-                                      file_specification: FileSpecification = FileSpecification()) -> ForecastIdentifier:
+                                      config_checkin: Optional[str] = None,
+                                      file_specification: FileSpecification = FileSpecification()) -> ReportIdentifier:
         """Starts a forecast run from raw data without the possibility to inspect interim results from the data preparation.
 
         Parameters
         ----------
         raw_data_source
-            data frame that contains the raw data or path to where the csv file with the data is stored.        
+            A Pandas DataFrame that contains the raw data or path to where the CSV file with the data is stored.   
         config_fc
-            Configuration of the forecast run.
-        config_data_def
-            Defines Column and row and column removal.
+            The configuration of the forecast run.
+        data_definition
+            Specifies the data, value and group columns and which rows and columns should be removed.
         config_ts_creation
             Defines filter and aggreagtion level of the time series.
-        config_from_json
-            Path to the json file with the checkin configuration.
+        config_checkin
+            Path to the JSON file with the futureCHECK-IN configuration. `config_ts_creation` and `config_checkin` 
+            cannot be set simultaneously. The configuration may be obtained from the last step of 
+            futureCHECK-IN using the future frontend (future.prognostica.de).
         file_specification
-            needed if a csv is used with e.g. german format.
+            Needed if a CSV is used with e.g. German format.
 
         Returns
         -------
@@ -402,17 +435,36 @@ class ExpertClient:
         user_input_id = upload_feedback['uuid']
         file_id = upload_feedback['files'][0]['uuid']
 
-        if data_definition is not None:
-            self.check_data_definition(user_input_id=user_input_id,
+        res2 = self.create_time_series(user_input_id=user_input_id,
                                        file_uuid=file_id,
                                        data_definition=data_definition,
+                                       config_ts_creation=config_ts_creation,
+                                       config_checkin=config_checkin,
                                        file_specification=file_specification)
-        else:
-            self.payload_checkin = {'userInputId': user_input_id,
-                                    'payload': {'fileUuid': file_id}}
-
-        res2 = self.create_time_series(config_obj=config_ts_creation,
-                                       json_config_file=config_from_json)
 
         version = res2['result']['tsVersion']['_id']
         return self.start_forecast(version=version, config=config_fc)
+
+    def start_matcher(self, config: MatcherConfig) -> ReportIdentifier:
+        """Starts a covariate matcher report.
+
+        Parameters
+        ----------
+        version
+            ID of a time series version
+        config
+            Configuration of the covariate matcher report.
+
+        Returns
+        -------
+        The identifier of the covariate matcher report.
+        """
+
+        payload = create_matcher_payload(config)
+
+        result = self.client.execute_action(group_id=self.group,
+                                            core_id='cov-selection',
+                                            payload=payload,
+                                            interval_status_check_in_seconds=2)
+        logger.info('Finished report creation.')
+        return ReportIdentifier.model_validate(result)

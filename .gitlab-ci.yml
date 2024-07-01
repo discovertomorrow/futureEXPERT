@@ -1,7 +1,8 @@
 workflow:
   rules:
     - if: $CI_COMMIT_BRANCH  == "dev"
-    - if: $CI_COMMIT_BRANCH == "prod"
+    - if: $CI_COMMIT_BRANCH == "staging"
+    - if: $CI_COMMIT_BRANCH == "release"
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_PIPELINE_SOURCE == "web"
 
@@ -19,15 +20,16 @@ stages:
 python_build:
   extends: .defaults
   stage: build
-  image:  ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.9
+  image:  ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.12
   script:
     - >
-      if [[ "${CI_COMMIT_REF_NAME}" =~ ^(release$|dev) ]]; then
-        sed -i "s#\.dev0#rc${CI_PIPELINE_ID}#g" futureexpert/__about__.py
+      if [[ "${CI_COMMIT_REF_NAME}" =~ ^(release$|dev|staging) ]]; then
+        sed -i "s#\"#rc${CI_PIPELINE_ID}\"#2" futureexpert/__about__.py
       elif [[ "${CI_COMMIT_TAG}" =~ ^release-.+ ]]; then
-        sed -i "s#\.dev0##g" futureexpert/__about__.py
+        # do nothing final release version already in futureexpert/__about__.py
+        :
       else
-        sed -i "s#\.dev0#\.dev${CI_PIPELINE_ID}#g" futureexpert/__about__.py
+        sed -i "s#\"#\.dev${CI_PIPELINE_ID}\"#2" futureexpert/__about__.py
       fi
     - python setup.py sdist bdist_wheel
   artifacts:
@@ -38,54 +40,132 @@ python_build:
 import-formatting:  
   stage: test
   extends: .defaults
-  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.9
+  image: ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
   script:
-    - pip config set global.index-url ${PROGNOSTICA_PYPI}
-    - pip install isort
     - isort --check-only .
 
 static-typing:
   stage: test
   extends: .defaults
-  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.9
+  image: ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
   script:
-    - pip config set global.index-url ${PROGNOSTICA_PYPI}
-    - pip install .[dev] # [dev] required for stubs dependencies!
     - mypy futureexpert
-
   
 unit-tests:  
   stage: test
   extends: .defaults
-  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.9
+  image: ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
   script:
-    - pip config set global.index-url ${PROGNOSTICA_PYPI}
-    - pip install .[dev] # [dev] required for stubs dependencies!
-    - pip install pytest
     - pytest
 
 notebook execution (required):
   stage: manual
   extends: .defaults
-  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.9
-  when: manual
+  image: ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
   variables:
     FUTURE_PW: $CI_TEST_PW
     FUTURE_USER: $CI_TEST_USER
     FUTURE_ENVIRONMENT: development
   script:
-    - pip install jupyter==1.0.0 nbconvert==7.2.6 .
     - for notebook in `find . -name '*.ipynb'`; do jupyter nbconvert --to notebook --execute --inplace $notebook; done
-  needs: [python_build]
-
+  needs: [docker_build]
+  rules:
+    - if: $CI_COMMIT_BRANCH  == "dev"
+      when: on_success
+    - when: manual
+      allow_failure: false
 
 python_deploy:
   stage: deploy
   extends: .defaults  
-  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.9
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.12
   script:
     - pip config set global.index-url ${PROGNOSTICA_PYPI}
     - pip install -U twine
     - python -m twine check dist/*
     - TWINE_PASSWORD=${CI_JOB_TOKEN} TWINE_USERNAME=gitlab-ci-token python -m twine upload --repository-url ${CI_PROJECT_PYPI} dist/* --verbose
   when: manual
+
+docker_build:
+  stage: build
+  tags:
+    - shell
+    - cloud
+  script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+    - docker build -t ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID} .
+    - docker push ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
+  needs: [python_build]
+
+docker_deploy:
+  stage: deploy
+  tags:
+    - shell
+    - cloud
+  script:
+    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+    - docker pull ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
+    - docker tag ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID} ${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_NAME}
+    - docker push ${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_NAME}
+
+e2e-deploy-dev:
+  stage: deploy
+  tags:
+    - shell
+    - cloud
+  script: |
+    git clone https://${GIT_USER_E2E}:${GIT_TOKEN_E2E}@git.prognostica.de/prognostica/future/futureapp/monitoring/future-end-to-end-test-deployment.git
+    cd future-end-to-end-test-deployment/overlays/dev
+    git config user.email "ci@gitlab.prognostica.de"
+    git config user.name "Gitlab CI"
+    git pull
+    sed -i "/- name: future-expert-e2e-test/{n;s/newTag: .*/newTag: \"${CI_PIPELINE_ID}\"/;}" kustomization.yaml
+    git diff
+    git commit -am "[dev] CI update to image ${CI_PIPELINE_ID}"
+    git push
+  environment: dev
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
+      when: on_success
+    - when: manual
+      allow_failure: true
+
+e2e-deploy-staging:
+  stage: deploy
+  tags:
+    - shell
+    - cloud
+  script: |
+    git clone https://${GIT_USER_E2E}:${GIT_TOKEN_E2E}@git.prognostica.de/prognostica/future/futureapp/monitoring/future-end-to-end-test-deployment.git
+    cd future-end-to-end-test-deployment/overlays/staging
+    git config user.email "ci@gitlab.prognostica.de"
+    git config user.name "Gitlab CI"
+    sed -i "/- name: future-expert-e2e-test/{n;s/newTag: .*/newTag: \"${CI_PIPELINE_ID}\"/;}" kustomization.yaml
+    git diff
+    git commit -am "[staging] CI update to image ${CI_PIPELINE_ID}"
+    git push
+  environment: staging
+  rules:
+    - if: $CI_COMMIT_BRANCH == "staging"
+      when: on_success
+    - when: never
+
+e2e-deploy-prod:
+  stage: deploy
+  tags:
+    - shell
+    - cloud
+  script: |
+    git clone https://${GIT_USER_E2E}:${GIT_TOKEN_E2E}@git.prognostica.de/prognostica/future/futureapp/monitoring/future-end-to-end-test-deployment.git
+    cd future-end-to-end-test-deployment/overlays/prod
+    git config user.email "ci@gitlab.prognostica.de"
+    git config user.name "Gitlab CI"
+    sed -i "/- name: future-expert-e2e-test/{n;s/newTag: .*/newTag: \"${CI_PIPELINE_ID}\"/;}" kustomization.yaml
+    git diff
+    git commit -am "[prod] CI update to image ${CI_PIPELINE_ID}"
+    git push
+  environment: prod
+  rules:
+    - if: $CI_COMMIT_BRANCH == "github" # let's not use prod branch here to ensure that the github branch is kept up-to-date with the productive version
+      when: on_success
+    - when: never
