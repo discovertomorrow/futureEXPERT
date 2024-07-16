@@ -60,7 +60,8 @@ def test_calculate_max_ts_len___given_ts_len_out_of_range___returns_error() -> N
     # Arrange
     max_ts_len = 1400
     granularity = 'daily'
-    expected_error_message = f'Given max_ts_len {max_ts_len} is not allowed for granularity {granularity}. Check the variable MAX_TS_LEN_CONFIG for allowed configuration.'
+    expected_error_message = f'Given max_ts_len {max_ts_len} is not allowed for granularity {
+        granularity}. Check the variable MAX_TS_LEN_CONFIG for allowed configuration.'
 
     # Act
     with pytest.raises(ValueError) as excinfo:

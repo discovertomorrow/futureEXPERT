@@ -292,10 +292,6 @@ class ExpertClient:
                                            config_checkin=config_checkin,
                                            file_specification=file_specification)
 
-        if len(response['result']['timeSeries']) > 7:
-            logger.warning(
-                "More than seven time series created. If these time series should be used as covariates, only the first seven will be used.")
-
         return response['result']['tsVersion']['_id']
 
     def start_forecast(self, version: str, config: ReportConfig) -> ReportIdentifier:

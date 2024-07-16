@@ -3,6 +3,7 @@ workflow:
     - if: $CI_COMMIT_BRANCH  == "dev"
     - if: $CI_COMMIT_BRANCH == "staging"
     - if: $CI_COMMIT_BRANCH == "release"
+    - if: $CI_COMMIT_BRANCH == "github"
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_PIPELINE_SOURCE == "web"
 
@@ -25,7 +26,7 @@ python_build:
     - >
       if [[ "${CI_COMMIT_REF_NAME}" =~ ^(release$|dev|staging) ]]; then
         sed -i "s#\"#rc${CI_PIPELINE_ID}\"#2" futureexpert/__about__.py
-      elif [[ "${CI_COMMIT_TAG}" =~ ^release-.+ ]]; then
+      elif [[ "${CI_COMMIT_REF_NAME}" =~ ^github$ ]]; then
         # do nothing final release version already in futureexpert/__about__.py
         :
       else
@@ -58,6 +59,18 @@ unit-tests:
   script:
     - pytest
 
+sonarqube:
+  extends: .defaults
+  stage: test
+  image:
+    name: sonarsource/sonar-scanner-cli
+    entrypoint: [""]
+  variables:
+    GIT_STRATEGY: fetch
+    GIT_DEPTH: 0
+  script:
+    - sonar-scanner -Dsonar.qualitygate.wait=true
+
 notebook execution (required):
   stage: manual
   extends: .defaults
@@ -72,6 +85,8 @@ notebook execution (required):
   rules:
     - if: $CI_COMMIT_BRANCH  == "dev"
       when: on_success
+    - if: $CI_COMMIT_BRANCH =~ /^(release$|release.+|staging)/
+      when: never
     - when: manual
       allow_failure: false
 

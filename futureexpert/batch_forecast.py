@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import re
-from typing import Annotated, Any, Literal, Optional, Union, cast
+from typing import Annotated, Any, Literal, Optional, Union
 
 import numpy as np
 import pydantic
@@ -43,7 +43,9 @@ class PreprocessingConfig(BaseConfig):
        If true, then the season length is determined from the data.
     seasonalities_to_test
        Season lengths to be tested. If not defined, a suitable set for the given granularity is used.
-       Note that 1 must be in the list if the non-seasonal case should be considered, too.
+       Season lengths can only be tested, if the number of observations is at least three times as
+       long as the biggest season length. Note that 1 must be in the list if the non-seasonal case should
+       be considered, too. Allows a combination of single granularities or combinations of granularities.
     fixed_seasonalities
        Season lengths used without checking. Allowed only if `use_season_detection` is false.
     detect_outliers
@@ -63,7 +65,7 @@ class PreprocessingConfig(BaseConfig):
     remove_leading_zeros: bool = False
     use_season_detection: bool = True
     # empty lists and None are treated the same in apollon
-    seasonalities_to_test: Optional[list[ValidatedPositiveInt]] = None
+    seasonalities_to_test: Optional[list[Union[list[ValidatedPositiveInt], ValidatedPositiveInt]]] = None
     fixed_seasonalities: Optional[list[ValidatedPositiveInt]] = None
     detect_outliers: bool = False
     replace_outliers: bool = False
@@ -320,15 +322,17 @@ class MatcherConfig(BaseConfig):
       Version of the 
     covs_version
       Version of the covariates.
+    lag_selection_fixed_lags
+      Lags that are tested in the lag selection.
     lag_selection_min_lag
       Minimal lag that is tested in the lag selection. For example, a lag 3 means the covariate is shifted 3 data points into the future.
     lag_selection_max_lag
       Maximal lag that is tested in the lag selection. For example, a lag 12 means the covariate is shifted 12 data points into the future.
-
     """
     title: str
     actuals_version: str
     covs_version: str
+    lag_selection_fixed_lags: Optional[list[int]] = None
     lag_selection_min_lag: Optional[int] = None
     lag_selection_max_lag: Optional[int] = None
 
@@ -342,11 +346,13 @@ class MatcherConfig(BaseConfig):
             raise ValueError(
                 'If one of `lag_selection_min_lag` and `lag_selection_max_lag` is set the other one also needs to be set.')
         if min_lag and max_lag:
+            if self.lag_selection_fixed_lags is not None:
+                raise ValueError('Fixed lags and min/max lag are mutually exclusive.')
             if max_lag < min_lag:
                 raise ValueError('lag_selection_max_lag needs to be higher as lag_selection_min_lag.')
-            range = abs(max_lag - min_lag)
-            if range > 15:
-                raise ValueError(f'Only a range of 15 lags is allowed to test. The current range is {range}.')
+            lag_range = abs(max_lag - min_lag)
+            if lag_range > 15:
+                raise ValueError(f'Only a range of 15 lags is allowed to test. The current range is {lag_range}.')
 
         return self
 
@@ -384,17 +390,13 @@ def create_matcher_payload(config: MatcherConfig) -> Any:
                 "post_selection_concatenation_operator": "&",
                 "protected_selections_queries": [],
                 "protected_selections_concatenation_operator": "&"
+            },
+            "lighthouse_config": {
+               "lag_selection_fixed_lags": config.lag_selection_fixed_lags,
+               "lag_selection_min_lag": config.lag_selection_min_lag,
+               "lag_selection_max_lag": config.lag_selection_max_lag
             }
         }
     }
 
-    if config.lag_selection_min_lag and config.lag_selection_max_lag:
-        config_dict['compute_config']['lighthouse_config'] = {
-            # The interchange and inversion of min_lag and max_lag is intended. Lags in Lighthouse configuration have the opposite meaning.
-            'lag_selection_min_lag': -config.lag_selection_max_lag,
-            'lag_selection_max_lag': -config.lag_selection_min_lag
-        }
-
-    payload = {'payload': config_dict}
-
-    return payload
+    return {'payload': config_dict}

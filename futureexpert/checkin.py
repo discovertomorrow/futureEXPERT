@@ -2,10 +2,15 @@
 import json
 from typing import Any, Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
-class FileSpecification(BaseModel):
+class BaseConfig(BaseModel):
+    """Basic Configuaration for all models."""
+    model_config = ConfigDict(extra='forbid')
+
+
+class FileSpecification(BaseConfig):
     """Specify the format of the CSV file.
 
     Parameters
@@ -22,7 +27,7 @@ class FileSpecification(BaseModel):
     thousands: Optional[str] = None
 
 
-class Column(BaseModel):
+class Column(BaseConfig):
     """Base model for the different column models
     (`DateColumn`, `ValueColumn` and `GroupColumn`).
 
@@ -79,7 +84,7 @@ class GroupColumn(Column):
     dtype_str: Optional[Literal['Character']] = None
 
 
-class DataDefinition(BaseModel):
+class DataDefinition(BaseConfig):
     """Model for the input parameter needed for the first futureCHECK-IN step.
 
     Parameters
@@ -160,7 +165,7 @@ def build_payload_from_ui_config(user_input_id: str, file_uuid: str, path: str) 
             'payload': json_data}
 
 
-class FilterSettings(BaseModel):
+class FilterSettings(BaseConfig):
     """Model for the filters.
 
     Parameters
@@ -177,7 +182,7 @@ class FilterSettings(BaseModel):
     items: list[str]
 
 
-class NewValue(BaseModel):
+class NewValue(BaseConfig):
     """Model for the value data.
 
     Parameters
@@ -201,7 +206,7 @@ class NewValue(BaseModel):
     unit: Optional[str] = None
 
 
-class TsCreationConfig(BaseModel):
+class TsCreationConfig(BaseConfig):
     """Model for the time series creation configuration.
 
     Parameters
@@ -229,7 +234,7 @@ class TsCreationConfig(BaseModel):
     grouping_level: list[str] = []
     filter: list[FilterSettings] = []
     new_variables: list[NewValue] = []
-    value_columns_to_save: list[str] = []
+    value_columns_to_save: list[str]
     missing_value_handler: Literal['keepNaN', 'setToZero'] = 'keepNaN'
 
 
@@ -263,7 +268,6 @@ def create_checkin_payload_2(payload: dict[str, Any], config: TsCreationConfig) 
     payload['payload']['stage'] = 'createDataset'
 
     return payload
-
 
 
 def snake_to_camel(snake_string: str) -> str:
