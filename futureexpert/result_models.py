@@ -1,13 +1,18 @@
-
+"""Models that are used for futureMATCHER and futureFORECAST results."""
 from __future__ import annotations
 
+import logging
+from copy import deepcopy
 from datetime import datetime
 from enum import Enum
 from typing import Annotated, Any, Optional, Sequence, Union
 
 from pydantic import BaseModel, ConfigDict, Field, NonNegativeFloat
 
-from futureexpert.batch_forecast import ValidatedPositiveInt
+from futureexpert.base_models import ValidatedPositiveInt
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class TimeSeriesValue(BaseModel):
@@ -397,9 +402,54 @@ class ForecastResult(BaseModel):
     changed_values: Sequence[ChangedValue]
     models: list[Model]
 
+    def incorporate_matcher_ranking(self, matcher_results: list[MatcherResult]) -> ForecastResult:
+        """Combines the ranking with the ranking from the matcher run.
+
+        Parameters
+        ----------
+        matcher_results
+            Results of a covariate matcher run and the corresponding input data.
+
+         Returns
+        -------
+        The forecast results with the models adjusted based on the matcher ranking.
+        """
+        fc_result = deepcopy(self)
+        actuals_name = self.input.actuals.name
+        matcher_rankings = [item.ranking for item in matcher_results if item.actuals.name == actuals_name]
+
+        if len(matcher_rankings) > 1:
+            raise ValueError('Invalid matcher results found: Only one result per time series is permitted.')
+        if len(matcher_rankings) == 0:
+            logger.info(f'For {actuals_name} no MATCHER results were found. FORECAST ranking is used instead.')
+            return fc_result
+
+        new_models = []
+        for matcher_ranking_details in matcher_rankings[0]:
+            covs_config = [CovariateRef(name=cov.ts.name, lag=cov.lag) for cov in matcher_ranking_details.covariates]
+
+            valid_models = [model for model in fc_result.models
+                            if model.covariates == covs_config]
+
+            valid_models.sort(key=lambda model: model.model_selection.ranking.rank_position)  # type: ignore
+
+            if valid_models:
+                selected_model = valid_models[0]
+                selected_model.model_selection.ranking.rank_position = matcher_ranking_details.rank  # type: ignore
+                new_models.append(selected_model)
+
+        if len(new_models) != len(matcher_rankings[0]):
+            logging.info('''Some MATCHER models are missing in the FORECAST. This could be caused by\n
+                            - the model failed in the forecast run\n
+                            - not all forecast models were downloaded
+                            (for more model results, adjust parameter include_k_best_models)''')
+        new_models.sort(key=lambda model: model.model_selection.ranking.rank_position)  # type: ignore
+        fc_result.models = new_models
+        return fc_result
+
 
 class MatcherResult(BaseModel):
-    """Results of a covariate matcher run and the corresponding input data.
+    """Result of a covariate matcher run and the corresponding input data.
 
     Parameters
     ----------
@@ -410,3 +460,53 @@ class MatcherResult(BaseModel):
     """
     actuals: TimeSeries
     ranking: list[CovariateRankingDetails]
+
+    def convert_ranking_to_forecast_config(self) -> ActualsCovsConfiguration:
+        """Converts MATCHER results into the input format for the FORECAST."""
+        covs_config = [CovariateRef(name=cov.ts.name, lag=cov.lag) for r in self.ranking for cov in r.covariates]
+        return ActualsCovsConfiguration(actuals_name=self.actuals.name,
+                                        covs_configurations=covs_config)
+
+
+class ActualsCovsConfiguration(BaseModel):
+    """Configuration of actuals and covariates via name and lag."""
+    actuals_name: str
+    covs_configurations: list[CovariateRef]
+
+
+class CheckInResult(BaseModel):
+    """Result of the CHECK-IN.
+
+    Parameters
+    ----------
+    time_series
+        Time series values.
+    version_id
+        Id of the time series version. Used to identifiy the time series
+    """
+    time_series: list[TimeSeries]
+    version_id: str
+
+
+def combine_forecast_ranking_with_matcher_ranking(forecast_results: list[ForecastResult],
+                                                  matcher_results: list[MatcherResult]) -> list[ForecastResult]:
+    """Ranks the forecasts based on the matcher results.
+
+    Parameters
+    ----------
+    forecast_results
+        Results of a forecast run and the corresponding input data.
+    matcher_results
+        Results of a covariate matcher run and the corresponding input data.
+
+    Returns
+    -------
+    The forecast results with the models adjusted based on the matcher ranking.
+    """
+    new_results = []
+
+    for fc_res in forecast_results:
+        fc_res_new = fc_res.incorporate_matcher_ranking(matcher_results)
+        new_results.append(fc_res_new)
+
+    return new_results

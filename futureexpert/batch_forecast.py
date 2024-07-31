@@ -5,29 +5,12 @@ import re
 from typing import Annotated, Any, Literal, Optional, Union
 
 import numpy as np
+import pandas as pd
 import pydantic
 from typing_extensions import NotRequired, Self, TypedDict
 
-
-class PositiveInt(int):
-    def __new__(cls, value: int) -> PositiveInt:
-        if value < 1:
-            raise ValueError('The value must be a positive integer.')
-        return super().__new__(cls, value)
-
-
-ValidatedPositiveInt = Annotated[PositiveInt,
-                                 pydantic.BeforeValidator(lambda x: PositiveInt(int(x))),
-                                 # raises an error without the lambda wrapper
-                                 pydantic.PlainSerializer(lambda x: int(x), return_type=int),
-                                 pydantic.WithJsonSchema({'type': 'int', 'minimum': 1})]
-
-
-class BaseConfig(pydantic.BaseModel):
-
-    model_config = pydantic.ConfigDict(allow_inf_nan=False,
-                                       extra='forbid',
-                                       arbitrary_types_allowed=True)
+from futureexpert.base_models import BaseConfig, PositiveInt, ValidatedPositiveInt
+from futureexpert.result_models import ActualsCovsConfiguration
 
 
 class PreprocessingConfig(BaseConfig):
@@ -145,7 +128,7 @@ class MethodSelectionConfig(BaseConfig):
        Only positive weights are allowed. Leave a forecast step out to assign a zero weight.
        Used only for non-sporadic time series.
     detect_changepoints
-       If true, then calculate ensemble forecasts. Automatically makes a smart decision on which 
+       If true, then calculate ensemble forecasts. Automatically makes a smart decision on which
        methods to use based on their backtesting performance.
 
     """
@@ -180,12 +163,13 @@ class ReportConfig(BaseConfig):
        Report ID of the covariate matcher.
     covs_version
        Version of the covariates.
-    covs_lag
-       Lag for the covariate.
+    covs_configuration
+       Mapping from actuals and covariates. Use for custom covariate or adjusted matcher results.
+       If the matcher results should be used without changes use `matcher_report_id` instead.
     title
        Title of the report.
     max_ts_len
-       At most this number of most recent observations is used. Check the environment variable MAX_TS_LEN_CONFIG 
+       At most this number of most recent observations is used. Check the environment variable MAX_TS_LEN_CONFIG
        for allowed configuration.
     preprocessing
        Preprocessing configuration.
@@ -197,14 +181,13 @@ class ReportConfig(BaseConfig):
        Only accessible for internal use. Name of the database to use for storing the results
     priority
        Only accessible for internal use. Higher value indicate higher priority
-
     """
 
     # is merged with the inherited settings
     model_config = pydantic.ConfigDict(title='Forecast run configuration.')
     matcher_report_id: Optional[int] = None
     covs_version: Optional[str] = None
-    covs_lag: Optional[int] = None
+    covs_configuration: Optional[list[ActualsCovsConfiguration]] = None
     title: str
 
     max_ts_len: Annotated[
@@ -215,6 +198,21 @@ class ReportConfig(BaseConfig):
     backtesting: Optional[MethodSelectionConfig] = None
     db_name:  Optional[str] = None
     priority: Annotated[Optional[int], pydantic.Field(ge=0, le=10)] = None
+
+    @pydantic.model_validator(mode="after")
+    def covs_configuration_not_with_matcher_report_id(self) -> Self:
+        if self.matcher_report_id and self.covs_configuration:
+            raise ValueError('matcher_report_id and covs_configuration can not be set simultaniusly.')
+        if (self.matcher_report_id or self.covs_configuration) and self.covs_version is None:
+            raise ValueError(
+                'If one of `matcher_report_id` and `covs_configuration` is set also `covs_version` needs to be set.')
+        if (self.matcher_report_id is None and self.covs_configuration is None) and self.covs_version:
+            raise ValueError(
+                'If `covs_version` is set either `matcher_report_id` or `covs_configuration` needs to be set.')
+        if self.covs_configuration is not None and len(self.covs_configuration) == 0:
+            raise ValueError('`covs_configuration` has length zero and therefore won`t have any effect.\
+                             Please remove the parameter or set to None.')
+        return self
 
     @pydantic.model_validator(mode="after")
     def backtesting_step_weights_refer_to_valid_forecast_steps(self) -> Self:
@@ -307,7 +305,8 @@ def calculate_max_ts_len(max_ts_len: Optional[int], granularity: str) -> Optiona
         return default_len
     if max_ts_len > max_allowed_len:
         raise ValueError(
-            f'Given max_ts_len {max_ts_len} is not allowed for granularity {granularity}. Check the environment variable MAX_TS_LEN_CONFIG for allowed configuration.')
+            f'''Given max_ts_len {max_ts_len} is not allowed for granularity {granularity}.
+             Check the environment variable MAX_TS_LEN_CONFIG for allowed configuration.''')
     return max_ts_len
 
 
@@ -317,17 +316,50 @@ class MatcherConfig(BaseConfig):
     Parameters
     ----------
     title
-      Title of the report.
+        A short description of the report.
     actuals_version
-      Version of the 
+        The version ID of the actuals.
     covs_version
-      Version of the covariates.
+        The version of the covariates.
     lag_selection_fixed_lags
-      Lags that are tested in the lag selection.
+        Lags that are tested in the lag selection.
     lag_selection_min_lag
-      Minimal lag that is tested in the lag selection. For example, a lag 3 means the covariate is shifted 3 data points into the future.
+        Minimal lag that is tested in the lag selection. For example, a lag 3 means the covariate
+        is shifted 3 data points into the future.
     lag_selection_max_lag
-      Maximal lag that is tested in the lag selection. For example, a lag 12 means the covariate is shifted 12 data points into the future.
+        Maximal lag that is tested in the lag selection. For example, a lag 12 means the covariate
+        is shifted 12 data points into the future.
+    evaluation_start_date
+        Optional start date for the evaluation. The input should be in the ISO format
+        with date and time, "YYYY-mm-DDTHH-MM-SS", e.g., "2024-01-01T16:40:00".
+        Actuals and covariate observations prior to this start date are dropped.
+    evaluation_end_date
+        Optional end date for the evaluation. The input should be in the ISO format
+        with date and time, "YYYY-mm-DDTHH-MM-SS", e.g., "2024-01-01T16:40:00".
+        Actuals and covariate observations after this end date are dropped.
+    max_publication_lag
+        Maximal publication lag for the covariates. The publication lag of a covariate
+        is the number of most recent observations (compared to the actuals) that are
+        missing for the covariate. E.g., if the actuals (for monthly granularity) end
+        in April 2023 but the covariate ends in February 2023, the covariate has a
+        publication lag of 2.
+    post_selection_queries
+        List of queries that are executed on the ranking summary DataFrame. Only ranking entries that
+        match the queries are kept. The query strings need to satisfy the pandas query syntax
+        (https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.query.html). Here are the columns
+        of the ranking summary DataFrame that you might want to filter on:
+
+        Column Name          |      Data Type   |    Description
+        -----------------------------------------------------------------------------------------------
+        Lag                  |          Int64   |    Lag of the covariate.
+        Rank                 |        float64   |    Rank of the model.
+        BetterThanNoCov      |           bool   |    Indicates whether the model is better than the non-cov model.
+    enable_leading_covariate_selection
+        When True, all covariates after the lag is applied that do not have at least one more
+        datapoint beyond the the time period covered by actuals are removed from the candidate
+        covariates passed to covariate selection.
+    lag_selection_fixed_season_length
+        An optional parameter specifying the length of a season in the dataset.
     """
     title: str
     actuals_version: str
@@ -335,6 +367,12 @@ class MatcherConfig(BaseConfig):
     lag_selection_fixed_lags: Optional[list[int]] = None
     lag_selection_min_lag: Optional[int] = None
     lag_selection_max_lag: Optional[int] = None
+    evaluation_start_date: Optional[str] = None
+    evaluation_end_date: Optional[str] = None
+    max_publication_lag: int = 2
+    post_selection_queries: list[str] = []
+    enable_leading_covariate_selection: bool = True
+    lag_selection_fixed_season_length: Optional[int] = None
 
     @pydantic.model_validator(mode='after')
     def check_lag_selection_range(self) -> Self:
@@ -356,6 +394,29 @@ class MatcherConfig(BaseConfig):
 
         return self
 
+    @pydantic.model_validator(mode='after')
+    def validate_post_selection_queries(self) -> Self:
+        # Validate the post-selection queries.
+        invalid_queries = []
+        columns = {
+            'Lag': 'int',
+            'Rank': 'float',
+            'BetterThanNoCov': 'bool'
+        }
+        # Create an empty DataFrame with the specified column names and data types
+        validation_df = pd.DataFrame(columns=columns.keys()).astype(columns)
+        for postselection_query in self.post_selection_queries:
+            try:
+                validation_df.query(postselection_query, )
+            except Exception:
+                invalid_queries.append(postselection_query)
+
+        if len(invalid_queries):
+            raise ValueError("The following post-selection queries are invalidly formatted: "
+                             f"{', '.join(invalid_queries)}. ")
+
+        return self
+
 
 def create_matcher_payload(config: MatcherConfig) -> Any:
 
@@ -367,8 +428,8 @@ def create_matcher_payload(config: MatcherConfig) -> Any:
             'covs_version': config.covs_version,
         },
         "compute_config": {
-            "evaluation_start_date": None,
-            "evaluation_end_date": None,
+            "evaluation_start_date": config.evaluation_start_date,
+            "evaluation_end_date": config.evaluation_end_date,
             "base_report_id": None,
             "base_report_requested_run_status": None,
             "report_update_strategy": "KEEP_OWN_RUNS",
@@ -380,21 +441,23 @@ def create_matcher_payload(config: MatcherConfig) -> Any:
             "preselection": {
                 "min_num_actuals_obs": 78,
                 "num_obs_short_term_class": 36,
-                "max_publication_lag": 2,
+                "max_publication_lag": config.max_publication_lag,
                 "min_num_cov_obs": 96
             },
             "postselection": {
                 "num_obs_short_term_correlation": 60,
                 "clustering_run_id": None,
-                "post_selection_queries": [],
+                "post_selection_queries": config.post_selection_queries,
                 "post_selection_concatenation_operator": "&",
                 "protected_selections_queries": [],
                 "protected_selections_concatenation_operator": "&"
             },
             "lighthouse_config": {
-               "lag_selection_fixed_lags": config.lag_selection_fixed_lags,
-               "lag_selection_min_lag": config.lag_selection_min_lag,
-               "lag_selection_max_lag": config.lag_selection_max_lag
+                "enable_leading_covariate_selection": config.enable_leading_covariate_selection,
+                "lag_selection_fixed_season_length": config.lag_selection_fixed_season_length,
+                "lag_selection_fixed_lags": config.lag_selection_fixed_lags,
+                "lag_selection_min_lag": config.lag_selection_min_lag,
+                "lag_selection_max_lag": config.lag_selection_max_lag
             }
         }
     }

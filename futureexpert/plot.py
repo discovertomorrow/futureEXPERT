@@ -44,7 +44,10 @@ def filter_models(models: list[Model], ranks: Optional[list[int]] = [1], model_n
     return models
 
 
-def plot_forecast(result: ForecastResult, plot_last_x_data_points_only: Optional[int] = None, model_names: Optional[list[str]] = None, ranks: Optional[list[int]] = [1]) -> Any:
+def plot_forecast(result: ForecastResult,
+                  plot_last_x_data_points_only: Optional[int] = None,
+                  model_names: Optional[list[str]] = None,
+                  ranks: Optional[list[int]] = [1]) -> Any:
     """Plots actuals and forecast from a single time series.
 
     Parameters
@@ -101,7 +104,7 @@ def plot_forecast(result: ForecastResult, plot_last_x_data_points_only: Optional
 
         # plot
         ax.plot(df_concat.date, df_concat.actuals, color=progColor.loc[0, 'darkblue'], label='Time Series')
-        ax.plot(df_concat.date, df_concat.fc, color=progColor.loc[0, 'cyan'], label=f'Forecast')
+        ax.plot(df_concat.date, df_concat.fc, color=progColor.loc[0, 'cyan'], label='Forecast')
 
         if not any(v is None for v in df_concat.lower):
             ax.fill_between(df_concat.date, df_concat.lower, df_concat.upper,
@@ -120,7 +123,11 @@ def plot_forecast(result: ForecastResult, plot_last_x_data_points_only: Optional
         plt.show()
 
 
-def plot_backtesting(result: ForecastResult, iteration: int = 1, plot_last_x_data_points_only: Optional[int] = None, model_names: Optional[list[str]] = None, ranks: Optional[list[int]] = [1]) -> Any:
+def plot_backtesting(result: ForecastResult,
+                     iteration: int = 1,
+                     plot_last_x_data_points_only: Optional[int] = None,
+                     model_names: Optional[list[str]] = None,
+                     ranks: Optional[list[int]] = [1]) -> Any:
     """Plots actuals and backtesting results from a single time series.
 
     Parameters
@@ -153,7 +160,7 @@ def plot_backtesting(result: ForecastResult, iteration: int = 1, plot_last_x_dat
 
         iterations = max([len(word_len_dict[x]) for x in word_len_dict])
         if iteration > iterations:
-            raise Exception('Selected iteration was not calculated.')
+            raise ValueError('Selected iteration was not calculated.')
 
         bt_round = [word_len_dict[x][iteration] for x in word_len_dict]
 

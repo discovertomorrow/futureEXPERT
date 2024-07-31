@@ -14,6 +14,7 @@ from futureexpert.checkin import (DataDefinition,
                                   TsCreationConfig,
                                   ValueColumn)
 from futureexpert.expert_client import ExpertClient
+from futureexpert.result_models import ActualsCovsConfiguration, CovariateRef
 
 __all__ = [
     'DataDefinition',
@@ -30,5 +31,7 @@ __all__ = [
     'ReportConfig',
     'TsCreationConfig',
     'ValueColumn',
-    'MAX_TS_LEN_CONFIG'
+    'MAX_TS_LEN_CONFIG',
+    'ActualsCovsConfiguration',
+    'CovariateRef'
 ]

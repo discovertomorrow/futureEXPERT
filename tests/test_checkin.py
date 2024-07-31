@@ -1,4 +1,4 @@
-from futureexpert import *
+from futureexpert import DataDefinition, DateColumn, GroupColumn, ValueColumn
 
 
 def test_CheckinConfig___given_minimum_input_parameter___runs_without_error() -> None:

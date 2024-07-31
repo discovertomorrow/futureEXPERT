@@ -90,7 +90,7 @@ class DataDefinition(BaseConfig):
     Parameters
     ----------
     remove_rows
-        Indexes of the rows to be removed before validation. Note: If the raw data was committed as pandas data frame 
+        Indexes of the rows to be removed before validation. Note: If the raw data was committed as pandas data frame
         the header is the first row (row index 0).
     remove_columns
         Indexes of the columns to be removed before validation.
@@ -108,7 +108,10 @@ class DataDefinition(BaseConfig):
     group_columns: list[GroupColumn] = []
 
 
-def create_checkin_payload_1(user_input_id: str, file_uuid: str, data_definition: DataDefinition, file_specification: FileSpecification = FileSpecification()) -> Any:
+def create_checkin_payload_1(user_input_id: str,
+                             file_uuid: str,
+                             data_definition: DataDefinition,
+                             file_specification: FileSpecification = FileSpecification()) -> Any:
     """Creates the payload for the futureCHECK-IN stage prepareDataset.
 
     Parameters
@@ -133,9 +136,12 @@ def create_checkin_payload_1(user_input_id: str, file_uuid: str, data_definition
                     'removedCols': data_definition.remove_columns
                 },
                 'columnDefinition': {
-                    'dateColumns': [{snake_to_camel(key): value for key, value in data_definition.date_columns.model_dump(exclude_none=True).items()}],
-                    'valueColumns': [{snake_to_camel(key): value for key, value in d.model_dump(exclude_none=True).items()} for d in data_definition.value_columns],
-                    'groupColumns': [{snake_to_camel(key): value for key, value in d.model_dump(exclude_none=True).items()} for d in data_definition.group_columns]
+                    'dateColumns': [{snake_to_camel(key): value for key, value in
+                                    data_definition.date_columns.model_dump(exclude_none=True).items()}],
+                    'valueColumns': [{snake_to_camel(key): value for key, value in d.model_dump(exclude_none=True).items()}
+                                     for d in data_definition.value_columns],
+                    'groupColumns': [{snake_to_camel(key): value for key, value in d.model_dump(exclude_none=True).items()}
+                                     for d in data_definition.group_columns]
                 }
             }}
 
@@ -197,7 +203,7 @@ class NewValue(BaseConfig):
     new_variable
         The new variable name.
     unit
-        The unit.        
+        The unit.
     """
     first_variable: str
     operator: Literal['x', '+', '-']
@@ -228,7 +234,7 @@ class TsCreationConfig(BaseConfig):
     missing_value_handler
         Strategy how to handle missing values during time series creation.
     """
-    time_granularity: Literal['yearly', 'monthly', 'weekly', 'daily', 'hourly']
+    time_granularity: Literal['yearly', 'quarterly', 'monthly', 'weekly', 'daily', 'hourly', 'halfhourly']
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     grouping_level: list[str] = []

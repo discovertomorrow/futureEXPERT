@@ -21,7 +21,7 @@ from futureexpert.checkin import (DataDefinition,
                                   create_checkin_payload_1,
                                   create_checkin_payload_2)
 from futureexpert.future_api import FutureApiClient
-from futureexpert.result_models import ForecastResult, MatcherResult
+from futureexpert.result_models import CheckInResult, ForecastResult, MatcherResult, TimeSeries
 
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -166,7 +166,11 @@ class ExpertClient:
 
         return upload_feedback
 
-    def check_data_definition(self, user_input_id: str, file_uuid: str, data_definition: DataDefinition, file_specification: FileSpecification = FileSpecification()) -> Any:
+    def check_data_definition(self,
+                              user_input_id: str,
+                              file_uuid: str,
+                              data_definition: DataDefinition,
+                              file_specification: FileSpecification = FileSpecification()) -> Any:
         """Checks the data definition.
 
         Removes specified rows and columns. Checks if column values have any issues.
@@ -193,12 +197,18 @@ class ExpertClient:
 
         error_message = result['error']
         if error_message != '':
-            raise Exception(f'Error during the execution of the futureCHECK-IN: {error_message}')
+            raise RuntimeError(f'Error during the execution of the futureCHECK-IN: {error_message}')
 
         logger.info('Finished data definition.')
         return result
 
-    def create_time_series(self, user_input_id: str, file_uuid: str, data_definition: Optional[DataDefinition] = None, config_ts_creation: Optional[TsCreationConfig] = None, config_checkin: Optional[str] = None, file_specification: FileSpecification = FileSpecification()) -> Any:
+    def create_time_series(self,
+                           user_input_id: str,
+                           file_uuid: str,
+                           data_definition: Optional[DataDefinition] = None,
+                           config_ts_creation: Optional[TsCreationConfig] = None,
+                           config_checkin: Optional[str] = None,
+                           file_specification: FileSpecification = FileSpecification()) -> Any:
         """Last step of the futureCHECK-IN process which creates the time series.
 
         Aggregates the data and saves them to the database.
@@ -216,8 +226,8 @@ class ExpertClient:
         config_ts_creation
             Configuration for the time series creation.
         config_checkin
-            Path to the JSON file with the futureCHECK-IN configuration. `config_ts_creation` and `config_checkin` 
-            cannot be set simultaneously. The configuration may be obtained from the last step of 
+            Path to the JSON file with the futureCHECK-IN configuration. `config_ts_creation` and `config_checkin`
+            cannot be set simultaneously. The configuration may be obtained from the last step of
             futureCHECK-IN using the _future_ frontend (future.prognostica.de).
         """
         logger.info('Transforming input data...')
@@ -247,7 +257,7 @@ class ExpertClient:
                                             interval_status_check_in_seconds=2)
         error_message = result['error']
         if error_message != '':
-            raise Exception(f'Error during the execution of the futureCHECK-IN: {error_message}')
+            raise RuntimeError(f'Error during the execution of the futureCHECK-IN: {error_message}')
 
         logger.info('Finished time series creation.')
 
@@ -258,27 +268,27 @@ class ExpertClient:
                              data_definition: Optional[DataDefinition] = None,
                              config_ts_creation: Optional[TsCreationConfig] = None,
                              config_checkin: Optional[str] = None,
-                             file_specification: FileSpecification = FileSpecification()) -> Any:
+                             file_specification: FileSpecification = FileSpecification()) -> CheckInResult:
         """Checks in time series data that can be used as actuals or covariate data.
 
         Parameters
         ----------
         raw_data_source
-            Data frame that contains the raw data or path to where the CSV file with the data is stored. 
+            Data frame that contains the raw data or path to where the CSV file with the data is stored.
         data_definition
             Specifies the data, value and group columns and which rows and columns are to be removed.
         config_ts_creation
             Defines filter and aggreagtion level of the time series.
         config_checkin
-            Path to the JSON file with the futureCHECK-IN configuration. `config_ts_creation` and `config_checkin` 
-            cannot be set simultaneously. The configuration may be obtained from the last step of 
+            Path to the JSON file with the futureCHECK-IN configuration. `config_ts_creation` and `config_checkin`
+            cannot be set simultaneously. The configuration may be obtained from the last step of
             futureCHECK-IN using the future frontend (future.prognostica.de).
         file_specification
             Needed if a CSV is used with e.g. German format.
 
         Returns
         -------
-        Id of the time series version. Used to identifiy the time series.
+        Id of the time series version. Used to identifiy the time series and the values of the time series.
         """
         upload_feedback = self.upload_data(source=raw_data_source)
 
@@ -292,7 +302,9 @@ class ExpertClient:
                                            config_checkin=config_checkin,
                                            file_specification=file_specification)
 
-        return response['result']['tsVersion']['_id']
+        result = [TimeSeries(**ts) for ts in response['result']['timeSeries']]
+        return CheckInResult(time_series=result,
+                             version_id=response['result']['tsVersion']['_id'])
 
     def start_forecast(self, version: str, config: ReportConfig) -> ReportIdentifier:
         """Starts a forecasting report.
@@ -353,9 +365,15 @@ class ExpertClient:
                                       no_evaluation=noeval,
                                       error=error)
 
-        return ReportStatus(id=fc_identifier, progress=summary, results=results, error_reasons=raw_result.get('customer_specific', {}).get('log_messages', None))
+        return ReportStatus(id=fc_identifier,
+                            progress=summary,
+                            results=results,
+                            error_reasons=raw_result.get('customer_specific', {}).get('log_messages', None))
 
-    def get_fc_results(self, id: Union[ReportIdentifier, int], include_k_best_models: int = 1, include_backtesting: bool = False) -> Any:
+    def get_fc_results(self,
+                       id: Union[ReportIdentifier, int],
+                       include_k_best_models: int = 1,
+                       include_backtesting: bool = False) -> list[ForecastResult]:
         """Gets the results from the given report.
 
         Parameters
@@ -363,7 +381,7 @@ class ExpertClient:
         id
             Forecast identifier or plain report ID.
         include_k_best_models
-            Number of k best models for which results are to be returned.           
+            Number of k best models for which results are to be returned.
         include_backtesting
             Determines whether backtesting results are to be returned.
         """
@@ -380,7 +398,7 @@ class ExpertClient:
 
         return [ForecastResult(**result) for result in results]
 
-    def get_matcher_results(self, id: Union[ReportIdentifier, int]) -> Any:
+    def get_matcher_results(self, id: Union[ReportIdentifier, int]) -> list[MatcherResult]:
         """Gets the results from the given report.
 
         Parameters
@@ -408,7 +426,7 @@ class ExpertClient:
         Parameters
         ----------
         raw_data_source
-            A Pandas DataFrame that contains the raw data or path to where the CSV file with the data is stored.   
+            A Pandas DataFrame that contains the raw data or path to where the CSV file with the data is stored.
         config_fc
             The configuration of the forecast run.
         data_definition
@@ -416,8 +434,8 @@ class ExpertClient:
         config_ts_creation
             Defines filter and aggreagtion level of the time series.
         config_checkin
-            Path to the JSON file with the futureCHECK-IN configuration. `config_ts_creation` and `config_checkin` 
-            cannot be set simultaneously. The configuration may be obtained from the last step of 
+            Path to the JSON file with the futureCHECK-IN configuration. `config_ts_creation` and `config_checkin`
+            cannot be set simultaneously. The configuration may be obtained from the last step of
             futureCHECK-IN using the future frontend (future.prognostica.de).
         file_specification
             Needed if a CSV is used with e.g. German format.

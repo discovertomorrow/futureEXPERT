@@ -80,7 +80,12 @@ class FutureApiClient:
             future_api.refresh_token()
             time.sleep(int(future_api.token['expires_in']*.7))
 
-    def __init__(self, user: str, password: str, totp: Any = None, environment: Literal['production', 'staging', 'development'] = 'production', auto_refresh: bool = True):
+    def __init__(self,
+                 user: str,
+                 password: str,
+                 totp: Any = None,
+                 environment: Literal['production', 'staging', 'development'] = 'production',
+                 auto_refresh: bool = True):
         """Initializer.
 
         Parameters
@@ -88,7 +93,7 @@ class FutureApiClient:
         user
             The username to be used to connect to the _future_ API.
         password
-            The user's password.        
+            The user's password.
         totp
             Optional OTP token of the user.
         environment
@@ -99,12 +104,14 @@ class FutureApiClient:
         future_config = FUTURE_CONFIGS.get(environment)
 
         if future_config is None:
-            raise Exception(f'Invalid environment {environment} only {list(FUTURE_CONFIGS.keys())} are valid')
+            raise ValueError(f'Invalid environment {environment} only {list(FUTURE_CONFIGS.keys())} are valid')
         assert future_config is not None
         self.future_config = future_config
 
         self.keycloak_openid = KeycloakOpenID(
-            server_url=self.future_config.auth_server_url, client_id=self.future_config.auth_client_id, realm_name=self.future_config.auth_realm, verify=True)
+            server_url=self.future_config.auth_server_url,
+            client_id=self.future_config.auth_client_id,
+            realm_name=self.future_config.auth_realm, verify=True)
         self.token = self.keycloak_openid.token(user, password, totp=totp)
         self.auto_refresh = auto_refresh
         if auto_refresh:
@@ -133,7 +140,10 @@ class FutureApiClient:
             self.token['access_token'], key=KEYCLOAK_PUBLIC_KEY, options=options)
         return decoded_token['resource_access']['frontend']['roles']
 
-    def _api_get_request(self, path: str, params: Optional[dict[str, Any]] = None, timeout: int | None = None) -> requests.Response:
+    def _api_get_request(self,
+                         path: str,
+                         params: Optional[dict[str, Any]] = None,
+                         timeout: int | None = None) -> requests.Response:
         """Submits a GET request to the _future_ API.
 
         Parameters
@@ -193,7 +203,10 @@ class FutureApiClient:
         """
         return get_json(self._api_get_request(f'groups/{group_id}/userinputs'))
 
-    def upload_user_inputs_for_group(self, group_id: str, filename: Optional[str] = None, df_file: Optional[Tuple[str, Any]] = None) -> Any:
+    def upload_user_inputs_for_group(self,
+                                     group_id: str,
+                                     filename: Optional[str] = None,
+                                     df_file: Optional[Tuple[str, Any]] = None) -> Any:
         """Uploads the user inputs of the given group.
 
         Parameters
@@ -252,7 +265,8 @@ class FutureApiClient:
         -------
             Amount of each run status.
         """
-        return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/status', params={'include_error_reason': include_error_reason}))
+        params = {'include_error_reason': include_error_reason}
+        return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/status', params=params))
 
     def get_fc_results(self, group_id: str, report_id: int, include_k_best_models: int, include_backtesting: bool) -> Any:
         """Retrieves forecasts and actuals from the database.
@@ -264,17 +278,15 @@ class FutureApiClient:
         report_id
             ID of the Report
         include_k_best_models
-            Number of k best models for which results are to be returned.        
+            Number of k best models for which results are to be returned.
         include_backtesting
            Should backtesting results are to be returned.
          Returns
         -------
         Actuals and forecasts for each time series in the given report.
         """
-
-        return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/results/fc', params={'include_k_best_models': include_k_best_models,
-                                                                                                           'include_backtesting': include_backtesting
-                                                                                                           }))
+        params = {'include_k_best_models': include_k_best_models, 'include_backtesting': include_backtesting}
+        return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/results/fc', params=params))
 
     def get_matcher_results(self, group_id: str, report_id: int) -> Any:
         """Collects covariate matcher results from the database.
