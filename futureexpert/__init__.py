@@ -1,10 +1,4 @@
 from futureexpert.__about__ import __version__
-from futureexpert.batch_forecast import (MAX_TS_LEN_CONFIG,
-                                         ForecastingConfig,
-                                         MatcherConfig,
-                                         MethodSelectionConfig,
-                                         PreprocessingConfig,
-                                         ReportConfig)
 from futureexpert.checkin import (DataDefinition,
                                   DateColumn,
                                   FileSpecification,
@@ -14,7 +8,13 @@ from futureexpert.checkin import (DataDefinition,
                                   TsCreationConfig,
                                   ValueColumn)
 from futureexpert.expert_client import ExpertClient
-from futureexpert.result_models import ActualsCovsConfiguration, CovariateRef
+from futureexpert.forecast import (MAX_TS_LEN_CONFIG,
+                                   ForecastingConfig,
+                                   MethodSelectionConfig,
+                                   PreprocessingConfig,
+                                   ReportConfig)
+from futureexpert.matcher import ActualsCovsConfiguration, MatcherConfig
+from futureexpert.shared_models import CovariateRef
 
 __all__ = [
     'DataDefinition',

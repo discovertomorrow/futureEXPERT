@@ -10,6 +10,8 @@ START_TIME=$(date +%s%N)
 EXIT_STATUS=0
 
 # Execute the command
+sed -i "s/'TBD'/'${VERSION_ID}'/g" notebooks/getting_started.ipynb
+sed -i "s/'TBD'/'${VERSION_ID}'/g" notebooks/checkin_configuration_options.ipynb
 for notebook in $(find notebooks -name '*.ipynb'); do
   python3 -m nbconvert --to notebook --execute --inplace "$notebook" 2>&1 | tee output.log
   COMMAND_EXIT_CODE=${PIPESTATUS[0]}

@@ -68,7 +68,7 @@ setup(
                 'autopep8',
                 'cloudpickle',
                 'pdoc3',
-                'types-pkg_resources',
+                'types-pkg-resources==0.1.3',
                 'types-python-dateutil',
                 'types-requests',
                 'types-toml',

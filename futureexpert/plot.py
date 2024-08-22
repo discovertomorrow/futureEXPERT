@@ -1,13 +1,13 @@
-import datetime
+"""Contains all the functionality to plot the checked in time series and the forecast and backtesting results."""
 from collections import defaultdict
 from typing import Any, Optional
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 
-from futureexpert.result_models import ForecastResult, Model
+from futureexpert.forecast import ForecastResult, Model
+from futureexpert.shared_models import Covariate, TimeSeries
 
 progColor = pd.DataFrame({
     'darkblue': ['#003652', '#34506c', '#62738a', '#949cae', '#c8cad5'],
@@ -24,7 +24,9 @@ mpl.rcParams['axes.titlesize'] = 12
 plt.style.use('seaborn-v0_8-whitegrid')
 
 
-def filter_models(models: list[Model], ranks: Optional[list[int]] = [1], model_names: Optional[list[str]] = None,) -> list[Model]:
+def filter_models(models: list[Model],
+                  ranks: Optional[list[int]] = [1],
+                  model_names: Optional[list[str]] = None,) -> list[Model]:
     """Filter models based on the given criteria.
 
     Parameters
@@ -42,6 +44,67 @@ def filter_models(models: list[Model], ranks: Optional[list[int]] = [1], model_n
         models = [mo for mo in models if mo.model_selection.ranking and mo.model_selection.ranking.rank_position in ranks]
 
     return models
+
+
+def plot_time_series(ts: TimeSeries,
+                     covariate: Optional[Covariate] = None,
+                     plot_last_x_data_points_only: Optional[int] = None) -> Any:
+    """Plots actuals from a single time series. Optional a Covariate can be plotted next to it.
+
+    Parameters
+    ----------
+    ts
+        time series data
+    covariate
+        covariate data
+    plot_last_x_data_points_only
+        Number of data points of the actuals that should be shown in the plot.
+    """
+
+    ac_date = [fc.time_stamp_utc for fc in ts.values]
+    ac_value = [fc.value for fc in ts.values]
+
+    if plot_last_x_data_points_only is not None:
+        ac_date = ac_date[-plot_last_x_data_points_only:]
+        ac_value = ac_value[-plot_last_x_data_points_only:]
+
+    name = ts.name
+    df_ac = pd.DataFrame({'date': ac_date, 'actuals': ac_value})
+    if covariate:
+        cov_date = [value.time_stamp_utc for value in covariate.ts.values]
+        cov_value = [value.value for value in covariate.ts.values]
+        df_cov = pd.DataFrame({'date': cov_date, 'covariate': cov_value, 'covariate_lag': cov_value})
+        df_ac = pd.merge(df_ac, df_cov, on='date', how='outer', validate='1:1').reset_index(drop=True)
+        df_ac = df_ac.sort_values(by='date')
+        df_ac.covariate_lag = df_ac.covariate_lag.shift(covariate.lag)
+
+        # remove all covariate values from befor the start of actuals
+        min_value = df_ac[df_ac['actuals'].notna()][['date']].min()
+        df_ac = df_ac[df_ac['date'] >= min_value[0]]
+        df_ac.reset_index(drop=True, inplace=True)
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches(12, 6)
+    fig.suptitle(name, fontsize=16)
+    ax.set_frame_on(False)
+    ax.tick_params(axis='both', labelsize=10)
+
+    # plot
+    ax.plot(df_ac.date, df_ac.actuals, color=progColor.loc[0, "darkblue"])
+    if covariate:
+        ax.set_title(f'with covariate: {covariate.ts.name} and lag {covariate.lag}')
+        ax2 = ax.twinx()
+        ax2.grid(False)
+        ax2.set_frame_on(False)
+        ax2.tick_params(axis='both', labelsize=10)
+        ax.yaxis.set_major_locator(mpl.ticker.LinearLocator(numticks=6))
+        ax2.yaxis.set_major_locator(mpl.ticker.LinearLocator(numticks=6))
+        ax2.plot(df_ac.date, df_ac.covariate_lag, color=progColor.loc[0, 'violet'], label=covariate.ts.name)
+
+    # margin
+    plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
+
+    plt.show()
 
 
 def plot_forecast(result: ForecastResult,

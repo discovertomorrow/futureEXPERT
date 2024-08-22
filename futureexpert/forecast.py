@@ -1,80 +1,240 @@
-"""Models that are used for futureMATCHER and futureFORECAST results."""
+"""Contains the models with the configuration for the forecast and the result format."""
 from __future__ import annotations
 
 import logging
+import re
 from copy import deepcopy
 from datetime import datetime
 from enum import Enum
-from typing import Annotated, Any, Optional, Sequence, Union
+from typing import Annotated, Any, Literal, Optional, Sequence, Union
 
+import numpy as np
+import pydantic
 from pydantic import BaseModel, ConfigDict, Field, NonNegativeFloat
+from typing_extensions import NotRequired, Self, TypedDict
 
-from futureexpert.base_models import ValidatedPositiveInt
+from futureexpert.matcher import ActualsCovsConfiguration, MatcherResult
+from futureexpert.shared_models import (BaseConfig,
+                                        Covariate,
+                                        CovariateRef,
+                                        PositiveInt,
+                                        TimeSeries,
+                                        ValidatedPositiveInt)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class TimeSeriesValue(BaseModel):
-    """Value of a time series.
+class PreprocessingConfig(BaseConfig):
+    """Preprocessing configuration.
 
     Parameters
     ----------
-    time_stamp_utc
-        The time stamp of the value.
-    value
-        The value.
+    remove_leading_zeros
+       If true, then leading zeros are removed from the time series before forecasting.
+    use_season_detection
+       If true, then the season length is determined from the data.
+    seasonalities_to_test
+       Season lengths to be tested. If not defined, a suitable set for the given granularity is used.
+       Season lengths can only be tested, if the number of observations is at least three times as
+       long as the biggest season length. Note that 1 must be in the list if the non-seasonal case should
+       be considered, too. Allows a combination of single granularities or combinations of granularities.
+    fixed_seasonalities
+       Season lengths used without checking. Allowed only if `use_season_detection` is false.
+    detect_outliers
+       If true, then identifies outliers in the data.
+    replace_outliers
+       If true, then identified outliers are replaced.
+    detect_changepoints
+       If true, then change points such as level shifts are identified.
+    detect_quantization
+       If true, then a quantization algorithm is applied to the time series.
     """
-    time_stamp_utc: datetime
-    value: Annotated[float, Field(allow_inf_nan=False)]
+
+    remove_leading_zeros: bool = False
+    use_season_detection: bool = True
+    # empty lists and None are treated the same in apollon
+    seasonalities_to_test: Optional[list[Union[list[ValidatedPositiveInt], ValidatedPositiveInt]]] = None
+    fixed_seasonalities: Optional[list[ValidatedPositiveInt]] = None
+    detect_outliers: bool = False
+    replace_outliers: bool = False
+    detect_changepoints: bool = False
+    detect_quantization: bool = False
+
+    @pydantic.model_validator(mode='after')
+    def _has_no_fixed_seasonalities_if_uses_season_detection(self) -> Self:
+        if self.use_season_detection and self.fixed_seasonalities:
+            raise ValueError('If fixed seasonalities is enabled, then season detection must be off.')
+
+        return self
 
 
-class TimeSeries(BaseModel):
-    """Time series data.
+class ForecastingConfig(BaseConfig):
+    """Forecasting configuration.
 
     Parameters
     ----------
-    name
-        Name of the time series.
-    group
-        Group of the time series.
-    granularity
-        Granularity of the time series.
-    values
-        The actual values of the time series.
+    fc_horizon
+       Forecast horizon.
+    lower_bound
+       Lower bound applied to the time series and forecasts.
+    upper_bound
+       Upper bound applied to the time series and forecasts.
+    confidence_level
+       Confidence level for prediction intervals.
+    round_forecast_to_integer
+       If true, then forecasts are rounded to the nearest integer (also applied during backtesting).
+    use_ensemble
+       If true, then calculate ensemble forecasts. Automatically makes a smart decision on which
+       methods to use based on their backtesting performance.
     """
-    name: Annotated[str, Field(min_length=1)]
-    group: str
-    granularity: Annotated[str, Field(min_length=1)]
-    values: Annotated[Sequence[TimeSeriesValue], Field(min_length=1)]
+
+    fc_horizon: ValidatedPositiveInt
+    lower_bound: Union[float, None] = None
+    upper_bound: Union[float, None] = None
+    confidence_level: float = 0.75
+    round_forecast_to_integer: bool = False
+    use_ensemble: bool = False
+
+    @property
+    def numeric_bounds(self) -> tuple[float, float]:
+        return (
+            self.lower_bound if self.lower_bound is not None else -np.inf,
+            self.upper_bound if self.upper_bound is not None else np.inf,
+        )
 
 
-class CovariateRef(BaseModel):
-    """Covariate reference.
+class MethodSelectionConfig(BaseConfig):
+    """Method selection configuration.
 
     Parameters
     ----------
-    name
-        Name of the Covariate
-    lag
-        Lag by which the covariate was used.
+    number_iterations
+       Number of backtesting iterations. At least 8 iterations are needed for empirical prediction intervals.
+    shift_len
+       Number of time points by which the test window is shifted between backtesting iterations.
+    refit
+       If true, then models are re-fitted for each backtesting iteration.
+    default_error_metric
+       Error metric applied to the backtesting error for non-sporadic time series.
+    sporadic_error_metric
+       Error metric applied to the backtesting errors for sporadic time series.
+    additional_accuracy_measures
+        Additional accuracy measures computed during model ranking.
+    step_weights
+       Mapping from forecast steps to weights associated with forecast errors for the given forecasting step.
+       Only positive weights are allowed. Leave a forecast step out to assign a zero weight.
+       Used only for non-sporadic time series.
     """
-    name: str
-    lag: int
+
+    number_iterations: ValidatedPositiveInt = PositiveInt(12)
+    shift_len: ValidatedPositiveInt = PositiveInt(1)
+    refit: bool = False
+    default_error_metric: Literal['me', 'mpe', 'mse', 'mae', 'mase', 'mape', 'smape'] = 'mse'
+    sporadic_error_metric: Literal['pis', 'sapis', 'acr', 'mar', 'msr'] = 'pis'
+    additional_accuracy_measures: list[Literal['me', 'mpe', 'mse', 'mae',
+                                               'mase', 'mape', 'smape', 'pis', 'sapis', 'acr', 'mar', 'msr']] = []
+    step_weights: Optional[dict[ValidatedPositiveInt, pydantic.PositiveFloat]] = None
 
 
-class Covariate(BaseModel):
-    """Covariate.
+class PipelineKwargs(TypedDict):
+    preprocessing_config: PreprocessingConfig
+    forecasting_config: ForecastingConfig
+    method_selection_config: NotRequired[MethodSelectionConfig]
+
+
+class ReportConfig(BaseConfig):
+    """Forecast run configuration.
 
     Parameters
     ----------
-    ts
-        Time series object of the covariate. Not lagged.
-    lag
-        Lag by which the covariate was used.
+    matcher_report_id
+       Report ID of the covariate matcher.
+    covs_version
+       Version of the covariates.
+    covs_configuration
+       Mapping from actuals and covariates. Use for custom covariate or adjusted matcher results.
+       If the matcher results should be used without changes use `matcher_report_id` instead.
+    title
+       Title of the report.
+    max_ts_len
+       At most this number of most recent observations is used. Check the variable MAX_TS_LEN_CONFIG
+       for allowed configuration.
+    preprocessing
+       Preprocessing configuration.
+    forecasting
+       Forecasting configuration.
+    method_selection
+       Method selection configuration. If not supplied, then a granularity dependent default is used.
+    db_name
+       Only accessible for internal use. Name of the database to use for storing the results.
+    priority
+       Only accessible for internal use. Higher value indicate higher priority.
     """
-    ts: TimeSeries
-    lag: int
+
+    matcher_report_id: Optional[int] = None
+    covs_version: Optional[str] = None
+    covs_configuration: Optional[list[ActualsCovsConfiguration]] = None
+    title: str
+
+    max_ts_len: Annotated[
+        Optional[int], pydantic.Field(ge=1, le=1500)] = None
+
+    preprocessing: PreprocessingConfig = PreprocessingConfig()
+    forecasting: ForecastingConfig
+    method_selection: Optional[MethodSelectionConfig] = None
+    db_name:  Optional[str] = None
+    priority: Annotated[Optional[int], pydantic.Field(ge=0, le=10)] = None
+
+    @pydantic.model_validator(mode="after")
+    def _covs_configuration_not_with_matcher_report_id(self) -> Self:
+        if self.matcher_report_id and self.covs_configuration:
+            raise ValueError('matcher_report_id and covs_configuration can not be set simultaniusly.')
+        if (self.matcher_report_id or self.covs_configuration) and self.covs_version is None:
+            raise ValueError(
+                'If one of `matcher_report_id` and `covs_configuration` is set also `covs_version` needs to be set.')
+        if (self.matcher_report_id is None and self.covs_configuration is None) and self.covs_version:
+            raise ValueError(
+                'If `covs_version` is set either `matcher_report_id` or `covs_configuration` needs to be set.')
+        if self.covs_configuration is not None and len(self.covs_configuration) == 0:
+            raise ValueError('`covs_configuration` has length zero and therefore won`t have any effect.\
+                             Please remove the parameter or set to None.')
+        return self
+
+    @pydantic.model_validator(mode="after")
+    def _backtesting_step_weights_refer_to_valid_forecast_steps(self) -> Self:
+        if (self.method_selection
+            and self.method_selection.step_weights
+                and max(self.method_selection.step_weights.keys()) > self.forecasting.fc_horizon):
+            raise ValueError('Step weights must not refer to forecast steps beyond the fc_horizon.')
+
+        return self
+
+    @pydantic.model_validator(mode="after")
+    def _valid_covs_version(self) -> Self:
+        if self.covs_version is not None:
+            if re.match('^[0-9a-f]{24}$', self.covs_version) is None:
+                raise ValueError('Given covs_version is not a valid ObjectId.')
+
+        return self
+
+
+MAX_TS_LEN_CONFIG = {
+    'halfhourly': {'default_len': 2*24*7,
+                   'max_allowed_len': 1500},
+    'hourly': {'default_len': 24*7*3,
+               'max_allowed_len': 1500},
+    'daily': {'default_len': 365,
+              'max_allowed_len': 365*3},
+    'weekly': {'default_len': 52*3,
+               'max_allowed_len': 52*6},
+    'monthly': {'default_len': 12*6,
+                'max_allowed_len': 12*10},
+    'quarterly': {'default_len': 4*12,
+                  'max_allowed_len': 1500},
+    'yearly': {'default_len': 1500,
+               'max_allowed_len': 1500},
+}
 
 
 class ModelStatus(str, Enum):
@@ -349,23 +509,6 @@ class TimeSeriesCharacteristics(BaseModel):
     num_trailing_zeros: Optional[int] = None
 
 
-class CovariateRankingDetails(BaseModel):
-    """Final rank for a given set of covariates.
-
-    Parameters
-    ----------
-    rank
-        Rank for the given set of covariates.
-    covariates
-        Used covariates (might be zero or more than one).
-    ts_ids
-        Ts Ids of the used covariates.
-    """
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    rank: ValidatedPositiveInt
-    covariates: list[Covariate]
-
-
 class ForecastInput(BaseModel):
     """Input data of a forecast run.
 
@@ -446,46 +589,6 @@ class ForecastResult(BaseModel):
         new_models.sort(key=lambda model: model.model_selection.ranking.rank_position)  # type: ignore
         fc_result.models = new_models
         return fc_result
-
-
-class MatcherResult(BaseModel):
-    """Result of a covariate matcher run and the corresponding input data.
-
-    Parameters
-    ----------
-    actuals
-        Time series for which the matching was performed.
-    ranking
-        Ranking of the different covariate and non-covariate models.
-    """
-    actuals: TimeSeries
-    ranking: list[CovariateRankingDetails]
-
-    def convert_ranking_to_forecast_config(self) -> ActualsCovsConfiguration:
-        """Converts MATCHER results into the input format for the FORECAST."""
-        covs_config = [CovariateRef(name=cov.ts.name, lag=cov.lag) for r in self.ranking for cov in r.covariates]
-        return ActualsCovsConfiguration(actuals_name=self.actuals.name,
-                                        covs_configurations=covs_config)
-
-
-class ActualsCovsConfiguration(BaseModel):
-    """Configuration of actuals and covariates via name and lag."""
-    actuals_name: str
-    covs_configurations: list[CovariateRef]
-
-
-class CheckInResult(BaseModel):
-    """Result of the CHECK-IN.
-
-    Parameters
-    ----------
-    time_series
-        Time series values.
-    version_id
-        Id of the time series version. Used to identifiy the time series
-    """
-    time_series: list[TimeSeries]
-    version_id: str
 
 
 def combine_forecast_ranking_with_matcher_ranking(forecast_results: list[ForecastResult],

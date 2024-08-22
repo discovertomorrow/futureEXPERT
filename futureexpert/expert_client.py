@@ -1,27 +1,23 @@
+"""Client for connecting with future."""
 from __future__ import annotations
 
+import json
 import logging
 import os
 import pprint
 from datetime import datetime
 from typing import Any, Literal, Optional, Union, cast
 
+import dotenv
 import pandas as pd
 import pydantic
 
-from futureexpert.batch_forecast import (MatcherConfig,
-                                         ReportConfig,
-                                         calculate_max_ts_len,
-                                         create_forecast_payload,
-                                         create_matcher_payload)
-from futureexpert.checkin import (DataDefinition,
-                                  FileSpecification,
-                                  TsCreationConfig,
-                                  build_payload_from_ui_config,
-                                  create_checkin_payload_1,
-                                  create_checkin_payload_2)
-from futureexpert.future_api import FutureApiClient
-from futureexpert.result_models import CheckInResult, ForecastResult, MatcherResult, TimeSeries
+from futureexpert._future_api import FutureApiClient
+from futureexpert._helpers import calculate_max_ts_len, snake_to_camel
+from futureexpert.checkin import CheckInResult, DataDefinition, FileSpecification, TsCreationConfig
+from futureexpert.forecast import ForecastResult, ReportConfig
+from futureexpert.matcher import MatcherConfig, MatcherResult
+from futureexpert.shared_models import TimeSeries
 
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -121,6 +117,12 @@ class ExpertClient:
         self.is_analyst = 'analyst' in self.client.user_roles
         self.forecast_core_id = 'forecast-batch-internal' if self.is_analyst else 'forecast-batch'
 
+    @staticmethod
+    def from_dotenv() -> ExpertClient:
+        """Create an instance from a .env file or environment variables."""
+        dotenv.load_dotenv()
+        return ExpertClient()
+
     def switch_group(self, new_group: str, verbose: bool = True) -> None:
         """Switches the current group.
 
@@ -186,7 +188,7 @@ class ExpertClient:
         file_specification
             Needed if a CSV is used with e.g. German format.
         """
-        payload = create_checkin_payload_1(
+        payload = self._create_checkin_payload_1(
             user_input_id, file_uuid, data_definition, file_specification)
 
         logger.info('Started data definition using futureCHECK-IN...')
@@ -243,11 +245,11 @@ class ExpertClient:
                 'For checkin configuration via python `data_defintion`and `config_ts_cration` must be provided.')
 
         if config_ts_creation is not None and data_definition is not None:
-            payload_1 = create_checkin_payload_1(
+            payload_1 = self._create_checkin_payload_1(
                 user_input_id, file_uuid, data_definition, file_specification)
-            payload = create_checkin_payload_2(payload_1, config_ts_creation)
+            payload = self._create_checkin_payload_2(payload_1, config_ts_creation)
         if config_checkin is not None:
-            payload = build_payload_from_ui_config(
+            payload = self._build_payload_from_ui_config(
                 user_input_id=user_input_id, file_uuid=file_uuid, path=config_checkin)
 
         logger.info('Creating time series using futureCHECK-IN...')
@@ -306,6 +308,125 @@ class ExpertClient:
         return CheckInResult(time_series=result,
                              version_id=response['result']['tsVersion']['_id'])
 
+    def _create_checkin_payload_1(self, user_input_id: str,
+                                  file_uuid: str,
+                                  data_definition: DataDefinition,
+                                  file_specification: FileSpecification = FileSpecification()) -> Any:
+        """Creates the payload for the futureCHECK-IN stage prepareDataset.
+
+        Parameters
+        ----------
+        user_input_id
+            UUID of the user input.
+        file_uuid
+            UUID of the file.
+        data_definition
+            Specifies the data, value and group columns and which rows and columns are to be removed first.
+        file_specification
+            Specify the format of the CSV file. Only relevant if a CSV was given as input.
+        """
+
+        return {'userInputId': user_input_id,
+                'payload': {
+                    'stage': 'prepareDataset',
+                    'fileUuid': file_uuid,
+                    'meta': file_specification.model_dump(),
+                    'performedTasks': {
+                        'removedRows': data_definition.remove_rows,
+                        'removedCols': data_definition.remove_columns
+                    },
+                    'columnDefinition': {
+                        'dateColumns': [{snake_to_camel(key): value for key, value in
+                                        data_definition.date_columns.model_dump(exclude_none=True).items()}],
+                        'valueColumns': [{snake_to_camel(key): value for key, value in d.model_dump(exclude_none=True).items()}
+                                         for d in data_definition.value_columns],
+                        'groupColumns': [{snake_to_camel(key): value for key, value in d.model_dump(exclude_none=True).items()}
+                                         for d in data_definition.group_columns]
+                    }
+                }}
+
+    def _build_payload_from_ui_config(self, user_input_id: str, file_uuid: str, path: str) -> Any:
+        """Creates the payload for the futureCHECK-IN stage createDataset.
+
+        Parameters
+        ----------
+        user_input_id
+            UUID of the user input.
+        file_uuid
+            UUID of the file.
+        path
+            Path to the JSON file.
+        """
+
+        with open(path) as file:
+            file_data = file.read()
+            json_data = json.loads(file_data)
+
+        json_data['stage'] = 'createDataset'
+        json_data['fileUuid'] = file_uuid
+        del json_data["performedTasksLog"]
+
+        return {'userInputId': user_input_id,
+                'payload': json_data}
+
+    def _create_checkin_payload_2(self, payload: dict[str, Any], config: TsCreationConfig) -> Any:
+        """Creates the payload for the futureCHECK-IN stage createDataset.
+
+        Parameters
+        ----------
+        payload
+            Payload used in `create_checkin_payload_1`.
+        config
+            Configuration for time series creation.
+        """
+
+        payload['payload']['rawDataReviewResults'] = {}
+        payload['payload']['timeSeriesDatasetParameter'] = {
+            'aggregation': {'operator': 'sum',
+                            'option': config.missing_value_handler},
+            'date': {
+                'timeGranularity': config.time_granularity,
+                'startDate': config.start_date,
+                'endDate': config.end_date
+            },
+            'grouping': {
+                'dataLevel': config.grouping_level,
+                'filter':  [d.model_dump() for d in config.filter]
+            },
+            'values': [{snake_to_camel(key): value for key, value in d.model_dump().items()} for d in config.new_variables],
+            'valueColumnsToSave': config.value_columns_to_save
+        }
+        payload['payload']['stage'] = 'createDataset'
+
+        return payload
+
+    def _create_forecast_payload(self, version: str, config: ReportConfig) -> Any:
+        """Creates the payload for the forecast.
+
+        Parameters
+        ----------
+        version
+        Version of the time series that should get forecasts.
+        config
+        Configuration of the forecast run.
+        """
+
+        config_dict = config.model_dump()
+        config_dict['actuals_version'] = version
+        config_dict['report_note'] = config_dict['title']
+        config_dict['cov_selection_report_id'] = config_dict['matcher_report_id']
+        config_dict['forecasting']['n_ahead'] = config_dict['forecasting']['fc_horizon']
+        config_dict['backtesting'] = config_dict['method_selection']
+
+        config_dict.pop('title')
+        config_dict['forecasting'].pop('fc_horizon')
+        config_dict.pop('matcher_report_id')
+        config_dict.pop('method_selection')
+
+        payload = {'payload': config_dict}
+
+        return payload
+
     def start_forecast(self, version: str, config: ReportConfig) -> ReportIdentifier:
         """Starts a forecasting report.
 
@@ -328,7 +449,7 @@ class ExpertClient:
 
         if not self.is_analyst and (config.db_name is not None or config.priority is not None):
             raise ValueError('Only users with the role analyst are allowed to use the parameters db_name and priority.')
-        payload = create_forecast_payload(version, config)
+        payload = self._create_forecast_payload(version, config)
         logger.info('Finished data preparation for forecast.')
         logger.info('Started creating forecasting report with futureFORECAST...')
         result = self.client.execute_action(group_id=self.group,
@@ -414,13 +535,13 @@ class ExpertClient:
 
         return [MatcherResult(**result) for result in results]
 
-    def create_forecast_from_raw_data(self,
-                                      raw_data_source: Union[pd.DataFrame, str],
-                                      config_fc: ReportConfig,
-                                      data_definition: Optional[DataDefinition] = None,
-                                      config_ts_creation: Optional[TsCreationConfig] = None,
-                                      config_checkin: Optional[str] = None,
-                                      file_specification: FileSpecification = FileSpecification()) -> ReportIdentifier:
+    def start_forecast_from_raw_data(self,
+                                     raw_data_source: Union[pd.DataFrame, str],
+                                     config_fc: ReportConfig,
+                                     data_definition: Optional[DataDefinition] = None,
+                                     config_ts_creation: Optional[TsCreationConfig] = None,
+                                     config_checkin: Optional[str] = None,
+                                     file_specification: FileSpecification = FileSpecification()) -> ReportIdentifier:
         """Starts a forecast run from raw data without the possibility to inspect interim results from the data preparation.
 
         Parameters
@@ -474,7 +595,7 @@ class ExpertClient:
         The identifier of the covariate matcher report.
         """
 
-        payload = create_matcher_payload(config)
+        payload = self._create_matcher_payload(config)
 
         result = self.client.execute_action(group_id=self.group,
                                             core_id='cov-selection',
@@ -482,3 +603,50 @@ class ExpertClient:
                                             interval_status_check_in_seconds=2)
         logger.info('Finished report creation.')
         return ReportIdentifier.model_validate(result)
+
+    def _create_matcher_payload(self, config: MatcherConfig) -> Any:
+        """Converts the MatcherConfig into the payload needed for the cov-selection core."""
+
+        config_dict: dict[str, Any] = {
+            'report_description': config.title,
+            'data_config': {
+                'actuals_version': config.actuals_version,
+                'actuals_filter': {},
+                'covs_version': config.covs_version,
+            },
+            "compute_config": {
+                "evaluation_start_date": config.evaluation_start_date,
+                "evaluation_end_date": config.evaluation_end_date,
+                "base_report_id": None,
+                "base_report_requested_run_status": None,
+                "report_update_strategy": "KEEP_OWN_RUNS",
+                "cov_names": {
+                    'cov_name_prefix': '',
+                    'cov_name_field': 'name',
+                    'cov_name_suffix': '',
+                },
+                "preselection": {
+                    "min_num_actuals_obs": 78,
+                    "num_obs_short_term_class": 36,
+                    "max_publication_lag": config.max_publication_lag,
+                    "min_num_cov_obs": 96
+                },
+                "postselection": {
+                    "num_obs_short_term_correlation": 60,
+                    "clustering_run_id": None,
+                    "post_selection_queries": config.post_selection_queries,
+                    "post_selection_concatenation_operator": "&",
+                    "protected_selections_queries": [],
+                    "protected_selections_concatenation_operator": "&"
+                },
+                "lighthouse_config": {
+                    "enable_leading_covariate_selection": config.enable_leading_covariate_selection,
+                    "lag_selection_fixed_season_length": config.lag_selection_fixed_season_length,
+                    "lag_selection_fixed_lags": config.lag_selection_fixed_lags,
+                    "lag_selection_min_lag": config.lag_selection_min_lag,
+                    "lag_selection_max_lag": config.lag_selection_max_lag
+                }
+            }
+        }
+
+        return {'payload': config_dict}

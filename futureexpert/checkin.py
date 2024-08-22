@@ -1,8 +1,9 @@
 """Contains the models with the configuration for futureCHECK-IN."""
-import json
-from typing import Any, Literal, Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
+
+from futureexpert.shared_models import TimeSeries
 
 
 class BaseConfig(BaseModel):
@@ -108,69 +109,6 @@ class DataDefinition(BaseConfig):
     group_columns: list[GroupColumn] = []
 
 
-def create_checkin_payload_1(user_input_id: str,
-                             file_uuid: str,
-                             data_definition: DataDefinition,
-                             file_specification: FileSpecification = FileSpecification()) -> Any:
-    """Creates the payload for the futureCHECK-IN stage prepareDataset.
-
-    Parameters
-    ----------
-    user_input_id
-        UUID of the user input.
-    file_uuid
-        UUID of the file.
-    data_definition
-        Specifies the data, value and group columns and which rows and columns are to be removed first.
-    file_specification
-        Specify the format of the CSV file. Only relevant if a CSV was given as input.
-    """
-
-    return {'userInputId': user_input_id,
-            'payload': {
-                'stage': 'prepareDataset',
-                'fileUuid': file_uuid,
-                'meta': file_specification.model_dump(),
-                'performedTasks': {
-                    'removedRows': data_definition.remove_rows,
-                    'removedCols': data_definition.remove_columns
-                },
-                'columnDefinition': {
-                    'dateColumns': [{snake_to_camel(key): value for key, value in
-                                    data_definition.date_columns.model_dump(exclude_none=True).items()}],
-                    'valueColumns': [{snake_to_camel(key): value for key, value in d.model_dump(exclude_none=True).items()}
-                                     for d in data_definition.value_columns],
-                    'groupColumns': [{snake_to_camel(key): value for key, value in d.model_dump(exclude_none=True).items()}
-                                     for d in data_definition.group_columns]
-                }
-            }}
-
-
-def build_payload_from_ui_config(user_input_id: str, file_uuid: str, path: str) -> Any:
-    """Creates the payload for the futureCHECK-IN stage createDataset.
-
-    Parameters
-    ----------
-    user_input_id
-        UUID of the user input.
-    file_uuid
-        UUID of the file.
-    path
-        Path to the JSON file.
-    """
-
-    with open(path) as file:
-        file_data = file.read()
-        json_data = json.loads(file_data)
-
-    json_data['stage'] = 'createDataset'
-    json_data['fileUuid'] = file_uuid
-    del json_data["performedTasksLog"]
-
-    return {'userInputId': user_input_id,
-            'payload': json_data}
-
-
 class FilterSettings(BaseConfig):
     """Model for the filters.
 
@@ -244,45 +182,15 @@ class TsCreationConfig(BaseConfig):
     missing_value_handler: Literal['keepNaN', 'setToZero'] = 'keepNaN'
 
 
-def create_checkin_payload_2(payload: dict[str, Any], config: TsCreationConfig) -> Any:
-    """Creates the payload for the futureCHECK-IN stage createDataset.
+class CheckInResult(BaseModel):
+    """Result of the CHECK-IN.
 
     Parameters
     ----------
-    payload
-        Payload used in `create_checkin_payload_1`.
-    config
-        Configuration for time series creation.
+    time_series
+        Time series values.
+    version_id
+        Id of the time series version. Used to identifiy the time series
     """
-
-    payload['payload']['rawDataReviewResults'] = {}
-    payload['payload']['timeSeriesDatasetParameter'] = {
-        'aggregation': {'operator': 'sum',
-                        'option': config.missing_value_handler},
-        'date': {
-            'timeGranularity': config.time_granularity,
-            'startDate': config.start_date,
-            'endDate': config.end_date
-        },
-        'grouping': {
-            'dataLevel': config.grouping_level,
-            'filter':  [d.model_dump() for d in config.filter]
-        },
-        'values': [{snake_to_camel(key): value for key, value in d.model_dump().items()} for d in config.new_variables],
-        'valueColumnsToSave': config.value_columns_to_save
-    }
-    payload['payload']['stage'] = 'createDataset'
-
-    return payload
-
-
-def snake_to_camel(snake_string: str) -> str:
-    """Converts snake case to lower camel case.
-
-    Parameters
-    ----------
-    snake_string
-        string im snake case format.
-    """
-    title_string = snake_string.title().replace('_', '')
-    return title_string[:1].lower() + title_string[1:]
+    time_series: list[TimeSeries]
+    version_id: str

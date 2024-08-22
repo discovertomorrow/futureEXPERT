@@ -13,7 +13,7 @@ stages:
 - manual
 - deploy
 
-.defaults: 
+.defaults:
   tags:
     - docker
     - cloud
@@ -38,7 +38,7 @@ python_build:
     - "dist/"
     expire_in: 1 week
 
-import-formatting:  
+import-formatting:
   stage: test
   extends: .defaults
   image: ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
@@ -51,11 +51,15 @@ static-typing:
   image: ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
   script:
     - mypy futureexpert
-  
-unit-tests:  
+
+unit-tests:
   stage: test
   extends: .defaults
   image: ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
+  variables:
+    FUTURE_PW: $CI_TEST_PW
+    FUTURE_USER: $CI_TEST_USER
+    FUTURE_ENVIRONMENT: development
   script:
     - pytest
 
@@ -80,19 +84,21 @@ notebook execution (required):
     FUTURE_USER: $CI_TEST_USER
     FUTURE_ENVIRONMENT: development
   script:
+    - sed -i "s/'TBD'/'66bf11000e58168a5203bf92'/g" notebooks/getting_started.ipynb
+    - sed -i "s/'TBD'/'66bf11000e58168a5203bf92'/g" notebooks/checkin_configuration_options.ipynb
     - for notebook in `find . -name '*.ipynb'`; do jupyter nbconvert --to notebook --execute --inplace $notebook; done
   needs: [docker_build]
   rules:
     - if: $CI_COMMIT_BRANCH  == "dev"
       when: on_success
-    - if: $CI_COMMIT_BRANCH =~ /^(release$|release.+|staging)/
+    - if: $CI_COMMIT_BRANCH =~ /^(release$|release.+|staging|github)/
       when: never
     - when: manual
       allow_failure: false
 
 python_deploy:
   stage: deploy
-  extends: .defaults  
+  extends: .defaults
   image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.12
   script:
     - pip config set global.index-url ${PROGNOSTICA_PYPI}
