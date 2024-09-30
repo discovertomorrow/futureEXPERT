@@ -17,12 +17,10 @@ from futureexpert._helpers import calculate_max_ts_len, snake_to_camel
 from futureexpert.checkin import CheckInResult, DataDefinition, FileSpecification, TsCreationConfig
 from futureexpert.forecast import ForecastResult, ReportConfig
 from futureexpert.matcher import MatcherConfig, MatcherResult
+from futureexpert.pool import CheckInPoolResult, PoolCovDefinition, PoolCovOverview
 from futureexpert.shared_models import TimeSeries
 
 pp = pprint.PrettyPrinter(indent=4)
-
-
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -65,7 +63,7 @@ class ReportStatus(pydantic.BaseModel):
         pct_txt = f'{round(self.progress.finished/self.progress.requested*100)} % are finished'
         overall = f'{self.progress.requested} time series requested for calculation'
         finished_txt = f'{self.progress.finished} time series finished'
-        noeval_txt = f'{self.results.no_evaluation} time series no evaluation'
+        noeval_txt = f'{self.results.no_evaluation} time series without evaluation'
         error_txt = f'{self.results.error} time series ran into an error'
         print(f'{title}\n {pct_txt} \n {overall} \n {finished_txt} \n {noeval_txt} \n {error_txt}')
 
@@ -265,6 +263,64 @@ class ExpertClient:
 
         return result
 
+    def check_in_pool_covs(self,
+                           requested_pool_covs: list[PoolCovDefinition]) -> CheckInPoolResult:
+        """Create a new version from a list of pool covariates and version ids.
+
+        Parameters
+        ----------
+        requested_pool_covs
+            List of pool covariate definitions. Each definition consists of an pool_cov_id and an optional version_id.
+            If no version id is provided, the newest version of the covariate is used.
+
+        Returns
+        -------
+        Result object with fields version_id and pool_cov_information.
+        """
+        logger.info('Transforming input data...')
+
+        payload = {
+            'payload': {
+                'requested_indicators': [
+                    {**covariate.model_dump(exclude_none=True),
+                     'indicator_id': covariate.pool_cov_id}
+                    for covariate in requested_pool_covs
+                ]
+            }
+        }
+        for covariate in payload['payload']['requested_indicators']:
+            covariate.pop('pool_cov_id', None)
+
+        logger.info('Creating time series using checkin-pool...')
+        result = self.client.execute_action(group_id=self.group,
+                                            core_id='checkin-pool',
+                                            payload=payload,
+                                            interval_status_check_in_seconds=2)
+
+        logger.info('Finished time series creation.')
+
+        return CheckInPoolResult(**result['result'])
+
+    def get_pool_cov_overview(self,
+                              granularity: Optional[str] = None,
+                              search: Optional[str] = None) -> PoolCovOverview:
+        """Gets an overview of all available covariates on the futurePOOL based on the defined filters.
+
+        Parameters
+        ----------
+        granularity
+            If set, returns only data matching that granularity (Day or Month).
+        search
+            If set, performs a full-text search and only returns data found in that search.
+
+        Returns
+        -------
+        PoolCovOverview object with tables containing the covariates with
+        different levels of detail .
+        """
+        response_json = self.client.get_pool_cov_overview(granularity=granularity, search=search)
+        return PoolCovOverview(response_json)
+
     def check_in_time_series(self,
                              raw_data_source: Union[pd.DataFrame, str],
                              data_definition: Optional[DataDefinition] = None,
@@ -406,9 +462,9 @@ class ExpertClient:
         Parameters
         ----------
         version
-        Version of the time series that should get forecasts.
+            Version of the time series that should get forecasts.
         config
-        Configuration of the forecast run.
+            Configuration of the forecast run.
         """
 
         config_dict = config.model_dump()
@@ -417,6 +473,11 @@ class ExpertClient:
         config_dict['cov_selection_report_id'] = config_dict['matcher_report_id']
         config_dict['forecasting']['n_ahead'] = config_dict['forecasting']['fc_horizon']
         config_dict['backtesting'] = config_dict['method_selection']
+
+        if config.pool_covs is not None:
+            covs_version = self.check_in_pool_covs(requested_pool_covs=config.pool_covs)
+            config_dict['covs_version'] = covs_version.version_id
+        config_dict.pop('pool_covs')
 
         config_dict.pop('title')
         config_dict['forecasting'].pop('fc_horizon')
@@ -595,6 +656,9 @@ class ExpertClient:
         The identifier of the covariate matcher report.
         """
 
+        if not self.is_analyst and config.db_name is not None:
+            raise ValueError('Only users with the role analyst are allowed to use the parameter db_name.')
+
         payload = self._create_matcher_payload(config)
 
         result = self.client.execute_action(group_id=self.group,
@@ -607,12 +671,18 @@ class ExpertClient:
     def _create_matcher_payload(self, config: MatcherConfig) -> Any:
         """Converts the MatcherConfig into the payload needed for the cov-selection core."""
 
+        if config.pool_covs is not None:
+            covs_version = self.check_in_pool_covs(requested_pool_covs=config.pool_covs)
+            config.covs_version = covs_version.version_id
+
         config_dict: dict[str, Any] = {
             'report_description': config.title,
+            'db_name': config.db_name,
             'data_config': {
                 'actuals_version': config.actuals_version,
-                'actuals_filter': {},
+                'actuals_filter': config.actuals_filter,
                 'covs_version': config.covs_version,
+                'covs_filter': config.covs_filter,
             },
             "compute_config": {
                 "evaluation_start_date": config.evaluation_start_date,

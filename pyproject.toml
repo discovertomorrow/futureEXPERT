@@ -25,6 +25,6 @@ plugins = "numpy.typing.mypy_plugin"
 module = "futureexpert.*"
 disallow_any_generics = true
 disallow_untyped_calls = true
-disallow_untyped_defs = true                           
+disallow_untyped_defs = true
 disallow_incomplete_defs = true
 disallow_untyped_decorators = true

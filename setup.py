@@ -49,7 +49,7 @@ setup(
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=['python-keycloak == 3.12.0',  # MIT License
                       'tenacity >= 8.2.0',          # Apache Software License
-                      'requests >= 2.31.0',         # Apache Software License
+                      'httpx >= 0.27.2',            # BSD-3-Clause License
                       'matplotlib >= 3.8.0',        # Python Software Foundation License
                       'pydantic >= 2.5.0,< 3.0.0',  # MIT License
                       'numpy >= 1.22.4,< 2.0.0',    # BSD-3-Clause License
@@ -70,7 +70,6 @@ setup(
                 'pdoc3',
                 'types-pkg-resources==0.1.3',
                 'types-python-dateutil',
-                'types-requests',
                 'types-toml',
                 'jupyter == 1.0.0',
                 'nbconvert == 7.2.6',

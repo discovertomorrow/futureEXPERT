@@ -9,11 +9,9 @@ import time
 from dataclasses import dataclass
 from typing import Any, Callable, Literal, Optional, Tuple, Union
 
-import requests
+import httpx
 import tenacity
 from keycloak import KeycloakOpenID
-from requests import Response
-from requests.exceptions import RequestException
 
 
 @dataclass
@@ -35,7 +33,7 @@ FUTURE_CONFIGS = {'production': PRODUCTION_CONFIG,
 logger = logging.getLogger(__name__)
 
 
-def get_json(response: requests.Response) -> Any:
+def get_json(response: httpx.Response) -> Any:
     """Gets JSON from a successful response object or raises an error.
 
     Parameters
@@ -123,7 +121,7 @@ class FutureApiClient:
                                   'wait': tenacity.wait.wait_exponential(multiplier=1, exp_base=2,),
                                   'before': tenacity.before.before_log(logger, logging.DEBUG),
                                   'after': tenacity.after.after_log(logger, logging.DEBUG),
-                                  'retry': tenacity.retry_if_exception_type(RequestException),
+                                  'retry': tenacity.retry_if_exception_type(httpx.RequestError),
                                   'reraise': True}
 
     @property
@@ -143,7 +141,7 @@ class FutureApiClient:
     def _api_get_request(self,
                          path: str,
                          params: Optional[dict[str, Any]] = None,
-                         timeout: int | None = None) -> requests.Response:
+                         timeout: int | None = None) -> httpx.Response:
         """Submits a GET request to the _future_ API.
 
         Parameters
@@ -161,13 +159,13 @@ class FutureApiClient:
         """
         request_url = urljoin(base=self.future_config.api_url, url=path)
         logger.debug(f'Sending GET request to {request_url}...')
-        return requests.get(request_url,
-                            params=params,
-                            headers={
-                                'Authorization': f'Bearer {self.token["access_token"]}'},
-                            timeout=timeout)
+        return httpx.get(request_url,
+                         params=params,
+                         headers={
+                             'Authorization': f'Bearer {self.token["access_token"]}'},
+                         timeout=timeout)
 
-    def _api_post_request(self, path: str, json: Any, timeout: int | None = None) -> requests.Response:
+    def _api_post_request(self, path: str, json: Any, timeout: int | None = None) -> httpx.Response:
         """Submits a POST request to the _future_ API.
 
         Parameters
@@ -185,9 +183,9 @@ class FutureApiClient:
         """
         request_url = urljoin(base=self.future_config.api_url, url=path)
         logger.debug(f'Sending POST request to {request_url}...')
-        return requests.post(request_url, headers={'Authorization': f'Bearer {self.token["access_token"]}'},
-                             json=json,
-                             timeout=timeout)
+        return httpx.post(request_url, headers={'Authorization': f'Bearer {self.token["access_token"]}'},
+                          json=json,
+                          timeout=timeout)
 
     def get_groups(self) -> Any:
         """Gets the groups of the current user."""
@@ -228,7 +226,7 @@ class FutureApiClient:
 
         request_url = urljoin(base=self.future_config.api_url, url=path)
         retryer = tenacity.Retrying(**self.retry_config)
-        initial_response = retryer(self._request_or_raise(request=lambda: requests.post(
+        initial_response = retryer(self._request_or_raise(request=lambda: httpx.post(
             headers={'Authorization': f'Bearer {self.token["access_token"]}'},
             url=request_url, files=payload)))
 
@@ -280,13 +278,41 @@ class FutureApiClient:
         include_k_best_models
             Number of k best models for which results are to be returned.
         include_backtesting
-           Should backtesting results are to be returned.
-         Returns
+            Should backtesting results are to be returned.
+        Returns
         -------
         Actuals and forecasts for each time series in the given report.
         """
         params = {'include_k_best_models': include_k_best_models, 'include_backtesting': include_backtesting}
         return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/results/fc', params=params))
+
+    def get_pool_cov_overview(self,
+                              granularity: Optional[str] = None,
+                              search: Optional[str] = None) -> Any:
+        """Gets an overview of all available covariates on the futurePOOL based on the defined filters.
+
+        Parameters
+        ----------
+        granularity
+            If set, returns only data matching that granularity (Day or Month).
+        search
+            If set, performs a full-text search and only returns data found
+            in that search.
+
+        Returns
+        ------
+        Covariate overview data.
+        """
+        params = {}
+        if granularity:
+            params['distance'] = granularity
+        if search:
+            params['search'] = search
+        path = 'indicators'
+        response = self._api_get_request(params=params, path=path, timeout=30)
+        if len(response_json := get_json(response)) == 0:
+            raise ValueError('No data found with the specified parameters')
+        return response_json
 
     def get_matcher_results(self, group_id: str, report_id: int) -> Any:
         """Collects covariate matcher results from the database.
@@ -297,7 +323,7 @@ class FutureApiClient:
             The ID of the relevant group.
         report_id
             ID of the report.
-         Returns
+        Returns
         -------
         Actuals and covariate ranking.
         """
@@ -305,7 +331,7 @@ class FutureApiClient:
         return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/results/cov-selection'))
 
     @staticmethod
-    def _request_or_raise(request: Callable[[], Response]) -> Callable[[], requests.Response]:
+    def _request_or_raise(request: Callable[[], httpx.Response]) -> Callable[[], httpx.Response]:
         """Wraps a request to be used with tenacity retry handling.
 
         request
@@ -343,7 +369,7 @@ class FutureApiClient:
             Interval in seconds between status requests while the futureCORE action is running.
         timeout_in_seconds
             Overall timeout waiting for the futureCORE action to have finished.
-            The actual running time might be longer due to retrying requests.
+            The actual running time might be longer due to retrying httpx.
 
         Returns
         -------
@@ -364,7 +390,7 @@ class FutureApiClient:
             for _ in range(math.ceil(timeout_in_seconds/interval_status_check_in_seconds)):
                 # There are three ways out of this loop:
                 # 1. result json property 'status' is not 'created', 'pending', 'running' or 'unknown'
-                # 2. raised RequestException (after retries)
+                # 2. raised RequestError (after retries)
                 # 3. Overall timeout exceeded
                 status_response = retryer(self._request_or_raise(
                     lambda: self._api_get_request(action_status_path, timeout=30)))
@@ -386,7 +412,7 @@ class FutureApiClient:
             # Even if the status was not successful (timeout exceeded), try to get the result
             response = retryer(self._request_or_raise(
                 request=lambda: self._api_get_request(action_path, timeout=30)))
-        except RequestException as exc_info:
+        except httpx.RequestError as exc_info:
             logger.error(msg=str(exc_info), exc_info=True)
             raise NonTransientError(
                 f'Request failed caused by {str(exc_info)}') from exc_info

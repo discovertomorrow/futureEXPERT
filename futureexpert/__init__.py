@@ -1,3 +1,5 @@
+import logging
+
 from futureexpert.__about__ import __version__
 from futureexpert.checkin import (DataDefinition,
                                   DateColumn,
@@ -35,3 +37,10 @@ __all__ = [
     'ActualsCovsConfiguration',
     'CovariateRef'
 ]
+
+
+logging.basicConfig(level=logging.INFO)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpx").propagate = False
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("httpcore").propagate = False

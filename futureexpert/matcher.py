@@ -1,12 +1,13 @@
 """Contains the models with the configuration for the matcher and the result format."""
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 import pandas as pd
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing_extensions import Self
 
+from futureexpert.pool import PoolCovDefinition
 from futureexpert.shared_models import BaseConfig, Covariate, CovariateRef, TimeSeries, ValidatedPositiveInt
 
 
@@ -21,6 +22,16 @@ class MatcherConfig(BaseConfig):
         The version ID of the actuals.
     covs_version
         The version of the covariates.
+    actuals_filter
+        Filter criterion for actuals time series. The given actuals version is
+        automatically added as additional filter criterion. Possible Filter criteria are all fields that are part
+        of the TimeSeries class. e.g. {'name': 'Sales'}
+        For more complex filter check: https://www.mongodb.com/docs/manual/reference/operator/query/#query-selectors
+    covs_filter
+        Filter criterion for covariates time series. The given covariate version is
+        automatically added as additional filter criterion. Possible Filter criteria are all fields that are part
+        of the TimeSeries class. e.g. {'name': 'Sales'}
+        For more complex filter check: https://www.mongodb.com/docs/manual/reference/operator/query/#query-selectors
     lag_selection_fixed_lags
         Lags that are tested in the lag selection.
     lag_selection_min_lag
@@ -60,10 +71,16 @@ class MatcherConfig(BaseConfig):
         covariates passed to covariate selection.
     lag_selection_fixed_season_length
         An optional parameter specifying the length of a season in the dataset.
+    pool_covs
+        List of covariate definitions.
+    db_name
+        Only accessible for internal use. Name of the database to use for storing the results.
     """
     title: str
     actuals_version: str
-    covs_version: str
+    covs_version: Optional[str] = None
+    actuals_filter: dict[str, Any] = Field(default_factory=dict)
+    covs_filter: dict[str, Any] = Field(default_factory=dict)
     lag_selection_fixed_lags: Optional[list[int]] = None
     lag_selection_min_lag: Optional[int] = None
     lag_selection_max_lag: Optional[int] = None
@@ -73,6 +90,8 @@ class MatcherConfig(BaseConfig):
     post_selection_queries: list[str] = []
     enable_leading_covariate_selection: bool = True
     lag_selection_fixed_season_length: Optional[int] = None
+    pool_covs: Optional[list[PoolCovDefinition]] = None
+    db_name: Optional[str] = None
 
     @model_validator(mode='after')
     def _check_lag_selection_range(self) -> Self:
@@ -114,6 +133,20 @@ class MatcherConfig(BaseConfig):
         if len(invalid_queries):
             raise ValueError("The following post-selection queries are invalidly formatted: "
                              f"{', '.join(invalid_queries)}. ")
+
+        return self
+
+    @model_validator(mode="after")
+    def _exactly_one_covariate_definition(self) -> Self:
+        fields = [
+            'covs_version',
+            'pool_covs'
+        ]
+
+        set_fields = [field for field in fields if getattr(self, field) is not None]
+
+        if len(set_fields) != 1:
+            raise ValueError(f"Exactly one of {', '.join(fields)} can be set. Found: {', '.join(set_fields)}")
 
         return self
 

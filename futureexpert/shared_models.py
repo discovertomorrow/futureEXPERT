@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated, Sequence
+from typing import Annotated, Optional, Sequence, Union
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, PlainSerializer, WithJsonSchema
 
@@ -55,11 +55,20 @@ class TimeSeries(BaseModel):
         Granularity of the time series.
     values
         The actual values of the time series.
+    unit
+        The unit of the time .
+    unit_factors
+        Factors to convert the time series in another unit.
+    grouping
+        Hierarchy levels ot the time series.
     """
     name: Annotated[str, Field(min_length=1)]
     group: str
     granularity: Annotated[str, Field(min_length=1)]
     values: Annotated[Sequence[TimeSeriesValue], Field(min_length=1)]
+    unit: Optional[str] = None
+    unit_factors: Optional[dict[str, float]] = None
+    grouping: Optional[dict[str, Union[str, int]]] = None
 
 
 class CovariateRef(BaseModel):

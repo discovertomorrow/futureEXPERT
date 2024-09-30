@@ -23,7 +23,7 @@ def calculate_max_ts_len(max_ts_len: Optional[int], granularity: str) -> Optiona
     max_ts_len
         At most the number of most recent observations is used.
     granularity
-       Granularity of the time series.
+        Granularity of the time series.
     """
 
     config = MAX_TS_LEN_CONFIG.get(granularity, None)

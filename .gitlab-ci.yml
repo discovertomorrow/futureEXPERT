@@ -32,7 +32,8 @@ python_build:
       else
         sed -i "s#\"#\.dev${CI_PIPELINE_ID}\"#2" futureexpert/__about__.py
       fi
-    - python setup.py sdist bdist_wheel
+    - pip install --user build
+    - python -m build
   artifacts:
     paths:
     - "dist/"
@@ -44,6 +45,7 @@ import-formatting:
   image: ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
   script:
     - isort --check-only .
+  needs: [docker_build]
 
 static-typing:
   stage: test
@@ -51,6 +53,7 @@ static-typing:
   image: ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
   script:
     - mypy futureexpert
+  needs: [docker_build]
 
 unit-tests:
   stage: test
@@ -62,6 +65,20 @@ unit-tests:
     FUTURE_ENVIRONMENT: development
   script:
     - pytest
+  needs: [docker_build]
+
+sonarqube:
+  extends: .defaults
+  stage: test
+  image:
+    name: sonarsource/sonar-scanner-cli
+    entrypoint: [""]
+  variables:
+    GIT_STRATEGY: fetch
+    GIT_DEPTH: 0
+  script:
+    - sonar-scanner -Dsonar.qualitygate.wait=true
+  needs: [python_build]
 
 sonarqube:
   extends: .defaults
@@ -84,8 +101,8 @@ notebook execution (required):
     FUTURE_USER: $CI_TEST_USER
     FUTURE_ENVIRONMENT: development
   script:
-    - sed -i "s/'TBD'/'66bf11000e58168a5203bf92'/g" notebooks/getting_started.ipynb
-    - sed -i "s/'TBD'/'66bf11000e58168a5203bf92'/g" notebooks/checkin_configuration_options.ipynb
+    - sed -i "s/'TBD'/'66ea6e1d38cb720ea1a2e44a'/g" notebooks/getting_started.ipynb
+    - sed -i "s/'TBD'/'66ea6e1d38cb720ea1a2e44a'/g" notebooks/checkin_configuration_options.ipynb
     - for notebook in `find . -name '*.ipynb'`; do jupyter nbconvert --to notebook --execute --inplace $notebook; done
   needs: [docker_build]
   rules:
@@ -95,6 +112,20 @@ notebook execution (required):
       when: never
     - when: manual
       allow_failure: false
+
+api-docs:
+  stage: build
+  extends: .defaults
+  image: ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
+  script:
+    - pip install pdoc3
+    - python docs/make.py --export-directory docs/
+    - mv ./docs/futureexpert/* ./docs/
+  artifacts:
+    paths:
+    - "docs/"
+    expire_in: 1 week
+  needs: [docker_build]
 
 python_deploy:
   stage: deploy

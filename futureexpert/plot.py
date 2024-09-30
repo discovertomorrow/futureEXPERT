@@ -70,6 +70,8 @@ def plot_time_series(ts: TimeSeries,
 
     name = ts.name
     df_ac = pd.DataFrame({'date': ac_date, 'actuals': ac_value})
+    df_ac = _fill_missing_values_for_plot(granularity=ts.granularity, df=df_ac)
+
     if covariate:
         cov_date = [value.time_stamp_utc for value in covariate.ts.values]
         cov_value = [value.value for value in covariate.ts.values]
@@ -105,6 +107,41 @@ def plot_time_series(ts: TimeSeries,
     plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
 
     plt.show()
+
+
+def _fill_missing_values_for_plot(granularity: str,
+                                  df: pd.DataFrame) -> pd.DataFrame:
+    """Finds missing values in data and explicity fills them with nan. This is required for accruately
+    displaying missing data in plots.
+
+    Parameters
+    ----------
+    granularity
+        Granularity of the time series.
+    df
+        Data with potentially missing values. Timestamp data needs to be in a column called date. Can handle any
+        other number of columns.
+
+    Returns
+    -------
+    Dataframe in the same structure as before, but with potentially added rows with nan values.
+    """
+
+    granularity_to_pd_alias = {
+        'yearly': 'Y',
+        'quarterly': 'Q',
+        'monthly': 'M',
+        'weekly': 'W',
+        'daily': 'D',
+        'hourly': 'H',
+        'halfhourly': '30T'
+    }
+    full_date_range = pd.date_range(start=df['date'].min(),
+                                    end=df['date'].max(),
+                                    freq=granularity_to_pd_alias.get(granularity))
+
+    # Reindex the dataframe to fill in missing dates, leaving actuals as NaN for missing entries
+    return df.set_index('date').reindex(full_date_range).reset_index().rename(columns={'index': 'date'})
 
 
 def plot_forecast(result: ForecastResult,
@@ -151,13 +188,15 @@ def plot_forecast(result: ForecastResult,
         ac_value = [fc.value for fc in values]
 
         df_ac = pd.DataFrame({'date': ac_date, 'actuals': ac_value})
+        df_ac = _fill_missing_values_for_plot(granularity=result.input.actuals.granularity, df=df_ac)
 
         df_fc = pd.DataFrame({'date': fc_date, 'fc': fc_value, 'upper': fc_upper_value, 'lower': fc_lower_value})
         df_concat = pd.concat([df_ac, df_fc], axis=0).reset_index(drop=True)
         # connected forecast line with actual line
-        df_concat.loc[len(ac_date)-1, 'fc'] = df_concat.loc[len(ac_date)-1, 'actuals']
-        df_concat.loc[len(ac_date)-1, 'upper'] = df_concat.loc[len(ac_date)-1, 'actuals']
-        df_concat.loc[len(ac_date)-1, 'lower'] = df_concat.loc[len(ac_date)-1, 'actuals']
+        index_last_actual = len(df_ac.index)-1
+        df_concat.loc[index_last_actual, 'fc'] = df_concat.loc[index_last_actual, 'actuals']
+        df_concat.loc[index_last_actual, 'upper'] = df_concat.loc[index_last_actual, 'actuals']
+        df_concat.loc[index_last_actual, 'lower'] = df_concat.loc[index_last_actual, 'actuals']
         df_concat.date = pd.to_datetime(df_concat.date)
 
         fig, ax = plt.subplots()
@@ -238,6 +277,13 @@ def plot_backtesting(result: ForecastResult,
 
         actual_dates = [ac.time_stamp_utc for ac in values]
         actual_values = [ac.value for ac in values]
+
+        # if the data has missing values, make sure to explicitly store them as nan. Otherwise the plot function will
+        # display interpolated values. To use help function, a temporary df is needed.
+        values_as_df = pd.DataFrame({'date': actual_dates, 'actuals': actual_values})
+        values_as_df = _fill_missing_values_for_plot(granularity=result.input.actuals.granularity, df=values_as_df)
+        actual_dates = values_as_df.date.tolist()
+        actual_values = values_as_df.actuals.tolist()
 
         fig, ax = plt.subplots()
         fig.set_size_inches(12, 6)

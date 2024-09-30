@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, NonNegativeFloat
 from typing_extensions import NotRequired, Self, TypedDict
 
 from futureexpert.matcher import ActualsCovsConfiguration, MatcherResult
+from futureexpert.pool import PoolCovDefinition
 from futureexpert.shared_models import (BaseConfig,
                                         Covariate,
                                         CovariateRef,
@@ -21,7 +22,6 @@ from futureexpert.shared_models import (BaseConfig,
                                         TimeSeries,
                                         ValidatedPositiveInt)
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -31,24 +31,24 @@ class PreprocessingConfig(BaseConfig):
     Parameters
     ----------
     remove_leading_zeros
-       If true, then leading zeros are removed from the time series before forecasting.
+        If true, then leading zeros are removed from the time series before forecasting.
     use_season_detection
-       If true, then the season length is determined from the data.
+        If true, then the season length is determined from the data.
     seasonalities_to_test
-       Season lengths to be tested. If not defined, a suitable set for the given granularity is used.
-       Season lengths can only be tested, if the number of observations is at least three times as
-       long as the biggest season length. Note that 1 must be in the list if the non-seasonal case should
-       be considered, too. Allows a combination of single granularities or combinations of granularities.
+        Season lengths to be tested. If not defined, a suitable set for the given granularity is used.
+        Season lengths can only be tested, if the number of observations is at least three times as
+        long as the biggest season length. Note that 1 must be in the list if the non-seasonal case should
+        be considered, too. Allows a combination of single granularities or combinations of granularities.
     fixed_seasonalities
-       Season lengths used without checking. Allowed only if `use_season_detection` is false.
+        Season lengths used without checking. Allowed only if `use_season_detection` is false.
     detect_outliers
-       If true, then identifies outliers in the data.
+        If true, then identifies outliers in the data.
     replace_outliers
-       If true, then identified outliers are replaced.
+        If true, then identified outliers are replaced.
     detect_changepoints
-       If true, then change points such as level shifts are identified.
+        If true, then change points such as level shifts are identified.
     detect_quantization
-       If true, then a quantization algorithm is applied to the time series.
+        If true, then a quantization algorithm is applied to the time series.
     """
 
     remove_leading_zeros: bool = False
@@ -75,18 +75,18 @@ class ForecastingConfig(BaseConfig):
     Parameters
     ----------
     fc_horizon
-       Forecast horizon.
+        Forecast horizon.
     lower_bound
-       Lower bound applied to the time series and forecasts.
+        Lower bound applied to the time series and forecasts.
     upper_bound
-       Upper bound applied to the time series and forecasts.
+        Upper bound applied to the time series and forecasts.
     confidence_level
-       Confidence level for prediction intervals.
+        Confidence level for prediction intervals.
     round_forecast_to_integer
-       If true, then forecasts are rounded to the nearest integer (also applied during backtesting).
+        If true, then forecasts are rounded to the nearest integer (also applied during backtesting).
     use_ensemble
-       If true, then calculate ensemble forecasts. Automatically makes a smart decision on which
-       methods to use based on their backtesting performance.
+        If true, then calculate ensemble forecasts. Automatically makes a smart decision on which
+        methods to use based on their backtesting performance.
     """
 
     fc_horizon: ValidatedPositiveInt
@@ -110,21 +110,21 @@ class MethodSelectionConfig(BaseConfig):
     Parameters
     ----------
     number_iterations
-       Number of backtesting iterations. At least 8 iterations are needed for empirical prediction intervals.
+        Number of backtesting iterations. At least 8 iterations are needed for empirical prediction intervals.
     shift_len
-       Number of time points by which the test window is shifted between backtesting iterations.
+        Number of time points by which the test window is shifted between backtesting iterations.
     refit
-       If true, then models are re-fitted for each backtesting iteration.
+        If true, then models are re-fitted for each backtesting iteration.
     default_error_metric
-       Error metric applied to the backtesting error for non-sporadic time series.
+        Error metric applied to the backtesting error for non-sporadic time series.
     sporadic_error_metric
-       Error metric applied to the backtesting errors for sporadic time series.
+        Error metric applied to the backtesting errors for sporadic time series.
     additional_accuracy_measures
         Additional accuracy measures computed during model ranking.
     step_weights
-       Mapping from forecast steps to weights associated with forecast errors for the given forecasting step.
-       Only positive weights are allowed. Leave a forecast step out to assign a zero weight.
-       Used only for non-sporadic time series.
+        Mapping from forecast steps to weights associated with forecast errors for the given forecasting step.
+        Only positive weights are allowed. Leave a forecast step out to assign a zero weight.
+        Used only for non-sporadic time series.
     """
 
     number_iterations: ValidatedPositiveInt = PositiveInt(12)
@@ -149,56 +149,80 @@ class ReportConfig(BaseConfig):
     Parameters
     ----------
     matcher_report_id
-       Report ID of the covariate matcher.
+        Report ID of the covariate matcher.
     covs_version
-       Version of the covariates.
+        Version of the covariates.
     covs_configuration
-       Mapping from actuals and covariates. Use for custom covariate or adjusted matcher results.
-       If the matcher results should be used without changes use `matcher_report_id` instead.
+        Mapping from actuals and covariates. Use for custom covariate or adjusted matcher results.
+        If the matcher results should be used without changes use `matcher_report_id` instead.
     title
-       Title of the report.
+        Title of the report.
+    actuals_filter
+        Filter criterion for actuals time series. The given actuals version is
+        automatically added as additional filter criterion. Possible Filter criteria are all fields that are part
+        of the TimeSeries class. e.g. {'name': 'Sales'}
+        For more complex filter check: https://www.mongodb.com/docs/manual/reference/operator/query/#query-selectors
     max_ts_len
-       At most this number of most recent observations is used. Check the variable MAX_TS_LEN_CONFIG
-       for allowed configuration.
+        At most this number of most recent observations is used. Check the variable MAX_TS_LEN_CONFIG
+        for allowed configuration.
     preprocessing
-       Preprocessing configuration.
+        Preprocessing configuration.
     forecasting
-       Forecasting configuration.
+        Forecasting configuration.
     method_selection
-       Method selection configuration. If not supplied, then a granularity dependent default is used.
+        Method selection configuration. If not supplied, then a granularity dependent default is used.
+    pool_covs
+        List of covariate definitions.
     db_name
-       Only accessible for internal use. Name of the database to use for storing the results.
+        Only accessible for internal use. Name of the database to use for storing the results.
     priority
-       Only accessible for internal use. Higher value indicate higher priority.
+        Only accessible for internal use. Higher value indicate higher priority.
     """
 
     matcher_report_id: Optional[int] = None
     covs_version: Optional[str] = None
     covs_configuration: Optional[list[ActualsCovsConfiguration]] = None
     title: str
+    actuals_filter: dict[str, Any] = Field(default_factory=dict)
 
     max_ts_len: Annotated[
         Optional[int], pydantic.Field(ge=1, le=1500)] = None
 
     preprocessing: PreprocessingConfig = PreprocessingConfig()
     forecasting: ForecastingConfig
+    pool_covs: Optional[list[PoolCovDefinition]] = None
     method_selection: Optional[MethodSelectionConfig] = None
     db_name:  Optional[str] = None
     priority: Annotated[Optional[int], pydantic.Field(ge=0, le=10)] = None
 
     @pydantic.model_validator(mode="after")
-    def _covs_configuration_not_with_matcher_report_id(self) -> Self:
-        if self.matcher_report_id and self.covs_configuration:
-            raise ValueError('matcher_report_id and covs_configuration can not be set simultaniusly.')
-        if (self.matcher_report_id or self.covs_configuration) and self.covs_version is None:
+    def _correctness_of_cov_configurations(self) -> Self:
+        if (self.matcher_report_id or self.covs_configuration) and (
+                self.covs_version is None and self.pool_covs is None):
             raise ValueError(
                 'If one of `matcher_report_id` and `covs_configuration` is set also `covs_version` needs to be set.')
-        if (self.matcher_report_id is None and self.covs_configuration is None) and self.covs_version:
+        if (self.matcher_report_id is None and self.covs_configuration is None) and (
+                self.covs_version or self.pool_covs):
             raise ValueError(
-                'If `covs_version` is set either `matcher_report_id` or `covs_configuration` needs to be set.')
+                'If `covs_version` or `pool_covs` is set ' +
+                'either `matcher_report_id` or `covs_configuration` needs to be set.')
         if self.covs_configuration is not None and len(self.covs_configuration) == 0:
-            raise ValueError('`covs_configuration` has length zero and therefore won`t have any effect.\
-                             Please remove the parameter or set to None.')
+            raise ValueError('`covs_configuration` has length zero and therefore won`t have any effect. '
+                             'Please remove the parameter or set to None.')
+        return self
+
+    @pydantic.model_validator(mode="after")
+    def _only_one_covariate_definition(self) -> Self:
+        fields = [
+            'matcher_report_id',
+            'pool_covs'
+        ]
+
+        set_fields = [field for field in fields if getattr(self, field) is not None]
+
+        if len(set_fields) > 1:
+            raise ValueError(f"Only one of {', '.join(fields)} can be set. Found: {', '.join(set_fields)}")
+
         return self
 
     @pydantic.model_validator(mode="after")
@@ -270,7 +294,7 @@ class RankingDetails(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
     rank_position: ValidatedPositiveInt
-    score: float
+    score: Annotated[float, Field(allow_inf_nan=False)]
 
 
 class ForecastValue(BaseModel):
@@ -445,7 +469,7 @@ class ChangedValue(BaseModel):
     """
     time_stamp_utc: datetime
     changed_value: float
-    original_value: float
+    original_value: Optional[Annotated[float, Field(allow_inf_nan=False)]]
     change_reason: str
 
 
@@ -490,7 +514,7 @@ class TimeSeriesCharacteristics(BaseModel):
     outliers
         Details about detected outliers.
     missing_values
-         Details about missing values.
+        Details about missing values.
     num_trailing_zeros
         Number of trailing zero values
     """
@@ -553,7 +577,7 @@ class ForecastResult(BaseModel):
         matcher_results
             Results of a covariate matcher run and the corresponding input data.
 
-         Returns
+        Returns
         -------
         The forecast results with the models adjusted based on the matcher ranking.
         """
