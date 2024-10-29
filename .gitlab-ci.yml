@@ -80,18 +80,6 @@ sonarqube:
     - sonar-scanner -Dsonar.qualitygate.wait=true
   needs: [python_build]
 
-sonarqube:
-  extends: .defaults
-  stage: test
-  image:
-    name: sonarsource/sonar-scanner-cli
-    entrypoint: [""]
-  variables:
-    GIT_STRATEGY: fetch
-    GIT_DEPTH: 0
-  script:
-    - sonar-scanner -Dsonar.qualitygate.wait=true
-
 notebook execution (required):
   stage: manual
   extends: .defaults

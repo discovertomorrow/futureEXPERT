@@ -9,13 +9,13 @@ granularities = ['yearly', 'quarterly', 'monthly', 'weekly', 'daily', 'hourly', 
 
 def create_example_df(granularity: str) -> pd.DataFrame:
     freq_map = {
-        'yearly': 'Y',
-        'quarterly': 'Q',
-        'monthly': 'M',
+        'yearly': 'YS',
+        'quarterly': 'QS',
+        'monthly': 'MS',
         'weekly': 'W',
         'daily': 'D',
-        'hourly': 'H',
-        'halfhourly': '30T'
+        'hourly': 'h',
+        'halfhourly': '30min'
     }
     date_range = pd.date_range(start='2020-01-01', periods=20, freq=freq_map[granularity])
     rng = np.random.default_rng(12345)

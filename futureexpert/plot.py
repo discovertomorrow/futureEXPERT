@@ -128,13 +128,13 @@ def _fill_missing_values_for_plot(granularity: str,
     """
 
     granularity_to_pd_alias = {
-        'yearly': 'Y',
-        'quarterly': 'Q',
-        'monthly': 'M',
+        'yearly': 'YS',
+        'quarterly': 'QS',
+        'monthly': 'MS',
         'weekly': 'W',
         'daily': 'D',
-        'hourly': 'H',
-        'halfhourly': '30T'
+        'hourly': 'h',
+        'halfhourly': '30min'
     }
     full_date_range = pd.date_range(start=df['date'].min(),
                                     end=df['date'].max(),
