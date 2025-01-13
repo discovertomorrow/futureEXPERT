@@ -9,6 +9,7 @@ from enum import Enum
 from typing import Annotated, Any, Literal, Optional, Sequence, Union
 
 import numpy as np
+import pandas as pd
 import pydantic
 from pydantic import BaseModel, ConfigDict, Field, NonNegativeFloat
 from typing_extensions import NotRequired, Self, TypedDict
@@ -31,7 +32,8 @@ class PreprocessingConfig(BaseConfig):
     Parameters
     ----------
     remove_leading_zeros
-        If true, then leading zeros are removed from the time series before forecasting.
+        If true, then leading zeros are removed from the time series before forecasting. Is only applied
+        if the time series has at least 5 values, including missing values.
     use_season_detection
         If true, then the season length is determined from the data.
     seasonalities_to_test
@@ -48,7 +50,8 @@ class PreprocessingConfig(BaseConfig):
     detect_changepoints
         If true, then change points such as level shifts are identified.
     detect_quantization
-        If true, then a quantization algorithm is applied to the time series.
+        If true, a quantization algorithm is applied to the time series. Recognizes quantizations in the historic
+        time series data and, if one has been detected, applies it to the forecasts.
     """
 
     remove_leading_zeros: bool = False
@@ -89,7 +92,7 @@ class ForecastingConfig(BaseConfig):
         methods to use based on their backtesting performance.
     """
 
-    fc_horizon: ValidatedPositiveInt
+    fc_horizon: Annotated[ValidatedPositiveInt, pydantic.Field(ge=1, le=60)]
     lower_bound: Union[float, None] = None
     upper_bound: Union[float, None] = None
     confidence_level: float = 0.75
@@ -104,6 +107,18 @@ class ForecastingConfig(BaseConfig):
         )
 
 
+ForecastingMethods = Literal['AdaBoost', 'Aft4Sporadic', 'ARIMA', 'AutoEsCov', 'CART',
+                             'CatBoost', 'Croston', 'ES', 'ExtraTrees', 'Glmnet(l1_ratio=1.0)',
+                             'MA(granularity)', 'InterpolID', 'LightGBM', 'LinearRegression',
+                             'MedianAS', 'MedianPattern', 'MLP', 'MostCommonValue', 'MA(3)',
+                             'Naive', 'RandomForest', 'MA(season lag)', 'SVM', 'TBATS', 'Theta',
+                                      'TSB', 'XGBoost', 'ZeroForecast']
+
+AdditionalCovMethod = Literal['AdaBoost', 'ARIMA', 'CART', 'CatBoost', 'ExtraTrees',
+                              'Glmnet(l1_ratio=1.0)', 'LightGBM', 'LinearRegression',
+                              'MLP', 'RandomForest', 'SVM', 'XGBoost']
+
+
 class MethodSelectionConfig(BaseConfig):
     """Method selection configuration.
 
@@ -114,7 +129,7 @@ class MethodSelectionConfig(BaseConfig):
     shift_len
         Number of time points by which the test window is shifted between backtesting iterations.
     refit
-        If true, then models are re-fitted for each backtesting iteration.
+        If true, then models are refitted for each backtesting iteration.
     default_error_metric
         Error metric applied to the backtesting error for non-sporadic time series.
     sporadic_error_metric
@@ -124,17 +139,34 @@ class MethodSelectionConfig(BaseConfig):
     step_weights
         Mapping from forecast steps to weights associated with forecast errors for the given forecasting step.
         Only positive weights are allowed. Leave a forecast step out to assign a zero weight.
-        Used only for non-sporadic time series.
+        Used only for non-sporadic time series. If empty, all forecast steps are weighted equally.
+    additional_cov_method
+        Define up to one additional method that uses the defined covariates for creating forecasts. Will not be
+        calculated if deemed unfit by the preselection. If the parameter forecasting_methods
+        is defined, the additional cov method must appear in that list, too.
+    cov_combination
+        Create a forecast model for each individual covariate (single)
+        or a model using all covariates together (joint).
+    forecasting_methods
+        Define specific forecasting methods to be tested for generating forecasts.
+        Specifying fewer methods can significantly reduce the runtime of forecast creation.
+        If not specified, all available forecasting methods will be used by default.
+        Given methods are automatically preselected based on time series characteristics of your data.
+        If none of the given methods fits your data, a fallback set of forecasting methods will be used instead.
     """
 
-    number_iterations: ValidatedPositiveInt = PositiveInt(12)
+    number_iterations: Annotated[ValidatedPositiveInt, pydantic.Field(ge=1, le=24)] = PositiveInt(12)
     shift_len: ValidatedPositiveInt = PositiveInt(1)
     refit: bool = False
     default_error_metric: Literal['me', 'mpe', 'mse', 'mae', 'mase', 'mape', 'smape'] = 'mse'
     sporadic_error_metric: Literal['pis', 'sapis', 'acr', 'mar', 'msr'] = 'pis'
-    additional_accuracy_measures: list[Literal['me', 'mpe', 'mse', 'mae',
-                                               'mase', 'mape', 'smape', 'pis', 'sapis', 'acr', 'mar', 'msr']] = []
+    additional_accuracy_measures: list[Literal['me', 'mpe', 'mse', 'mae', 'mase', 'mape', 'smape', 'pis', 'sapis',
+                                               'acr', 'mar', 'msr']] = pydantic.Field(default_factory=list)
     step_weights: Optional[dict[ValidatedPositiveInt, pydantic.PositiveFloat]] = None
+
+    additional_cov_method: Optional[AdditionalCovMethod] = None
+    cov_combination: Literal['single', 'joint'] = 'single'
+    forecasting_methods: Sequence[ForecastingMethods] = pydantic.Field(default_factory=list)
 
 
 class PipelineKwargs(TypedDict):
@@ -150,8 +182,8 @@ class ReportConfig(BaseConfig):
     ----------
     matcher_report_id
         Report ID of the covariate matcher.
-    covs_version
-        Version of the covariates.
+    covs_versions
+        List of versions of the covariates.
     covs_configuration
         Mapping from actuals and covariates. Use for custom covariate or adjusted matcher results.
         If the matcher results should be used without changes use `matcher_report_id` instead.
@@ -180,13 +212,12 @@ class ReportConfig(BaseConfig):
     """
 
     matcher_report_id: Optional[int] = None
-    covs_version: Optional[str] = None
+    covs_versions: list[str] = Field(default_factory=list)
     covs_configuration: Optional[list[ActualsCovsConfiguration]] = None
     title: str
     actuals_filter: dict[str, Any] = Field(default_factory=dict)
 
-    max_ts_len: Annotated[
-        Optional[int], pydantic.Field(ge=1, le=1500)] = None
+    max_ts_len: Optional[int] = None
 
     preprocessing: PreprocessingConfig = PreprocessingConfig()
     forecasting: ForecastingConfig
@@ -198,13 +229,13 @@ class ReportConfig(BaseConfig):
     @pydantic.model_validator(mode="after")
     def _correctness_of_cov_configurations(self) -> Self:
         if (self.matcher_report_id or self.covs_configuration) and (
-                self.covs_version is None and self.pool_covs is None):
+                self.covs_versions is None and self.pool_covs is None):
             raise ValueError(
-                'If one of `matcher_report_id` and `covs_configuration` is set also `covs_version` needs to be set.')
+                'If one of `matcher_report_id` and `covs_configuration` is set also `covs_versions` needs to be set.')
         if (self.matcher_report_id is None and self.covs_configuration is None) and (
-                self.covs_version or self.pool_covs):
+                self.covs_versions or self.pool_covs):
             raise ValueError(
-                'If `covs_version` or `pool_covs` is set ' +
+                'If `covs_versions` or `pool_covs` is set ' +
                 'either `matcher_report_id` or `covs_configuration` needs to be set.')
         if self.covs_configuration is not None and len(self.covs_configuration) == 0:
             raise ValueError('`covs_configuration` has length zero and therefore won`t have any effect. '
@@ -236,29 +267,10 @@ class ReportConfig(BaseConfig):
 
     @pydantic.model_validator(mode="after")
     def _valid_covs_version(self) -> Self:
-        if self.covs_version is not None:
-            if re.match('^[0-9a-f]{24}$', self.covs_version) is None:
-                raise ValueError('Given covs_version is not a valid ObjectId.')
-
+        for covs_version in self.covs_versions:
+            if re.match('^[0-9a-f]{24}$', covs_version) is None:
+                raise ValueError(f'Given covs_version "{covs_version}" is not a valid ObjectId.')
         return self
-
-
-MAX_TS_LEN_CONFIG = {
-    'halfhourly': {'default_len': 2*24*7,
-                   'max_allowed_len': 1500},
-    'hourly': {'default_len': 24*7*3,
-               'max_allowed_len': 1500},
-    'daily': {'default_len': 365,
-              'max_allowed_len': 365*3},
-    'weekly': {'default_len': 52*3,
-               'max_allowed_len': 52*6},
-    'monthly': {'default_len': 12*6,
-                'max_allowed_len': 12*10},
-    'quarterly': {'default_len': 4*12,
-                  'max_allowed_len': 1500},
-    'yearly': {'default_len': 1500,
-               'max_allowed_len': 1500},
-}
 
 
 class ModelStatus(str, Enum):
@@ -495,12 +507,14 @@ class TimeSeriesCharacteristics(BaseModel):
 
     Parameters
     ----------
-    season_lag
-        Season lag of the time series.
+    season_length
+        Season length of the time series.
     ts_class
         The time series class.
     trend
         Details about the trend.
+    recent_trend
+        Details about the recent_trend. Is only detected if the time series has at least 10 values.
     share_of_zeros
         Share of the series values that are zero.
     mean_inter_demand_interval
@@ -519,7 +533,7 @@ class TimeSeriesCharacteristics(BaseModel):
         Number of trailing zero values
     """
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    season_lag: Optional[ValidatedPositiveInt] = None
+    season_length: Optional[Sequence[ValidatedPositiveInt]] = Field(alias="season_lag", default=None)
     ts_class: Optional[Annotated[str, Field(min_length=1)]] = None
     trend: Optional[Trend] = None
     recent_trend: Optional[Trend] = None
@@ -637,3 +651,90 @@ def combine_forecast_ranking_with_matcher_ranking(forecast_results: list[Forecas
         new_results.append(fc_res_new)
 
     return new_results
+
+
+def export_result_overview_to_pandas(results: list[ForecastResult]) -> pd.DataFrame:
+    """Extracts various time series insights, metadata, and other information from the forecast results
+    and compiles them into an overview table. Contains model information about the best model.
+
+    Parameters:
+    -----------
+    results
+        The forecast results as provided by get_fc_results.
+
+    Returns:
+    --------
+    A DataFrame where each row represents the insights for one time series.
+    """
+
+    overview_list = []
+    for ts_result in results:
+        [best_model] = [model for model in ts_result.models
+                        if model.model_selection.ranking is not None
+                        and model.model_selection.ranking.rank_position == 1]
+        overview_for_ts: dict[str, Any] = {"name": ts_result.input.actuals.name}
+        if ts_result.input.actuals.grouping:
+            overview_for_ts.update(ts_result.input.actuals.grouping)
+        overview_for_ts.update({
+            'model': best_model.model_name,
+            'cov': best_model.covariates[0].name if best_model.covariates else np.nan,
+            'cov_lag': best_model.covariates[0].lag if best_model.covariates else np.nan,
+            'season_length': ts_result.ts_characteristics.season_length,
+            'ts_class': ts_result.ts_characteristics.ts_class,
+            'quantization': (ts_result.ts_characteristics.quantization
+                             if ts_result.ts_characteristics.quantization else np.nan),
+            'trend': ts_result.ts_characteristics.trend.is_trending if ts_result.ts_characteristics.trend else np.nan,
+            'recent_trend': (ts_result.ts_characteristics.recent_trend.is_trending
+                             if ts_result.ts_characteristics.recent_trend else np.nan),
+            'missing_values_count': (len(ts_result.ts_characteristics.missing_values)
+                                     if ts_result.ts_characteristics.missing_values else np.nan),
+            'outliers_count': (len(ts_result.ts_characteristics.outliers)
+                               if ts_result.ts_characteristics.outliers else np.nan)
+        })
+        overview_list.append(overview_for_ts)
+    return pd.DataFrame(overview_list)
+
+
+def export_forecasts_to_pandas(results: list[ForecastResult]) -> pd.DataFrame:
+    """Export forecasts of the best model including lower and upper limits of prediction interval.
+
+    Parameters:
+    -----------
+    results
+        The forecast results as provided by get_fc_results.
+
+    Returns:
+    --------
+    A DataFrame where each row represents the forecast information of a single timeseries of a certain date.
+    """
+    forecast_list = []
+    for ts_result in results:
+        [best_model] = [model for model in ts_result.models
+                        if model.model_selection.ranking is not None
+                        and model.model_selection.ranking.rank_position == 1]
+        for fc in best_model.forecasts:
+            ts_forecast = {'name': ts_result.input.actuals.name}
+            ts_forecast.update(fc)
+            forecast_list.append(ts_forecast)
+    return pd.DataFrame(forecast_list)
+
+
+def export_forecasts_with_overview_to_pandas(results: list[ForecastResult]) -> pd.DataFrame:
+    """Export forecasts with metadata from a list of ForecastResult objects to a pandas DataFrame.
+
+    Parameters:
+    -----------
+    results
+        The forecast results as provided by get_fc_results.
+
+    Returns:
+    --------
+    A DataFrame where each row represents the forecast information of a single time series
+    for a certain date, combined with the metadata.
+    """
+
+    metadata_df = export_result_overview_to_pandas(results)
+    forecasts_df = export_forecasts_to_pandas(results)
+    merged_df = pd.merge(forecasts_df, metadata_df, on='name', how='outer', validate="many_to_one")
+
+    return merged_df

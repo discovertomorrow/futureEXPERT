@@ -7,7 +7,7 @@ import os
 import threading
 import time
 from dataclasses import dataclass
-from typing import Any, Callable, Literal, Optional, Tuple, Union
+from typing import Any, Callable, Literal, Optional, Tuple, Union, cast
 
 import httpx
 import tenacity
@@ -22,9 +22,9 @@ class FutureConfig:
     auth_client_id: str = 'frontend'
 
 
-DEVELOPMENT_CONFIG = FutureConfig(api_url='https://future-dev.prognostica.de/api/v1/', auth_realm='development')
-STAGING_CONFIG = FutureConfig(api_url='https://future-staging.prognostica.de/api/v1/', auth_realm='development')
-PRODUCTION_CONFIG = FutureConfig(api_url='https://future.prognostica.de/api/v1/', auth_realm='future')
+DEVELOPMENT_CONFIG = FutureConfig(api_url='https://api.dev.future-forecasting.de/api/v1/', auth_realm='development')
+STAGING_CONFIG = FutureConfig(api_url='https://api.staging.future-forecasting.de/api/v1/', auth_realm='development')
+PRODUCTION_CONFIG = FutureConfig(api_url='https://api.future-forecasting.de/api/v1/', auth_realm='future')
 
 FUTURE_CONFIGS = {'production': PRODUCTION_CONFIG,
                   'staging': STAGING_CONFIG,
@@ -53,13 +53,13 @@ def urljoin(base: str, url: str) -> str:
     Parameters
     ----------
     base
-        Base URL to be used. May include a path, e.g. https://future.prognostica.de/api/v1/
+        Base URL to be used. May include a path, e.g. https://api.future-forecasting.de/api/v1/
     url
         Relative URL path to be added to the base URL, e.g. /groups/customer1/userinputs
 
     Returns
     -------
-    The joined URL, e.g. https://future.prognostica.de/api/v1/groups/customer1/userinputs
+    The joined URL, e.g. https://api.future-forecasting.de/api/v1/groups/customer1/userinputs
     """
     return f"{base.strip('/')}/{url.strip('/')}"
 
@@ -191,6 +191,25 @@ class FutureApiClient:
         """Gets the groups of the current user."""
         return get_json(self._api_get_request('groups'))
 
+    def get_group_reports(self, group_id: str, skip: int = 0, limit: int = 100) -> Any:
+        """Gets the reports for the given group. The reports are ordered from newest to oldest.
+
+        Parameters
+        ----------
+        group_id
+            The ID of the group.
+        skip
+            The number reports to skip before returning.
+        limit
+            The maximum number of reports to return. By default 100.
+
+        Returns
+        -------
+            A list of reports in the given group from newest to oldest.
+        """
+        params = {'skip': skip, 'limit': limit}
+        return get_json(self._api_get_request(f'groups/{group_id}/reports', params=params))
+
     def get_user_inputs_for_group(self, group_id: str) -> Any:
         """Gets the user inputs of the given group.
 
@@ -247,6 +266,23 @@ class FutureApiClient:
         """
         return get_json(self._api_get_request(f'groups/{group_id}/ts/versions/{version_id}'))
 
+    def get_report_type(self, group_id: str, report_id: int) -> str:
+        """Gets the report type of the given report ID.
+
+        Parameters
+        ----------
+        group_id
+            The ID of the relevant group.
+        report_id
+            ID of the Report
+
+        Returns
+        -------
+            String representation of the type of one report.
+        """
+        raw_result = get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}'))
+        return cast(str, raw_result['result_type'])
+
     def get_report_status(self, group_id: str, report_id: int, include_error_reason: bool) -> Any:
         """Gets the report status of the given report ID.
 
@@ -289,7 +325,7 @@ class FutureApiClient:
     def get_pool_cov_overview(self,
                               granularity: Optional[str] = None,
                               search: Optional[str] = None) -> Any:
-        """Gets an overview of all available covariates on the futurePOOL based on the defined filters.
+        """Gets an overview of all covariates available on POOL according to the given filters.
 
         Parameters
         ----------

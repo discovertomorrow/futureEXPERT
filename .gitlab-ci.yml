@@ -91,7 +91,7 @@ notebook execution (required):
   script:
     - sed -i "s/'TBD'/'66ea6e1d38cb720ea1a2e44a'/g" notebooks/getting_started.ipynb
     - sed -i "s/'TBD'/'66ea6e1d38cb720ea1a2e44a'/g" notebooks/checkin_configuration_options.ipynb
-    - for notebook in `find . -name '*.ipynb'`; do jupyter nbconvert --to notebook --execute --inplace $notebook; done
+    - for notebook in $(./generate-notebook-list.sh); do jupyter nbconvert --to notebook --execute --inplace "$notebook"; done
   needs: [docker_build]
   rules:
     - if: $CI_COMMIT_BRANCH  == "dev"
@@ -128,25 +128,30 @@ python_deploy:
 
 docker_build:
   stage: build
-  tags:
-    - shell
-    - cloud
   script:
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
     - docker build -t ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID} .
     - docker push ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
+    - syft ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID} -o cyclonedx-json=sbom.json -o syft-table
+    - grype sbom:sbom.json
+  tags:
+    - shell
+    - cloud
+  artifacts:
+    paths:
+      - sbom.json
   needs: [python_build]
 
 docker_deploy:
   stage: deploy
-  tags:
-    - shell
-    - cloud
   script:
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
     - docker pull ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
     - docker tag ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID} ${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_NAME}
     - docker push ${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_NAME}
+  tags:
+    - shell
+    - cloud
 
 e2e-deploy-dev:
   stage: deploy

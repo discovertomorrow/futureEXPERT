@@ -9,7 +9,7 @@ from typing_extensions import Self
 
 
 class PoolCovOverview():
-    """Contains all functionality to inspect, view and process the futurePOOL covariates."""
+    """Contains all functionality to inspect, view and process the POOL covariates."""
 
     def __init__(self, overview_json: dict[Any, Any]) -> None:
         """Initializer.
@@ -93,7 +93,7 @@ class PoolCovDefinition(BaseModel):
     Parameters
     ----------
     pool_cov_id
-        ID of a the pool_cov as it is found on the futurePOOL.
+        ID of a the pool_cov as it is found on POOL.
     version_id
         ID of one specific version. If not defined, the newest version
         of the pool_cov will be returned.

@@ -1,4 +1,4 @@
-"""Contains the models with the configuration for futureCHECK-IN."""
+"""Contains the models with the configuration for CHECK-IN."""
 from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict
@@ -86,7 +86,7 @@ class GroupColumn(Column):
 
 
 class DataDefinition(BaseConfig):
-    """Model for the input parameter needed for the first futureCHECK-IN step.
+    """Model for the input parameter needed for the first CHECK-IN step.
 
     Parameters
     ----------

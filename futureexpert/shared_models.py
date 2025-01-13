@@ -20,6 +20,16 @@ ValidatedPositiveInt = Annotated[PositiveInt,
                                  PlainSerializer(lambda x: int(x), return_type=int),
                                  WithJsonSchema({'type': 'int', 'minimum': 1})]
 
+MAX_TS_LEN_CONFIG = {
+    'halfhourly': 302,
+    'hourly': 252,
+    'daily': 546,
+    'weekly': 326,
+    'monthly': 86,
+    'quarterly': 38,
+    'yearly': 26,
+}
+
 
 class BaseConfig(BaseModel):
     """Base configuration that is used for most models."""

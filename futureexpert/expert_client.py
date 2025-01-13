@@ -13,7 +13,7 @@ import pandas as pd
 import pydantic
 
 from futureexpert._future_api import FutureApiClient
-from futureexpert._helpers import calculate_max_ts_len, snake_to_camel
+from futureexpert._helpers import calculate_max_ts_len, remove_arima_if_not_allowed, snake_to_camel
 from futureexpert.checkin import CheckInResult, DataDefinition, FileSpecification, TsCreationConfig
 from futureexpert.forecast import ForecastResult, ReportConfig
 from futureexpert.matcher import MatcherConfig, MatcherResult
@@ -22,6 +22,12 @@ from futureexpert.shared_models import TimeSeries
 
 pp = pprint.PrettyPrinter(indent=4)
 logger = logging.getLogger(__name__)
+
+
+class MissingCredentialsError(RuntimeError):
+    def __init__(self, missing_credential_type: str) -> None:
+        super().__init__(f'Please enter {missing_credential_type} either when ' +
+                         'initializing the expert client or in the the .env file!')
 
 
 class ReportStatusProgress(pydantic.BaseModel):
@@ -73,6 +79,11 @@ class ReportIdentifier(pydantic.BaseModel):
     settings_id: Optional[int]
 
 
+class ReportSummary(pydantic.BaseModel):
+    report_id: int
+    description: str
+
+
 class ExpertClient:
     """FutureEXPERT client."""
 
@@ -98,8 +109,14 @@ class ExpertClient:
             Optionally the _future_ environment to be used, defaults to production environment.
             If not provided, the environment is read from the environment variable FUTURE_ENVIRONMENT.
         """
-        future_user = user or os.environ['FUTURE_USER']
-        future_password = password or os.environ['FUTURE_PW']
+        try:
+            future_user = user or os.environ['FUTURE_USER']
+        except KeyError:
+            raise MissingCredentialsError('username') from None
+        try:
+            future_password = password or os.environ['FUTURE_PW']
+        except KeyError:
+            raise MissingCredentialsError('password') from None
         future_group = group or os.getenv('FUTURE_GROUP')
         future_env = cast(Literal['production', 'staging', 'development'],
                           environment or os.getenv('FUTURE_ENVIRONMENT') or 'production')
@@ -137,13 +154,16 @@ class ExpertClient:
         verbose_text = f' for group {self.group}' if verbose else ''
         logger.info(f'Successfully logged in{verbose_text}.')
 
-    def upload_data(self, source: Union[pd.DataFrame, str]) -> Any:
+    def upload_data(self, source: Union[pd.DataFrame, str], file_specification: Optional[FileSpecification] = None) -> Any:
         """Uploads the given raw data for further processing.
 
         Parameters
         ----------
         source
             Path to a CSV file or a pandas data frame.
+        file_specification
+            If source is a pandas data frame, it will be uploaded as a csv using the specified parameters or the default ones.
+            The parameter has no effect if source is a path to a CSV file.
 
         Returns
         -------
@@ -151,9 +171,10 @@ class ExpertClient:
         """
         df_file = None
         if isinstance(source, pd.DataFrame):
-            file_specs = FileSpecification()
-            csv = source.to_csv(index=False, sep=file_specs.delimiter,
-                                decimal=file_specs.decimal, encoding='utf-8-sig')
+            if not file_specification:
+                file_specification = FileSpecification()
+            csv = source.to_csv(index=False, sep=file_specification.delimiter,
+                                decimal=file_specification.decimal, encoding='utf-8-sig')
             time_stamp = datetime.now().strftime('%Y-%m-%d-%H%M%S')
             df_file = (f'expert-{time_stamp}.csv', csv)
             path = None
@@ -189,7 +210,7 @@ class ExpertClient:
         payload = self._create_checkin_payload_1(
             user_input_id, file_uuid, data_definition, file_specification)
 
-        logger.info('Started data definition using futureCHECK-IN...')
+        logger.info('Started data definition using CHECK-IN...')
         result = self.client.execute_action(group_id=self.group,
                                             core_id='checkin-preprocessing',
                                             payload=payload,
@@ -197,7 +218,7 @@ class ExpertClient:
 
         error_message = result['error']
         if error_message != '':
-            raise RuntimeError(f'Error during the execution of the futureCHECK-IN: {error_message}')
+            raise RuntimeError(f'Error during the execution of CHECK-IN: {error_message}')
 
         logger.info('Finished data definition.')
         return result
@@ -209,7 +230,7 @@ class ExpertClient:
                            config_ts_creation: Optional[TsCreationConfig] = None,
                            config_checkin: Optional[str] = None,
                            file_specification: FileSpecification = FileSpecification()) -> Any:
-        """Last step of the futureCHECK-IN process which creates the time series.
+        """Last step of the CHECK-IN process which creates the time series.
 
         Aggregates the data and saves them to the database.
 
@@ -226,9 +247,9 @@ class ExpertClient:
         config_ts_creation
             Configuration for the time series creation.
         config_checkin
-            Path to the JSON file with the futureCHECK-IN configuration. `config_ts_creation` and `config_checkin`
+            Path to the JSON file with the CHECK-IN configuration. `config_ts_creation` and `config_checkin`
             cannot be set simultaneously. The configuration may be obtained from the last step of
-            futureCHECK-IN using the _future_ frontend (future.prognostica.de).
+            CHECK-IN using the _future_ frontend (now.future-forecasting.de).
         """
         logger.info('Transforming input data...')
 
@@ -250,14 +271,14 @@ class ExpertClient:
             payload = self._build_payload_from_ui_config(
                 user_input_id=user_input_id, file_uuid=file_uuid, path=config_checkin)
 
-        logger.info('Creating time series using futureCHECK-IN...')
+        logger.info('Creating time series using CHECK-IN...')
         result = self.client.execute_action(group_id=self.group,
                                             core_id='checkin-preprocessing',
                                             payload=payload,
                                             interval_status_check_in_seconds=2)
         error_message = result['error']
         if error_message != '':
-            raise RuntimeError(f'Error during the execution of the futureCHECK-IN: {error_message}')
+            raise RuntimeError(f'Error during the execution of CHECK-IN: {error_message}')
 
         logger.info('Finished time series creation.')
 
@@ -304,7 +325,7 @@ class ExpertClient:
     def get_pool_cov_overview(self,
                               granularity: Optional[str] = None,
                               search: Optional[str] = None) -> PoolCovOverview:
-        """Gets an overview of all available covariates on the futurePOOL based on the defined filters.
+        """Gets an overview of all covariates available on POOL according to the given filters.
 
         Parameters
         ----------
@@ -338,9 +359,9 @@ class ExpertClient:
         config_ts_creation
             Defines filter and aggreagtion level of the time series.
         config_checkin
-            Path to the JSON file with the futureCHECK-IN configuration. `config_ts_creation` and `config_checkin`
+            Path to the JSON file with the CHECK-IN configuration. `config_ts_creation` and `config_checkin`
             cannot be set simultaneously. The configuration may be obtained from the last step of
-            futureCHECK-IN using the future frontend (future.prognostica.de).
+            CHECK-IN using the future frontend (now.future-forecasting.de).
         file_specification
             Needed if a CSV is used with e.g. German format.
 
@@ -348,7 +369,7 @@ class ExpertClient:
         -------
         Id of the time series version. Used to identifiy the time series and the values of the time series.
         """
-        upload_feedback = self.upload_data(source=raw_data_source)
+        upload_feedback = self.upload_data(source=raw_data_source, file_specification=file_specification)
 
         user_input_id = upload_feedback['uuid']
         file_id = upload_feedback['files'][0]['uuid']
@@ -368,7 +389,7 @@ class ExpertClient:
                                   file_uuid: str,
                                   data_definition: DataDefinition,
                                   file_specification: FileSpecification = FileSpecification()) -> Any:
-        """Creates the payload for the futureCHECK-IN stage prepareDataset.
+        """Creates the payload for the CHECK-IN stage prepareDataset.
 
         Parameters
         ----------
@@ -402,7 +423,7 @@ class ExpertClient:
                 }}
 
     def _build_payload_from_ui_config(self, user_input_id: str, file_uuid: str, path: str) -> Any:
-        """Creates the payload for the futureCHECK-IN stage createDataset.
+        """Creates the payload for the CHECK-IN stage createDataset.
 
         Parameters
         ----------
@@ -426,7 +447,7 @@ class ExpertClient:
                 'payload': json_data}
 
     def _create_checkin_payload_2(self, payload: dict[str, Any], config: TsCreationConfig) -> Any:
-        """Creates the payload for the futureCHECK-IN stage createDataset.
+        """Creates the payload for the CHECK-IN stage createDataset.
 
         Parameters
         ----------
@@ -475,8 +496,8 @@ class ExpertClient:
         config_dict['backtesting'] = config_dict['method_selection']
 
         if config.pool_covs is not None:
-            covs_version = self.check_in_pool_covs(requested_pool_covs=config.pool_covs)
-            config_dict['covs_version'] = covs_version.version_id
+            pool_covs_checkin_result = self.check_in_pool_covs(requested_pool_covs=config.pool_covs)
+            cast(list[str], config_dict['covs_versions']).append(pool_covs_checkin_result.version_id)
         config_dict.pop('pool_covs')
 
         config_dict.pop('title')
@@ -506,19 +527,64 @@ class ExpertClient:
         version_data = self.client.get_ts_version(self.group, version)
         config.max_ts_len = calculate_max_ts_len(max_ts_len=config.max_ts_len,
                                                  granularity=version_data['customer_specific']['granularity'])
+
+        if config.method_selection:
+            config.method_selection.forecasting_methods = remove_arima_if_not_allowed(
+                granularity=version_data['customer_specific']['granularity'],
+                methods=config.method_selection.forecasting_methods)
+
+            if version_data['customer_specific']['granularity'] in ['weekly', 'daily', 'hourly', 'halfhourly'] \
+            and 'ARIMA' == config.method_selection.additional_cov_method:
+                raise ValueError('ARIMA is not supported for granularities below monthly.')
+
         logger.info('Preparing data for forecast...')
 
         if not self.is_analyst and (config.db_name is not None or config.priority is not None):
             raise ValueError('Only users with the role analyst are allowed to use the parameters db_name and priority.')
         payload = self._create_forecast_payload(version, config)
         logger.info('Finished data preparation for forecast.')
-        logger.info('Started creating forecasting report with futureFORECAST...')
+        logger.info('Started creating forecasting report with FORECAST...')
         result = self.client.execute_action(group_id=self.group,
                                             core_id=self.forecast_core_id,
                                             payload=payload,
                                             interval_status_check_in_seconds=2)
         logger.info('Finished report creation. Forecasts are running...')
         return ReportIdentifier.model_validate(result)
+
+    def get_report_type(self, report_identifier: int | ReportIdentifier) -> str:
+        """Gets the available reports, ordered from newest to oldest.
+
+        Parameters
+        ----------
+        skip
+            The number of initial elements of the report list to skip
+        limit
+            The limit on the length of the report list
+
+        Returns
+        -------
+            String representation of the type of one report.
+        """
+        report_id = report_identifier.report_id if isinstance(
+            report_identifier, ReportIdentifier) else report_identifier
+        return self.client.get_report_type(group_id=self.group, report_id=report_id)
+
+    def get_reports(self, skip: int = 0, limit: int = 100) -> list[ReportSummary]:
+        """Gets the available reports, ordered from newest to oldest.
+
+        Parameters
+        ----------
+        skip
+            The number of initial elements of the report list to skip
+        limit
+            The limit on the length of the report list
+
+        Returns
+        -------
+        The available reports from newest to oldest.
+        """
+        group_reports = self.client.get_group_reports(group_id=self.group, skip=skip, limit=limit)
+        return [ReportSummary.model_validate(report) for report in group_reports]
 
     def get_report_status(self, id: Union[ReportIdentifier, int], include_error_reason: bool = True) -> ReportStatus:
         """Gets the current status of a forecast or matcher report.
@@ -571,6 +637,10 @@ class ExpertClient:
         if include_k_best_models < 1:
             raise ValueError('At least one model is needed.')
 
+        if self.get_report_type(report_identifier=id) != 'MongoForecastingResultSink':
+            raise ValueError('The given report ID does not belong to a FORECAST result. ' +
+                             'Please input a different ID or use get_matcher_results().')
+
         report_id = id.report_id if isinstance(id, ReportIdentifier) else id
 
         results = self.client.get_fc_results(group_id=self.group,
@@ -588,6 +658,10 @@ class ExpertClient:
         id
             Report identifier or plain report ID.
         """
+
+        if self.get_report_type(report_identifier=id) != 'CovariateSelection':
+            raise ValueError('The given report ID does not belong to a MATCHER result. ' +
+                             'Please input a different ID or use get_fc_results().')
 
         report_id = id.report_id if isinstance(id, ReportIdentifier) else id
 
@@ -616,9 +690,9 @@ class ExpertClient:
         config_ts_creation
             Defines filter and aggreagtion level of the time series.
         config_checkin
-            Path to the JSON file with the futureCHECK-IN configuration. `config_ts_creation` and `config_checkin`
+            Path to the JSON file with the CHECK-IN configuration. `config_ts_creation` and `config_checkin`
             cannot be set simultaneously. The configuration may be obtained from the last step of
-            futureCHECK-IN using the future frontend (future.prognostica.de).
+            CHECK-IN using the future frontend (now.future-forecasting.de).
         file_specification
             Needed if a CSV is used with e.g. German format.
 
@@ -626,7 +700,7 @@ class ExpertClient:
         -------
         The identifier of the forecasting report.
         """
-        upload_feedback = self.upload_data(source=raw_data_source)
+        upload_feedback = self.upload_data(source=raw_data_source, file_specification=file_specification)
 
         user_input_id = upload_feedback['uuid']
         file_id = upload_feedback['files'][0]['uuid']
@@ -656,6 +730,10 @@ class ExpertClient:
         The identifier of the covariate matcher report.
         """
 
+        version_data = self.client.get_ts_version(self.group, config.actuals_version)
+        config.max_ts_len = calculate_max_ts_len(max_ts_len=config.max_ts_len,
+                                                 granularity=version_data['customer_specific']['granularity'])
+
         if not self.is_analyst and config.db_name is not None:
             raise ValueError('Only users with the role analyst are allowed to use the parameter db_name.')
 
@@ -670,10 +748,10 @@ class ExpertClient:
 
     def _create_matcher_payload(self, config: MatcherConfig) -> Any:
         """Converts the MatcherConfig into the payload needed for the cov-selection core."""
-
+        all_covs_versions = config.covs_versions
         if config.pool_covs is not None:
-            covs_version = self.check_in_pool_covs(requested_pool_covs=config.pool_covs)
-            config.covs_version = covs_version.version_id
+            pool_covs_checkin_result = self.check_in_pool_covs(requested_pool_covs=config.pool_covs)
+            all_covs_versions.append(pool_covs_checkin_result.version_id)
 
         config_dict: dict[str, Any] = {
             'report_description': config.title,
@@ -681,12 +759,13 @@ class ExpertClient:
             'data_config': {
                 'actuals_version': config.actuals_version,
                 'actuals_filter': config.actuals_filter,
-                'covs_version': config.covs_version,
+                'covs_versions': all_covs_versions,
                 'covs_filter': config.covs_filter,
             },
             "compute_config": {
                 "evaluation_start_date": config.evaluation_start_date,
                 "evaluation_end_date": config.evaluation_end_date,
+                'max_ts_len': config.max_ts_len,
                 "base_report_id": None,
                 "base_report_requested_run_status": None,
                 "report_update_strategy": "KEEP_OWN_RUNS",
@@ -696,10 +775,8 @@ class ExpertClient:
                     'cov_name_suffix': '',
                 },
                 "preselection": {
-                    "min_num_actuals_obs": 78,
                     "num_obs_short_term_class": 36,
                     "max_publication_lag": config.max_publication_lag,
-                    "min_num_cov_obs": 96
                 },
                 "postselection": {
                     "num_obs_short_term_correlation": 60,
@@ -709,12 +786,12 @@ class ExpertClient:
                     "protected_selections_queries": [],
                     "protected_selections_concatenation_operator": "&"
                 },
-                "lighthouse_config": {
-                    "enable_leading_covariate_selection": config.enable_leading_covariate_selection,
-                    "lag_selection_fixed_season_length": config.lag_selection_fixed_season_length,
-                    "lag_selection_fixed_lags": config.lag_selection_fixed_lags,
-                    "lag_selection_min_lag": config.lag_selection_min_lag,
-                    "lag_selection_max_lag": config.lag_selection_max_lag
+                "enable_leading_covariate_selection": config.enable_leading_covariate_selection,
+                "fixed_season_length": config.fixed_season_length,
+                "lag_selection": {
+                    "fixed_lags": config.lag_selection.fixed_lags,
+                    "min_lag": config.lag_selection.min_lag,
+                    "max_lag": config.lag_selection.max_lag,
                 }
             }
         }

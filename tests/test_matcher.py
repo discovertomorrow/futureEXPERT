@@ -1,12 +1,12 @@
 import pytest
 from pydantic import ValidationError
 
-from futureexpert import ExpertClient, MatcherConfig
+from futureexpert import ExpertClient, LagSelectionConfig, MatcherConfig
 
 
 def test_create_matcher_payload___given_default_configuration___returns_start_and_end_dates_with_none() -> None:
     # Arrange
-    config = MatcherConfig(title="Test", actuals_version="89sadhkasgdsadffff", covs_version="89sadhkasgdsadffff")
+    config = MatcherConfig(title="Test", actuals_version="89sadhkasgdsadffff", covs_versions=["89sadhkasgdsadffff"])
     client = ExpertClient.from_dotenv()
 
     # Act
@@ -19,8 +19,10 @@ def test_create_matcher_payload___given_default_configuration___returns_start_an
 
 def test_create_matcher_payload___given_min_and_max_lag___returns_without_error() -> None:
     # Arrange
-    config = MatcherConfig(title="Test", actuals_version="89sadhkasgdsadffff", covs_version="89sadhkasgdsadffff",
-                           lag_selection_min_lag=2, lag_selection_max_lag=8)
+    config = MatcherConfig(title="Test",
+                           actuals_version="89sadhkasgdsadffff",
+                           covs_versions=["89sadhkasgdsadffff"],
+                           lag_selection=LagSelectionConfig(min_lag=2, max_lag=8))
     client = ExpertClient()
 
     # Act
@@ -42,7 +44,7 @@ def test_create_matcher_payload___given_min_and_max_lag___returns_without_error(
 def test_create_matcher_payload___given_valid_post_selection_parameters___returns_without_error(query: list[str]) -> None:
 
     # Arrange
-    config = MatcherConfig(title="Test", actuals_version="89sadhkasgdsadffff", covs_version="89sadhkasgdsadffff",
+    config = MatcherConfig(title="Test", actuals_version="89sadhkasgdsadffff", covs_versions=["89sadhkasgdsadffff"],
                            post_selection_queries=query)
 
     # Assert
@@ -59,7 +61,7 @@ def test_create_matcher_payload___given_incorrect_post_selection_parameters___ra
 
     # Arrange
     with pytest.raises(ValidationError) as exc_info:
-        MatcherConfig(title="Test", actuals_version="89sadhkasgdsadffff", covs_version="89sadhkasgdsadffff",
+        MatcherConfig(title="Test", actuals_version="89sadhkasgdsadffff", covs_versions=["]89sadhkasgdsadffff"],
                       post_selection_queries=invalid_query)
 
     # Assert
@@ -74,7 +76,7 @@ def test_create_matcher_payload___given_mixed_post_selection_parameters___raises
 
     # Arrange
     with pytest.raises(ValidationError) as exc_info:
-        MatcherConfig(title="Test", actuals_version="89sadhkasgdsadffff", covs_version="89sadhkasgdsadffff",
+        MatcherConfig(title="Test", actuals_version="89sadhkasgdsadffff", covs_versions=["89sadhkasgdsadffff"],
                       post_selection_queries=mixed_query)
 
     # Assert

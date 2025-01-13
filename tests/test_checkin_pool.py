@@ -55,6 +55,7 @@ def test_query___get_valid_query___creates_expected_result() -> None:
     assert len(queried_overview.detailed_pool_cov_information.index) >= 1
     assert queried_overview.detailed_pool_cov_information.name.str.contains('ferien').all()
 
+
 def test_query___rerun_valid_query___creates_expected_result() -> None:
     # Arrange
     client = ExpertClient.from_dotenv()

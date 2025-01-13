@@ -12,12 +12,22 @@ EXIT_STATUS=0
 # Execute the command
 sed -i "s/'TBD'/'${VERSION_ID}'/g" notebooks/getting_started.ipynb
 sed -i "s/'TBD'/'${VERSION_ID}'/g" notebooks/checkin_configuration_options.ipynb
-for notebook in $(find notebooks -name '*.ipynb'); do
-  python3 -m nbconvert --to notebook --execute --inplace "$notebook" 2>&1 | tee output.log
-  COMMAND_EXIT_CODE=${PIPESTATUS[0]}
-  if [ ${COMMAND_EXIT_CODE} -ne 0 ]; then
-    EXIT_STATUS=1
-    echo "Failed to execute $notebook:\n$(tail -n2 output.log | head -n1)" >> errors.log
+
+# Get the list of notebooks to execute
+notebooks=$(./generate-notebook-list.sh)
+
+# Execute all notebooks in order (replace with echo for testing)
+for notebook in $notebooks; do
+  if [[ -f "$notebook" ]]; then
+    echo "Executing notebook $notebook ..."
+    python3 -m nbconvert --to notebook --execute --inplace "$notebook" 2>&1 | tee output.log
+    COMMAND_EXIT_CODE=${PIPESTATUS[0]}
+    if [ ${COMMAND_EXIT_CODE} -ne 0 ]; then
+      EXIT_STATUS=1
+      echo "Failed to execute $notebook:\n$(tail -n2 output.log | head -n1)" >> errors.log
+    fi
+  else
+    echo "Warning: $notebook not found. Skipping."
   fi
 done
 

@@ -4,9 +4,7 @@ futureEXPERT offers forecasts for data experts.
 
 ## Registration
 
-If you do not have an account for [future](https://future.prognostica.de) you can apply for a trial account [here](https://www.prognostica.de/de/future.html#future-testen).
-
-Additionally, if you are not subscribed for futureEXPERT, please contact us at support@future.prognostica.de
+If you do not have an account for [future](https://now.future-forecasting.de), click [here](https://launch.future-forecasting.de/) to register for a free account.
 
 ## Installation
 
