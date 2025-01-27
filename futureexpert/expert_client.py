@@ -131,6 +131,7 @@ class ExpertClient:
                           verbose=future_group is not None)
         self.is_analyst = 'analyst' in self.client.user_roles
         self.forecast_core_id = 'forecast-batch-internal' if self.is_analyst else 'forecast-batch'
+        self.matcher_core_id = 'cov-selection-internal' if self.is_analyst else 'cov-selection'
 
     @staticmethod
     def from_dotenv() -> ExpertClient:
@@ -534,7 +535,7 @@ class ExpertClient:
                 methods=config.method_selection.forecasting_methods)
 
             if version_data['customer_specific']['granularity'] in ['weekly', 'daily', 'hourly', 'halfhourly'] \
-            and 'ARIMA' == config.method_selection.additional_cov_method:
+                    and 'ARIMA' == config.method_selection.additional_cov_method:
                 raise ValueError('ARIMA is not supported for granularities below monthly.')
 
         logger.info('Preparing data for forecast...')
@@ -740,7 +741,7 @@ class ExpertClient:
         payload = self._create_matcher_payload(config)
 
         result = self.client.execute_action(group_id=self.group,
-                                            core_id='cov-selection',
+                                            core_id=self.matcher_core_id,
                                             payload=payload,
                                             interval_status_check_in_seconds=2)
         logger.info('Finished report creation.')

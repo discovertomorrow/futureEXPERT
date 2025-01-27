@@ -1,0 +1,9 @@
+name;Country;model;cov;cov_lag;season_length;ts_class;quantization;trend;recent_trend;missing_values_count;outliers_count
+Sales-Austria;Austria;AutoEsCov;;;[12];smooth;;False;True;;
+Sales-France;France;Ensemble;;;[12];smooth;;True;True;;
+Sales-Germany;Germany;AutoEsCov extended by SmoothExtensionStrategy;Values-Global..Consumer.confidence.index;2.0;[12];smooth;;True;True;;
+Sales-Global;Global;AutoEsCov;;;[12];smooth;;False;True;;
+Sales-Italy;Italy;Glmnet(l1_ratio=1.0) extended by SmoothExtensionStrategy;Values-Global..Consumer.confidence.index;3.0;[12];smooth;;True;True;;
+Sales-Poland;Poland;AutoEsCov extended by SmoothExtensionStrategy;Values-Global..Business.confidence.index;6.0;[12];smooth;;False;False;;
+Sales-Spain;Spain;Ensemble;;;[12];smooth;;True;True;;
+Sales-USA;USA;AutoEsCov extended by SmoothExtensionStrategy;Values-Global..Consumer.confidence.index;3.0;[12];smooth;;False;False;;

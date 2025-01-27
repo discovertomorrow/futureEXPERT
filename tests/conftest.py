@@ -1,8 +1,10 @@
 from datetime import datetime
 from typing import Any
 
+import pandas as pd
 import pytest
 
+from futureexpert import ExpertClient
 from futureexpert.forecast import (ComparisonDetails,
                                    ForecastInput,
                                    ForecastResult,
@@ -115,3 +117,21 @@ def sample_fc_result_3() -> ForecastResult:
         ts_class='lumpy',
         quantization=1
     )
+
+
+@pytest.fixture(scope="module")
+def demand_planning_results() -> list[ForecastResult]:
+    client = ExpertClient()
+    all_reports = client.get_reports(limit=100)
+    demand_planning_report = [report for report in all_reports if report.description ==
+                              'Monthly Demand Forecast on Material Level'][0]
+    return client.get_fc_results(id=demand_planning_report.report_id, include_k_best_models=3)
+
+
+@pytest.fixture(scope="module")
+def sales_forecasting_result() -> list[ForecastResult]:
+    client = ExpertClient()
+    all_reports = client.get_reports(limit=100)
+    sales_forecasting_report = [report for report in all_reports if report.description ==
+                              'Monthly Sales Forecast on Country Level'][0]
+    return client.get_fc_results(id=sales_forecasting_report.report_id, include_k_best_models=3)
