@@ -5,7 +5,7 @@ import json
 import logging
 import os
 import pprint
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Literal, Optional, Union, cast
 
 import dotenv
@@ -14,7 +14,7 @@ import pydantic
 
 from futureexpert._future_api import FutureApiClient
 from futureexpert._helpers import calculate_max_ts_len, remove_arima_if_not_allowed, snake_to_camel
-from futureexpert.checkin import CheckInResult, DataDefinition, FileSpecification, TsCreationConfig
+from futureexpert.checkin import CheckInResult, DataDefinition, FileSpecification, TimeSeriesVersion, TsCreationConfig
 from futureexpert.forecast import ForecastResult, ReportConfig
 from futureexpert.matcher import MatcherConfig, MatcherResult
 from futureexpert.pool import CheckInPoolResult, PoolCovDefinition, PoolCovOverview
@@ -75,11 +75,13 @@ class ReportStatus(pydantic.BaseModel):
 
 
 class ReportIdentifier(pydantic.BaseModel):
+    """Report ID and Settings ID of a report. Required to identify the report, e.g. when retrieving the results."""
     report_id: int
     settings_id: Optional[int]
 
 
 class ReportSummary(pydantic.BaseModel):
+    """Report ID and description of a report."""
     report_id: int
     description: str
 
@@ -286,7 +288,8 @@ class ExpertClient:
         return result
 
     def check_in_pool_covs(self,
-                           requested_pool_covs: list[PoolCovDefinition]) -> CheckInPoolResult:
+                           requested_pool_covs: list[PoolCovDefinition],
+                           description: Optional[str] = None) -> CheckInPoolResult:
         """Create a new version from a list of pool covariates and version ids.
 
         Parameters
@@ -294,6 +297,8 @@ class ExpertClient:
         requested_pool_covs
             List of pool covariate definitions. Each definition consists of an pool_cov_id and an optional version_id.
             If no version id is provided, the newest version of the covariate is used.
+        description
+            A short description of the selected covariates.
 
         Returns
         -------
@@ -301,7 +306,7 @@ class ExpertClient:
         """
         logger.info('Transforming input data...')
 
-        payload = {
+        payload: dict[str, Any] = {
             'payload': {
                 'requested_indicators': [
                     {**covariate.model_dump(exclude_none=True),
@@ -312,6 +317,8 @@ class ExpertClient:
         }
         for covariate in payload['payload']['requested_indicators']:
             covariate.pop('pool_cov_id', None)
+
+        payload['payload']['version_description'] = description
 
         logger.info('Creating time series using checkin-pool...')
         result = self.client.execute_action(group_id=self.group,
@@ -342,6 +349,22 @@ class ExpertClient:
         """
         response_json = self.client.get_pool_cov_overview(granularity=granularity, search=search)
         return PoolCovOverview(response_json)
+
+    def get_time_series(self,
+                        version_id: str) -> CheckInResult:
+        """Get time series data. From previously checked-in data.
+
+        Parameters
+        ---------
+        version_id
+            Id of the time series version.
+        Returns
+        -------
+        Id of the time series version. Used to identifiy the time series and the values of the time series.
+        """
+        result = self.client.get_ts_data(self.group, version_id)
+        return CheckInResult(time_series=[TimeSeries(**ts) for ts in result],
+                             version_id=version_id)
 
     def check_in_time_series(self,
                              raw_data_source: Union[pd.DataFrame, str],
@@ -474,6 +497,7 @@ class ExpertClient:
             'values': [{snake_to_camel(key): value for key, value in d.model_dump().items()} for d in config.new_variables],
             'valueColumnsToSave': config.value_columns_to_save
         }
+        payload['payload']['versionDescription'] = config.description
         payload['payload']['stage'] = 'createDataset'
 
         return payload
@@ -670,6 +694,34 @@ class ExpertClient:
                                                   report_id=report_id)
 
         return [MatcherResult(**result) for result in results]
+
+    def get_ts_versions(self, skip: int = 0, limit: int = 100) -> pd.DataFrame:
+        """Gets the available time series version, ordered from newest to oldest.
+            keep_until_utc shows the last day where the data is stored.
+
+        Parameters
+        ----------
+        skip
+            The number of initial elements of the version list to skip
+        limit
+            The limit on the length of the versjion list
+
+        Returns
+        -------
+        Overview of the available time series versions.
+        """
+        results = self.client.get_group_ts_versions(self.group, skip, limit)
+        transformed_results = []
+        for version in results:
+            transformed_results.append(TimeSeriesVersion(
+                version_id=version['_id'],
+                description=version.get('description', None),
+                creation_time_utc=version.get('creation_time_utc', None),
+                keep_until_utc=version['customer_specific'].get('keep_until_utc', None)
+            ))
+        transformed_results.sort(key=lambda x: x.creation_time_utc, reverse=True)
+
+        return pd.DataFrame([res.model_dump() for res in transformed_results])
 
     def start_forecast_from_raw_data(self,
                                      raw_data_source: Union[pd.DataFrame, str],

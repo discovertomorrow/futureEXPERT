@@ -10,8 +10,6 @@ priority_notebooks=(
   "notebooks/cov_matcher_and_forecast.ipynb"
   "notebooks/cov_matcher_and_forecast_monthly.ipynb"
   "notebooks/advanced_workflow.ipynb"
-  "use_cases/demand_planning/demand_planning.ipynb"
-  "use_cases/sales_forecasting/sales_forecasting.ipynb"
 )
 
 # Combine priority notebooks and other notebooks into one list

@@ -133,5 +133,5 @@ def sales_forecasting_result() -> list[ForecastResult]:
     client = ExpertClient()
     all_reports = client.get_reports(limit=100)
     sales_forecasting_report = [report for report in all_reports if report.description ==
-                              'Monthly Sales Forecast on Country Level'][0]
+                                'Monthly Sales Forecast on Country Level'][0]
     return client.get_fc_results(id=sales_forecasting_report.report_id, include_k_best_models=3)

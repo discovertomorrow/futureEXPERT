@@ -67,5 +67,3 @@ def test_sales_forecasting___confirm_aggregated_forecasts(
     # Assert
     assert isclose(sum(forecasts), 588639.846)
     assert isclose(statistics.stdev(forecasts), 5210.673)
-
-

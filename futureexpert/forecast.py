@@ -52,6 +52,18 @@ class PreprocessingConfig(BaseConfig):
     detect_quantization
         If true, a quantization algorithm is applied to the time series. Recognizes quantizations in the historic
         time series data and, if one has been detected, applies it to the forecasts.
+    phase_out_method
+        Choose which method will be used to detect Phase-Out in timeseries or turn it OFF.
+        TRAILING_ZEROS method uses the number of trailing zeros to detect Phase-Out.
+        AUTO_FEW_OBS method uses few-observation-changepoints at the end of the time series to detect Phase-Out.
+        AUTO_FEW_OBS is only allowed if `detect_changepoints` is true.
+    num_trailing_zeros_for_phase_out
+        Number of trailing zeros in timeseries to detect Phase-Out with TRAILING_ZEROS method.
+    recent_trend_num_observations
+        Number of observations which are included in time span used for recent trend detection.
+    recent_trend_num_seasons
+        Number of seasons which are included in time span used for recent trend detection.
+        If both recent_trend_num_seasons and recent_trend_num_observations are set, the longer time span is used.
     """
 
     remove_leading_zeros: bool = False
@@ -63,11 +75,30 @@ class PreprocessingConfig(BaseConfig):
     replace_outliers: bool = False
     detect_changepoints: bool = False
     detect_quantization: bool = False
+    phase_out_method: Literal['OFF', 'TRAILING_ZEROS', 'AUTO_FEW_OBS'] = 'OFF'
+    num_trailing_zeros_for_phase_out: ValidatedPositiveInt = PositiveInt(5)
+    recent_trend_num_observations: Optional[ValidatedPositiveInt] = PositiveInt(6)
+    recent_trend_num_seasons: Optional[ValidatedPositiveInt] = PositiveInt(2)
 
     @pydantic.model_validator(mode='after')
     def _has_no_fixed_seasonalities_if_uses_season_detection(self) -> Self:
         if self.use_season_detection and self.fixed_seasonalities:
             raise ValueError('If fixed seasonalities is enabled, then season detection must be off.')
+
+        return self
+
+    @pydantic.model_validator(mode='after')
+    def _has_detect_changepoints_if_phase_out_method_is_auto_few_obs(self) -> Self:
+        if not self.detect_changepoints and self.phase_out_method == 'AUTO_FEW_OBS':
+            raise ValueError('If phase_out_method is set to AUTO_FEW_OBS, then detect_changepoints must be on.')
+
+        return self
+
+    @pydantic.model_validator(mode='after')
+    def _has_no_recent_trend_num_observation_nor_num_seasons(self) -> Self:
+        if not self.recent_trend_num_observations and not self.recent_trend_num_seasons:
+            raise ValueError(
+                'Both recent_trend_num_observations and recent_trend_num_seasons cannot be None at the same time.')
 
         return self
 
@@ -153,6 +184,9 @@ class MethodSelectionConfig(BaseConfig):
         If not specified, all available forecasting methods will be used by default.
         Given methods are automatically preselected based on time series characteristics of your data.
         If none of the given methods fits your data, a fallback set of forecasting methods will be used instead.
+    phase_out_fc_methods
+        List of methods that will be used to forecast phase-out time series.
+        Phase-out detection must be enabled in preprocessing configuration to take effect.
     """
 
     number_iterations: Annotated[ValidatedPositiveInt, pydantic.Field(ge=1, le=24)] = PositiveInt(12)
@@ -167,6 +201,7 @@ class MethodSelectionConfig(BaseConfig):
     additional_cov_method: Optional[AdditionalCovMethod] = None
     cov_combination: Literal['single', 'joint'] = 'single'
     forecasting_methods: Sequence[ForecastingMethods] = pydantic.Field(default_factory=list)
+    phase_out_fc_methods: Sequence[ForecastingMethods] = pydantic.Field(default_factory=lambda: ['ZeroForecast'])
 
 
 class PipelineKwargs(TypedDict):
@@ -229,7 +264,7 @@ class ReportConfig(BaseConfig):
     @pydantic.model_validator(mode="after")
     def _correctness_of_cov_configurations(self) -> Self:
         if (self.matcher_report_id or self.covs_configuration) and (
-                self.covs_versions is None and self.pool_covs is None):
+                len(self.covs_versions) == 0 and self.pool_covs is None):
             raise ValueError(
                 'If one of `matcher_report_id` and `covs_configuration` is set also `covs_versions` needs to be set.')
         if (self.matcher_report_id is None and self.covs_configuration is None) and (
@@ -270,6 +305,26 @@ class ReportConfig(BaseConfig):
         for covs_version in self.covs_versions:
             if re.match('^[0-9a-f]{24}$', covs_version) is None:
                 raise ValueError(f'Given covs_version "{covs_version}" is not a valid ObjectId.')
+        return self
+
+    @pydantic.model_validator(mode='after')
+    def _has_valid_phase_out_detection_method_if_phase_out_fc_method_was_changed(self) -> Self:
+        if ((self.method_selection and self.method_selection.phase_out_fc_methods != ['ZeroForecast']) and
+                self.preprocessing.phase_out_method == 'OFF'):
+            # A warning is logged instead of raising an error since this does not cause downstream issues.
+            # The user is informed that their changes to phase_out_fc_methods have no effect
+            # to clarify the relationship between these settings.
+            logger.warning('Phase-out detection must be enabled in PreprocessingConfig'
+                           ' so changes in phase_out_fc_methods in MethodSelectionConfig take effect.')
+        return self
+
+    @pydantic.model_validator(mode='after')
+    def _has_non_empty_phase_out_fc_method_if_phase_out_detection_is_on(self) -> Self:
+        if (self.method_selection and
+                not self.method_selection.phase_out_fc_methods and
+                self.preprocessing.phase_out_method != 'OFF'):
+            raise ValueError('Phase out forecasting method cannot be empty when phase out detection is enabled.')
+
         return self
 
 

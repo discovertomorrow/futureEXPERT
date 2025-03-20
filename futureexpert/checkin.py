@@ -1,6 +1,8 @@
 """Contains the models with the configuration for CHECK-IN."""
-from typing import Literal, Optional
+from datetime import datetime
+from typing import Literal, Optional, Self
 
+import pydantic
 from pydantic import BaseModel, ConfigDict
 
 from futureexpert.shared_models import TimeSeries
@@ -151,10 +153,12 @@ class NewValue(BaseConfig):
 
 
 class TsCreationConfig(BaseConfig):
-    """Model for the time series creation configuration.
+    """Configuration for the creation of time series.
 
     Parameters
     ----------
+    description
+        A short description of the time series.
     time_granularity
         Target granularity of the time series.
     start_date
@@ -172,6 +176,7 @@ class TsCreationConfig(BaseConfig):
     missing_value_handler
         Strategy how to handle missing values during time series creation.
     """
+    description: Optional[str] = None
     time_granularity: Literal['yearly', 'quarterly', 'monthly', 'weekly', 'daily', 'hourly', 'halfhourly']
     start_date: Optional[str] = None
     end_date: Optional[str] = None
@@ -194,3 +199,31 @@ class CheckInResult(BaseModel):
     """
     time_series: list[TimeSeries]
     version_id: str
+
+
+class TimeSeriesVersion(BaseModel):
+    """Time series version created in CHECK-IN.
+
+    Parameters
+    ----------
+    version_id
+        Id of the time series version. Used to identifiy the time series.
+    description
+        Description of the time series version.
+    creation_time_utc
+        Time of the creation.
+    keep_until_utc: datetime
+        Last day where the data is stored until it is deleted.
+    """
+    version_id: str
+    description: Optional[str]
+    creation_time_utc: datetime
+    keep_until_utc: datetime
+
+    @pydantic.model_validator(mode="after")
+    def fix_time_stamps(self) -> Self:
+        last_day = self.keep_until_utc.date()
+        self.creation_time_utc = self.creation_time_utc.replace(microsecond=0)
+        self.keep_until_utc = datetime.combine(last_day, datetime.min.time())
+
+        return self

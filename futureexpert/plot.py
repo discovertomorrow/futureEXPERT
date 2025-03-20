@@ -1,14 +1,17 @@
 """Contains all the functionality to plot the checked in time series and the forecast and backtesting results."""
 import copy
 import datetime
+import math
 from collections import defaultdict
-from typing import Hashable, Optional, Sequence
+from typing import Any, Final, Hashable, Optional, Sequence
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 
-from futureexpert.forecast import ChangedValue, ChangePoint, ForecastResult, Model, Outlier
+from futureexpert.forecast import ChangedStartDate, ChangedValue, ChangePoint, ForecastResult, Model, Outlier
 from futureexpert.shared_models import Covariate, CovariateRef, TimeSeries
 
 prog_color = pd.DataFrame({
@@ -32,9 +35,25 @@ cov_column_color = [prog_color.loc[0, "violet"], prog_color.loc[0, "darkviolet"]
                     prog_color.loc[0, "lightgreen"], prog_color.loc[0, "turquois"], prog_color.loc[0, "darkgreen"],
                     prog_color.loc[0, "marine"]
                     ]
-
+transparent_rgba = 'rgba(0,0,0,0)'
 legend_position = {'loc': 'upper left'}
 
+plot_labels = {'time_series': 'Time Series',
+               'original_outlier': 'Original Outlier',
+               'replace_value': 'Replacement Values',
+               'removed_values': 'Removed Values',
+               'few_observations': 'Few Observations',
+               'pi': 'Prediction Interval'}
+
+granularity_to_pd_alias: Final[dict[str, str]] = {
+    'yearly': 'YS',
+    'quarterly': 'QS',
+    'monthly': 'MS',
+    'weekly': 'W',
+    'daily': 'D',
+    'hourly': 'h',
+    'halfhourly': '30min'
+}
 # set the font globally
 # plt.rcParams.update({'font.sans-serif':'Regular'})
 mpl.rcParams['axes.titlesize'] = 12
@@ -63,9 +82,99 @@ def filter_models(models: list[Model],
     return models
 
 
+def _create_interactive_time_series_plot(df_ac: pd.DataFrame, name: str) -> None:
+    """Creates a interactive plot for time series data.
+
+    Parameters
+    ----------
+    df_ac
+        Actuals data frame containing dates an values.
+    name
+        Name of the time series used as title.
+    """
+    fig = go.Figure()
+    fig.update_layout(
+        plot_bgcolor='white',
+        title_text=name,
+        title_x=0.5
+    )
+    fig.update_xaxes(
+        mirror=True,
+        ticks='outside',
+        showline=False,
+        gridcolor='lightgrey'
+    )
+    fig.update_yaxes(
+        mirror=True,
+        ticks='outside',
+        showline=False,
+        gridcolor='lightgrey'
+    )
+
+    fig.add_trace(go.Scatter(x=df_ac.date, y=df_ac.actuals, mode='lines',
+                             name=plot_labels['time_series'],
+                             line=dict(color=prog_color.loc[0, 'darkblue']),
+                             connectgaps=False,
+                             yaxis='y1'
+                             ))
+
+    covariate_column = [col for col in df_ac if col.startswith('covariate_lag')]
+    if len(covariate_column) > 0:
+        for idx, cov in enumerate(covariate_column):
+            fig.add_trace(go.Scatter(x=df_ac.date, y=df_ac[cov],
+                                     connectgaps=False,
+                                     yaxis=f'y{idx+2}',
+                                     mode='lines', name=str(cov).replace('covariate_lag_', ''),
+                                     line=dict(color=cov_column_color[idx % len(cov_column_color)])))
+
+        count_y_axis = len(covariate_column) + 1
+        fig.update_layout(
+            {
+                f"yaxis{'' if ax == 0 else ax+1}": {
+                    "showticklabels": False,
+                    "overlaying": None if ax == 0 else "y",
+                }
+                for ax in range(count_y_axis)
+            }
+        )
+
+    fig.show()
+
+
+def _create_static_time_series_plot(df_ac: pd.DataFrame,  name: str) -> None:
+    """Creates a static plot for time series data.
+
+    Parameters
+    ----------
+    df_ac
+        Actuals data frame containing dates an values.
+    name
+        Name of the time series used as title.
+    """
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches(12, 6)
+    fig.suptitle(name, fontsize=16)
+    ax.set_frame_on(False)
+    ax.tick_params(axis='both', labelsize=10)
+
+    covariate_column = [col for col in df_ac if col.startswith('covariate_lag')]
+
+    ax.plot(df_ac.date, df_ac.actuals, color=prog_color.loc[0,
+            "darkblue"], label=plot_labels['time_series'] if len(covariate_column) > 0 else None)
+
+    if len(covariate_column) > 0:
+        _add_covariates_to_static_plot(ax, covariate_column, df_ac)
+
+    plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
+
+    plt.show()
+
+
 def plot_time_series(ts: TimeSeries,
-                     covariate: Optional[Covariate] = None,
-                     plot_last_x_data_points_only: Optional[int] = None) -> None:
+                     covariate: Optional[list[Covariate]] = None,
+                     plot_last_x_data_points_only: Optional[int] = None,
+                     as_interactive: bool = False) -> None:
     """Plots actuals from a single time series. Optional a Covariate can be plotted next to it.
 
     Parameters
@@ -76,54 +185,37 @@ def plot_time_series(ts: TimeSeries,
         covariate data
     plot_last_x_data_points_only
         Number of data points of the actuals that should be shown in the plot.
+    as_interactive
+        Plots the data as an interactive plot or as static image.
     """
-
-    actual_dates = [fc.time_stamp_utc for fc in ts.values]
-    actual_values = [fc.value for fc in ts.values]
-
-    if plot_last_x_data_points_only is not None:
-        actual_dates = actual_dates[-plot_last_x_data_points_only:]
-        actual_values = actual_values[-plot_last_x_data_points_only:]
-
+    df_ac = _prepare_actuals(actuals=ts, plot_last_x_data_points_only=plot_last_x_data_points_only)
     name = ts.name
-    df_ac = pd.DataFrame({'date': actual_dates, 'actuals': actual_values})
-    df_ac = _fill_missing_values_for_plot(granularity=ts.granularity, df=df_ac)
 
     if covariate:
-        cov_date = [value.time_stamp_utc for value in covariate.ts.values]
-        cov_value = [value.value for value in covariate.ts.values]
-        df_cov = pd.DataFrame({'date': cov_date, 'covariate': cov_value, 'covariate_lag': cov_value})
-        df_ac = pd.merge(df_ac, df_cov, on='date', how='outer', validate='1:1').reset_index(drop=True)
-        df_ac = df_ac.sort_values(by='date')
-        df_ac.covariate_lag = df_ac.covariate_lag.shift(covariate.lag)
+        df_ac = _add_covariates(df_ac, covariate, covariate,
+                                _calculate_max_covariate_date(ts.granularity, df_ac.date.max()))
 
-        # remove all covariate values from befor the start of actuals
-        min_value = df_ac[df_ac['actuals'].notna()][['date']].min()
-        df_ac = df_ac[df_ac['date'] >= min_value[0]]
-        df_ac.reset_index(drop=True, inplace=True)
+    if as_interactive:
+        _create_interactive_time_series_plot(df_ac, name)
+    else:
+        _create_static_time_series_plot(df_ac, name)
 
-    fig, ax = plt.subplots()
-    fig.set_size_inches(12, 6)
-    fig.suptitle(name, fontsize=16)
-    ax.set_frame_on(False)
-    ax.tick_params(axis='both', labelsize=10)
 
-    # plot
-    ax.plot(df_ac.date, df_ac.actuals, color=prog_color.loc[0, "darkblue"])
-    if covariate:
-        ax.set_title(f'with covariate: {covariate.ts.name} and lag {covariate.lag}')
-        ax2 = ax.twinx()
-        ax2.grid(False)
-        ax2.set_frame_on(False)
-        ax2.tick_params(axis='both', labelsize=10)
-        ax.yaxis.set_major_locator(mpl.ticker.LinearLocator(numticks=6))
-        ax2.yaxis.set_major_locator(mpl.ticker.LinearLocator(numticks=6))
-        ax2.plot(df_ac.date, df_ac.covariate_lag, color=prog_color.loc[0, 'violet'], label=covariate.ts.name)
+def _calculate_max_covariate_date(granularity: str, start_date: datetime.datetime) -> datetime.datetime:
+    """Calculates 60 data points into the future based on the start_date. Used for cropping covariates in plots.
 
-    # margin
-    plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
+    Parameters
+    ----------
+    granularity
+        Granularity of the time series.
+    start_date
+         Date from which 60 steps should be calculated into the future. Usually last datapoint of actuals.
+    """
+    result: list[datetime.datetime] = pd.date_range(start=start_date,
+                                                    periods=60,
+                                                    freq=granularity_to_pd_alias.get(granularity))
 
-    plt.show()
+    return result[-1]
 
 
 def _fill_missing_values_for_plot(granularity: str,
@@ -143,16 +235,6 @@ def _fill_missing_values_for_plot(granularity: str,
     -------
     Dataframe in the same structure as before, but with potentially added rows with nan values.
     """
-
-    granularity_to_pd_alias = {
-        'yearly': 'YS',
-        'quarterly': 'QS',
-        'monthly': 'MS',
-        'weekly': 'W',
-        'daily': 'D',
-        'hourly': 'h',
-        'halfhourly': '30min'
-    }
     full_date_range = pd.date_range(start=df['date'].min(),
                                     end=df['date'].max(),
                                     freq=granularity_to_pd_alias.get(granularity))
@@ -177,31 +259,25 @@ def _calculate_few_observation_borders(actual_dates: list[datetime.datetime],
     -------
     List where each entry contains the borders of a few observation time frame.
     """
+
+    if len(few_observations) == 0:
+        return []
+
     matched_few_observations = []
     few_observations.sort(key=lambda x: x.time_stamp_utc)
-    for idx, few_observation in enumerate(few_observations):
-
-        left_border = None
-        right_border = None
-
-        if few_observation.change_point_type == 'FEW_OBSERVATIONS_RIGHT':
-
-            if idx == len(few_observations)-1:
-                right_border = actual_dates[-1]
-            else:
-                ref_point = next((k for k in few_observations[idx:]
-                                  if k.change_point_type == 'FEW_OBSERVATIONS_LEFT'), None)
-                if ref_point:
-                    right_border = ref_point.time_stamp_utc
-            left_border = few_observation.time_stamp_utc
-
-        if few_observation.change_point_type == 'FEW_OBSERVATIONS_LEFT' and idx == 0:
-            right_border = few_observation.time_stamp_utc
-            left_border = actual_dates[0]
-
-        if left_border and right_border:
-            matched_few_observations.append((left_border, right_border))
-
+    for i, obs in enumerate(few_observations):
+        if obs.change_point_type == 'FEW_OBSERVATIONS_LEFT':
+            obs.time_stamp_utc = actual_dates[actual_dates.index(obs.time_stamp_utc) - 1]
+    if few_observations[0].change_point_type == 'FEW_OBSERVATIONS_LEFT':
+        few_observations.insert(0, ChangePoint(time_stamp_utc=actual_dates[0],
+                                               change_point_type='FEW_OBSERVATIONS_RIGHT'))
+    if few_observations[-1].change_point_type == 'FEW_OBSERVATIONS_RIGHT':
+        few_observations.append(ChangePoint(time_stamp_utc=actual_dates[-1],
+                                            change_point_type='FEW_OBSERVATIONS_LEFT'))
+    for i in range(0, len(few_observations), 2):
+        left_border = few_observations[i].time_stamp_utc
+        right_border = few_observations[i+1].time_stamp_utc
+        matched_few_observations.append((left_border, right_border))
     return matched_few_observations
 
 
@@ -312,9 +388,29 @@ def _add_replaced_missings(df_ac: pd.DataFrame, changed_values: Sequence[Changed
     return df_ac
 
 
+def _add_changed_start_date(df_ac: pd.DataFrame, changed_start_date: Optional[ChangedStartDate]) -> pd.DataFrame:
+    """Adjust actuals based on changed_start_date.
+
+    Parameters
+    ----------
+    df_ac
+        Actuals data frame containing dates an values.
+    changed_start_date
+        Details about a changed start date of the time series.
+    """
+    # If changed_start_date ist not part of the plot scope (ts was shorten by plot_x_last_data_points)
+    # skip logic to prevent an unnecessary entry in the legend
+    if changed_start_date is not None and df_ac.date.min() < changed_start_date.changed_start_date:
+        df_ac['removed_actuals'] = df_ac['actuals']
+        df_ac.loc[df_ac.date > changed_start_date.changed_start_date, 'removed_actuals'] = np.NaN
+        df_ac.loc[df_ac.date < changed_start_date.changed_start_date, 'actuals'] = np.NaN
+    return df_ac
+
+
 def _add_covariates(df_plot: pd.DataFrame,
-                    model_covariates: Sequence[CovariateRef],
-                    input_covariates: Sequence[Covariate]) -> pd.DataFrame:
+                    model_covariates: Sequence[CovariateRef | Covariate],
+                    input_covariates: Sequence[Covariate],
+                    max_date: datetime.date) -> pd.DataFrame:
     """Add covariates to the plot data.
 
     Parameters
@@ -325,11 +421,17 @@ def _add_covariates(df_plot: pd.DataFrame,
         CovariateRef that were used in the model
     input_covariates
         Complete covariate data that were used in the report.
+    max_date
+        Max date to which covaraites are plotted.
     """
+
     for covariate_ref in model_covariates:
         if covariate_ref is None:
             continue
-        covariate = next((x for x in input_covariates if x.ts.name == covariate_ref.name))
+        if isinstance(covariate_ref, Covariate):
+            covariate = covariate_ref
+        else:
+            covariate = next((x for x in input_covariates if x.ts.name == covariate_ref.name))
 
         cov_date = [value.time_stamp_utc for value in covariate.ts.values]
         cov_value = [value.value for value in covariate.ts.values]
@@ -338,19 +440,19 @@ def _add_covariates(df_plot: pd.DataFrame,
         df_plot = pd.merge(df_plot, df_cov, on='date', how='outer', validate='1:1').reset_index(drop=True)
         df_plot = df_plot.sort_values(by='date')
         df_plot.covariate_lag = df_plot.covariate_lag.shift(covariate.lag)
-        columns_new_name_mapping = {'covariate': 'covariate_' + covariate_ref.name,
-                                    'covariate_lag': 'covariate_lag_' + covariate_ref.name + ' and lag ' + str(covariate_ref.lag)}
+        columns_new_name_mapping = {'covariate': 'covariate_' + covariate.ts.name,
+                                    'covariate_lag': 'covariate_lag_' + covariate.ts.name + ' and lag ' + str(covariate_ref.lag)}
         df_plot = df_plot.rename(columns=columns_new_name_mapping)
 
     # remove all covariate values from before the start of actuals
     min_value = df_plot[df_plot['actuals'].notna()][['date']].min()
-    df_plot = df_plot[df_plot['date'] >= min_value.iloc[0]]
+    df_plot = df_plot[(df_plot['date'] >= min_value.iloc[0]) & (df_plot['date'] <= max_date)]
     df_plot.reset_index(drop=True, inplace=True)
 
     return df_plot
 
 
-def _add_covariates_to_plot(ax: mpl.axes.Axes, covariate_column: list[Hashable], df_plot: pd.DataFrame) -> None:
+def _add_covariates_to_static_plot(ax: mpl.axes.Axes, covariate_column: list[Hashable], df_plot: pd.DataFrame) -> None:
     """Add covariates to the plot.
 
     Parameters
@@ -382,6 +484,362 @@ def _add_covariates_to_plot(ax: mpl.axes.Axes, covariate_column: list[Hashable],
     ax.legend(lines, labels, bbox_to_anchor=(1, 1), loc=legend_position['loc'])
 
 
+def _prepare_actuals(actuals: TimeSeries, plot_last_x_data_points_only: Optional[int] = None) -> pd.DataFrame:
+    """Converts the actual data into a pandas DataFrame.
+
+    Parameters
+    ----------
+    actuals
+        Time series data.
+    plot_last_x_data_points_only
+        Number of data points of the actuals that should be shown in the plot.
+    """
+
+    values = actuals.values
+    if plot_last_x_data_points_only is not None:
+        values = actuals.values[-plot_last_x_data_points_only:]
+
+    actual_dates = [fc.time_stamp_utc for fc in values]
+    actual_values = [fc.value for fc in values]
+
+    # if the data has missing values, make sure to explicitly store them as nan. Otherwise the plot function will
+    # display interpolated values. To use help function, a temporary df is needed.
+    df_ac = pd.DataFrame({'date': actual_dates, 'actuals': actual_values})
+    df_ac = _fill_missing_values_for_plot(granularity=actuals.granularity, df=df_ac)
+
+    return df_ac
+
+
+def _add_forecast(df_ac: pd.DataFrame, model: Model) -> pd.DataFrame:
+    """Add forecast to the plot data.
+
+    Parameters
+    ----------
+    df_ac
+        Data frame containing dates values of actuals, forecast and various preprocessing information.
+    model
+        Result data of one forecasting model.
+    """
+
+    forecast = model.forecasts
+    index_last_actual = len(df_ac.index)-1
+
+    fc_date = [fc.time_stamp_utc for fc in forecast]
+    # forecast values
+    fc_value = [fc.point_forecast_value for fc in forecast]
+    # forecast intervals
+    fc_upper_value = [fc.upper_limit_value for fc in forecast]
+    fc_lower_value = [fc.lower_limit_value for fc in forecast]
+
+    df_fc = pd.DataFrame({'date': fc_date, 'fc': fc_value, 'upper': fc_upper_value, 'lower': fc_lower_value})
+
+    df_concat = pd.concat([df_ac, df_fc], axis=0).reset_index(drop=True)
+
+    # connected forecast line with actual line
+    df_concat.loc[index_last_actual, 'fc'] = df_concat.loc[index_last_actual, 'actuals']
+    df_concat.loc[index_last_actual, 'upper'] = df_concat.loc[index_last_actual, 'actuals']
+    df_concat.loc[index_last_actual, 'lower'] = df_concat.loc[index_last_actual, 'actuals']
+    df_concat.date = pd.to_datetime(df_concat.date)
+    df_concat.sort_values('date', inplace=True)
+    df_concat.reset_index(drop=True, inplace=True)
+    return df_concat
+
+
+def _prepare_backtesting(model: Model, iteration: int) -> pd.DataFrame:
+    """Converts the backtesting data of one model into a pandas DataFrame.
+
+    Parameters
+    ----------
+    model
+        Result data of one forecasting model.
+    iteration
+        Iteration of the backtesting forecast.
+    """
+
+    fc_step_dict = defaultdict(list)
+
+    for bt in model.model_selection.backtesting:
+        fc_step_dict[bt.fc_step].append(bt)
+
+    highest_calculated_iteration = max([len(fc_step_dict[x]) for x in fc_step_dict])
+    if iteration > highest_calculated_iteration:
+        raise ValueError('Selected iteration was not calculated.')
+
+    bt_round = [fc_step_dict[x][iteration] for x in fc_step_dict]
+
+    backtesting_dates = [ac.time_stamp_utc for ac in bt_round]
+    backtesting_fc = [ac.point_forecast_value for ac in bt_round]
+    backtesting_upper = [ac.upper_limit_value for ac in bt_round]
+    backtesting_lower = [ac.lower_limit_value for ac in bt_round]
+
+    return pd.DataFrame({'date': backtesting_dates,
+                         'fc': backtesting_fc,
+                         'lower': backtesting_lower,
+                         'upper': backtesting_upper})
+
+
+def _calculate_replaced_missing_borders(df_ac: pd.DataFrame) -> list[tuple[datetime.datetime, datetime.datetime]]:
+    """Reshapes the replaced missing information for the interactive plot.
+
+    Parameters
+    ----------
+    df_ac
+        DataFrame containing actuals and various preprocessing results.
+
+    Returns
+    -------
+    Tupel with start and end date of a block with missing values
+    """
+    missing_borders: list[tuple[datetime.datetime, datetime.datetime]] = []
+    current_missing_block_start = None
+    for index, row in df_ac.iterrows():
+        if index+1 == len(df_ac.index):
+            break
+        if not math.isnan(row['replaced_missing']):
+            if current_missing_block_start is None:
+                current_missing_block_start = row['date']
+
+            if math.isnan(df_ac.iloc[index+1]['replaced_missing']):
+                assert current_missing_block_start is not None, 'Start date for replaced missing block is missing.'
+                missing_borders.append((current_missing_block_start, df_ac.iloc[index]['date']))
+                current_missing_block_start = None
+    return missing_borders
+
+
+def create_multiple_yaxis(count_y_axis: int) -> dict[str, Any]:
+    """Create multiple yaxis for interactive plots.
+
+    Parameters
+    ----------
+    count_y_axis
+        Number of how many yaxis are needed.
+    """
+    return {
+        f"yaxis{'' if ax == 0 else ax+1}": {
+            "showticklabels": False,
+            "overlaying": None if ax == 0 else "y",
+        }
+        for ax in range(count_y_axis)
+    }
+
+
+def _create_static_forecast_plot(title: str,
+                                 subtitle: str,
+                                 df_concat: pd.DataFrame,
+                                 plot_prediction_intervals: bool,
+                                 plot_few_observations: list[tuple[datetime.datetime, datetime.datetime]]) -> None:
+    """Creates a static plot for the forecasting results.
+
+    Parameters
+    ----------
+    title
+        Title of the plot.
+    subtitle
+        Subtitle of the plot.
+    df_concat
+        DataFrame containing actuals and various preprocessing results.
+    df_bt
+        DataFrame containing the backtesting forecasts.
+    plot_prediction_intervals
+        Shows prediction intervals.
+    plot_few_observations
+        Information about few observation time frames.
+    """
+    fig, ax = plt.subplots(figsize=(12, 6))
+    fig.suptitle(title, fontsize=16)
+    ax.set_title(subtitle)
+
+    ax.plot(df_concat.date, df_concat.actuals, color=prog_color.loc[0, 'darkblue'], label=plot_labels['time_series'])
+    ax.plot(df_concat.date, df_concat.fc, color=prog_color.loc[0, 'cyan'], label='Forecast')
+
+    if 'removed_actuals' in df_concat.columns:
+        ax.plot(df_concat.date, df_concat.removed_actuals,
+                color=prog_color.loc[3, 'greyblue'], label=plot_labels['removed_values'])
+    if 'replaced_missing' in df_concat.columns:
+        ax.fill_between(df_concat.date, df_concat.actuals.min(), df_concat.actuals.max(),
+                        where=df_concat.replaced_missing.notnull(),
+                        color=prog_color.loc[2, 'red'], alpha=0.30, label='Missings')
+
+    if 'original_outlier' in df_concat.columns:
+        ax.plot(df_concat.date, df_concat.original_outlier, 'o-',
+                color=prog_color.loc[0, 'red'], label=plot_labels['original_outlier'])
+        ax.plot(df_concat.date, df_concat.replace_outlier, 'o-',
+                color=prog_color.loc[0, 'green'], label=plot_labels['replace_value'])
+        ax.plot(df_concat.date, df_concat.outlier_connection, '-',
+                color=prog_color.loc[4, 'red'], zorder=1)
+
+    if 'level_shift' in df_concat.columns:
+        ax.plot(df_concat.date, df_concat.level_shift, color=prog_color.loc[0, 'gold'], label='Levels')
+
+    for idx, time_frame in enumerate(plot_few_observations):
+
+        ax.fill_between(df_concat.date, df_concat.actuals.min(), df_concat.actuals.max(),
+                        where=(df_concat.date >= time_frame[0]) & (df_concat.date <= time_frame[1]),
+                        color=prog_color.loc[1, 'greyblue'], alpha=0.30,
+                        label=plot_labels['few_observations'] if idx == 0 else None)
+
+    if plot_prediction_intervals and not any(v is None for v in df_concat.lower):
+        ax.fill_between(df_concat.date, df_concat.lower, df_concat.upper,
+                        color=prog_color.loc[2, 'cyan'], alpha=0.30, label=plot_labels['pi'])
+
+    covariate_column = [col for col in df_concat if col.startswith('covariate_lag')]
+    if len(covariate_column) > 0:
+        _add_covariates_to_static_plot(ax, covariate_column, df_concat)
+    else:
+        ax.legend(loc=legend_position['loc'], bbox_to_anchor=(1, 1))
+
+    ax.set_frame_on(False)
+    ax.tick_params(axis='both', labelsize=10)
+
+    plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
+
+    plt.show()
+
+
+def _create_interactive_forecast_plot(title: str,
+                                      subtitle: str,
+                                      df_concat: pd.DataFrame,
+                                      plot_prediction_intervals: bool,
+                                      missing_borders: list[tuple[datetime.datetime, datetime.datetime]],
+                                      plot_few_observations: list[tuple[datetime.datetime, datetime.datetime]]) -> None:
+    """Creates a interactive plot for the forecasting results.
+
+    Parameters
+    ----------
+    title
+        Title of the plot.
+    subtitle
+        Subtitle of the plot.
+    df_concat
+        DataFrame containing actuals and various preprocessing results.
+    plot_prediction_intervals
+        Shows prediction intervals.
+    missing_borders
+        Information about missing time frames.
+    plot_few_observations
+        Information about few observation time frames.
+    """
+
+    fig = go.Figure()
+
+    fig.update_layout(
+        plot_bgcolor='white',
+        title=f'{title}<br><sup>{subtitle}</sup>',
+        title_x=0.5,
+        title_font=dict(size=16),
+        xaxis_title='Date',
+        yaxis_title='Value'
+    )
+    fig.update_xaxes(
+        mirror=True,
+        ticks='outside',
+        showline=False,
+        gridcolor='lightgrey'
+    )
+    fig.update_yaxes(
+        mirror=True,
+        ticks='outside',
+        showline=False,
+        gridcolor='lightgrey'
+    )
+
+    fig.add_trace(go.Scatter(x=df_concat.date,
+                             y=df_concat.actuals,
+                             connectgaps=False,
+                             mode='lines', name=plot_labels['time_series'], line=dict(color=prog_color.loc[0, 'darkblue'])))
+
+    if 'removed_actuals' in df_concat.columns:
+        fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.removed_actuals,
+                                 connectgaps=False,
+                                 mode='lines', name=plot_labels['removed_values'], line=dict(color=prog_color.loc[3, 'greyblue'])))
+
+    if plot_prediction_intervals and not any(v is None for v in df_concat.lower):
+        fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.upper,
+                                 line_color=transparent_rgba,
+                                 mode='lines',
+                                 hoverinfo='skip',
+                                 showlegend=False))
+        pi_color = mpl.colors.to_rgba(prog_color.loc[2, "cyan"], alpha=0.3)
+        fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.lower,
+                                 line_color=transparent_rgba,
+                                 mode='lines', fill='tonexty', name=plot_labels['pi'],
+                                 fillcolor=f"rgba({pi_color[0]}, {pi_color[1]}, {pi_color[2]}, {pi_color[3]})"))
+
+    fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.fc,
+                             mode='lines', name='Forecast', line=dict(color=prog_color.loc[0, 'cyan'])))
+
+    if 'replaced_missing' in df_concat.columns:
+        missing_color = mpl.colors.to_rgba(prog_color.loc[2, 'red'], alpha=0.3)
+        missing_color_str = f"rgba({missing_color[0]}, {missing_color[1]}, {missing_color[2]}, {missing_color[3]})"
+
+        for idx, time_frame in enumerate(missing_borders):
+            missing_dates = df_concat.date[(df_concat.date >= time_frame[0]) & (df_concat.date <= time_frame[1])]
+            fig.add_trace(go.Scatter(x=missing_dates, y=[df_concat.actuals.max()] * len(missing_dates),
+                                     line_color=transparent_rgba,
+                                     mode='lines',
+                                     hoverinfo='skip',
+                                     showlegend=False))
+            fig.add_trace(go.Scatter(x=missing_dates, y=[df_concat.actuals.min()] * len(missing_dates),
+                                     mode='lines', fill='tonexty',
+                                     line_color=transparent_rgba,
+                                     legendgroup='2',
+                                     showlegend=True if idx == 0 else False,
+                                     name='Missings',
+                                     fillcolor=missing_color_str))
+
+    if 'original_outlier' in df_concat.columns:
+        fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.outlier_connection,
+                                 mode='lines', name='Outlier Connection', showlegend=False,
+                                 line=dict(color=prog_color.loc[4, 'red'])))
+        fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.original_outlier,
+                                 mode='markers+lines', name=plot_labels['original_outlier'],
+                                 line=dict(color=prog_color.loc[0, 'red']), marker=dict(symbol='circle')))
+        fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.replace_outlier,
+                                 mode='markers+lines', name=plot_labels['replace_value'],
+                                 line=dict(color=prog_color.loc[0, 'green']), marker=dict(symbol='circle')))
+
+    if 'level_shift' in df_concat.columns:
+        fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.level_shift,
+                                 mode='lines', name='Levels', line=dict(color=prog_color.loc[0, 'gold'])))
+
+    for idx, time_frame in enumerate(plot_few_observations):
+        few_obs_color = mpl.colors.to_rgba(prog_color.loc[1, 'greyblue'], alpha=0.3)
+        few_obs_color_str = f"rgba({few_obs_color[0]}, {few_obs_color[1]}, {few_obs_color[2]}, {few_obs_color[3]})"
+        few_obs_dates = df_concat.date[(df_concat.date >= time_frame[0]) & (df_concat.date <= time_frame[1])]
+
+        fig.add_trace(go.Scatter(x=few_obs_dates, y=[df_concat.actuals.max()] * len(few_obs_dates),
+                                 line_color=transparent_rgba,
+                                 mode='lines',
+                                 hoverinfo='skip',
+                                 showlegend=False))
+        fig.add_trace(go.Scatter(x=few_obs_dates,
+                                 y=[df_concat.actuals.min()] * len(few_obs_dates),
+                                 line_color=transparent_rgba,
+                                 legendgroup='1',
+                                 showlegend=True if idx == 0 else False,
+                                 mode='lines', fill='tonexty', name=plot_labels['few_observations'],
+                                 fillcolor=few_obs_color_str))
+
+    covariate_column = [col for col in df_concat if col.startswith('covariate_lag')]
+    if len(covariate_column) > 0:
+        for idx, cov in enumerate(covariate_column):
+            fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat[cov],
+                                     connectgaps=False,
+                                     yaxis=f'y{idx+2}',
+                                     mode='lines', name=str(cov).replace('covariate_lag_', ''),
+                                     line=dict(color=cov_column_color[idx % len(cov_column_color)])))
+
+        count_y_axis = len(covariate_column) + 1
+        fig.update_layout(create_multiple_yaxis(count_y_axis))
+
+    fig.update_layout(
+        showlegend=True,
+        legend=dict(x=1.05, y=1, traceorder='normal', orientation='v')
+    )
+
+    fig.show()
+
+
 def plot_forecast(result: ForecastResult,
                   plot_last_x_data_points_only: Optional[int] = None,
                   model_names: Optional[list[str]] = None,
@@ -390,7 +848,8 @@ def plot_forecast(result: ForecastResult,
                   plot_outliers: bool = False,
                   plot_change_points: bool = False,
                   plot_replaced_missings: bool = False,
-                  plot_covariates: bool = False) -> None:
+                  plot_covariates: bool = False,
+                  as_interactive: bool = False) -> None:
     """Plots actuals and forecast from a single time series.
 
     Parameters
@@ -413,29 +872,21 @@ def plot_forecast(result: ForecastResult,
         Shows replaced missing values.
     plot_covariates
         Shows the covariates that where used in the model.
+    as_interactive
+        Plots the data in an interactive plot or as static image.
     """
 
-    actuals = result.input.actuals
+    df_ac = _prepare_actuals(actuals=result.input.actuals,
+                             plot_last_x_data_points_only=plot_last_x_data_points_only)
+    name = result.input.actuals.name
     plot_models = filter_models(result.models, ranks, model_names)
-
-    # prepare actual values
-    values = actuals.values
-    if plot_last_x_data_points_only is not None:
-        values = actuals.values[-plot_last_x_data_points_only:]
-
-    actual_dates = [fc.time_stamp_utc for fc in values]
-    actual_values = [fc.value for fc in values]
-    df_ac = pd.DataFrame({'date': actual_dates, 'actuals': actual_values})
-    df_ac = _fill_missing_values_for_plot(granularity=result.input.actuals.granularity, df=df_ac)
-    index_last_actual = len(df_ac.index)-1
 
     plot_few_observations = []
     if plot_change_points:
-
         change_points = result.ts_characteristics.change_points or []
         few_observations = [copy.deepcopy(x) for x in change_points if x.change_point_type.startswith('FEW_OBS')]
 
-        plot_few_observations = _calculate_few_observation_borders(actual_dates, few_observations)
+        plot_few_observations = _calculate_few_observation_borders(df_ac.date.tolist(), few_observations)
 
         level_shifts = [x for x in change_points if x.change_point_type == 'LEVEL_SHIFT']
         df_ac = _add_level_shifts(df_ac, level_shifts)
@@ -444,86 +895,255 @@ def plot_forecast(result: ForecastResult,
         outliers = result.ts_characteristics.outliers or []
         df_ac = _add_outliers(df_ac, outliers, result.changed_values)
 
+    df_ac = _add_changed_start_date(df_ac, result.changed_start_date)
+
+    missing_borders = []
     if plot_replaced_missings:
         df_ac = _add_replaced_missings(df_ac, result.changed_values)
+        if 'replaced_missing' in df_ac.columns:
+            missing_borders = _calculate_replaced_missing_borders(df_ac)
 
     for model in plot_models:
-        forecast = model.forecasts
-
-        name = actuals.name
-        model_name = model.model_name
         assert model.model_selection.ranking, 'No ranking, plotting not possible.'
-        model_rank = model.model_selection.ranking.rank_position
-
-        fc_date = [fc.time_stamp_utc for fc in forecast]
-        # forecast values
-        fc_value = [fc.point_forecast_value for fc in forecast]
-        # forecast intervals
-        fc_upper_value = [fc.upper_limit_value for fc in forecast]
-        fc_lower_value = [fc.lower_limit_value for fc in forecast]
-
-        df_fc = pd.DataFrame({'date': fc_date, 'fc': fc_value, 'upper': fc_upper_value, 'lower': fc_lower_value})
-
-        df_concat = pd.concat([df_ac, df_fc], axis=0).reset_index(drop=True)
-
-        # connected forecast line with actual line
-        df_concat.loc[index_last_actual, 'fc'] = df_concat.loc[index_last_actual, 'actuals']
-        df_concat.loc[index_last_actual, 'upper'] = df_concat.loc[index_last_actual, 'actuals']
-        df_concat.loc[index_last_actual, 'lower'] = df_concat.loc[index_last_actual, 'actuals']
-        df_concat.date = pd.to_datetime(df_concat.date)
-        df_concat.sort_values('date', inplace=True)
-        df_concat.reset_index(drop=True, inplace=True)
+        df_concat = _add_forecast(df_ac, model)
+        title = f'Forecast for {name}'
+        subtitle = f'using {model.model_name} (Rank {model.model_selection.ranking.rank_position})'
 
         if plot_covariates and len(model.covariates) > 0:
-            df_concat = _add_covariates(df_concat, model.covariates, result.input.covariates)
+            df_concat = _add_covariates(df_concat, model.covariates, result.input.covariates, df_concat.date.max())
 
-        fig, ax = plt.subplots(figsize=(12, 6))
-        fig.suptitle(f'Forecast for {name}', fontsize=16)
-        ax.set_title(f'using {model_name} (Rank {model_rank})')
-
-        # plot
-        ax.plot(df_concat.date, df_concat.actuals, color=prog_color.loc[0, 'darkblue'], label='Time Series')
-        ax.plot(df_concat.date, df_concat.fc, color=prog_color.loc[0, 'cyan'], label='Forecast')
-        if 'replaced_missing' in df_concat.columns:
-            ax.fill_between(df_concat.date, min(df_concat.actuals), max(df_concat.actuals),
-                            where=df_concat.replaced_missing.notnull(),
-                            color=prog_color.loc[2, 'red'], alpha=0.30, label='Missings')
-
-        if 'original_outlier' in df_concat.columns:
-            ax.plot(df_concat.date, df_concat.original_outlier, 'o-',
-                    color=prog_color.loc[0, 'red'], label='Original Outlier')
-            ax.plot(df_concat.date, df_concat.replace_outlier, 'o-',
-                    color=prog_color.loc[0, 'green'], label='Replacement Values')
-            ax.plot(df_concat.date, df_concat.outlier_connection, '-',
-                    color=prog_color.loc[4, 'red'], zorder=1)
-
-        if 'level_shift' in df_concat.columns:
-            ax.plot(df_concat.date, df_concat.level_shift, color=prog_color.loc[0, 'gold'], label='Levels')
-
-        for idx, time_frame in enumerate(plot_few_observations):
-            ax.fill_between(df_concat.date, min(df_concat.actuals), max(df_concat.actuals),
-                            where=(df_concat.date >= time_frame[0]) & (df_concat.date < time_frame[1]),
-                            color=prog_color.loc[1, 'greyblue'], alpha=0.30, label='Few Observations' if idx == 0 else None)
-
-        if plot_prediction_intervals and not any(v is None for v in df_concat.lower):
-            ax.fill_between(df_concat.date, df_concat.lower, df_concat.upper,
-                            color=prog_color.loc[2, 'cyan'], alpha=0.30, label='Prediction Interval')
-
-        covariate_column = [col for col in df_concat if col.startswith('covariate_lag')]
-        if len(covariate_column) > 0:
-            _add_covariates_to_plot(ax, covariate_column, df_concat)
+        if as_interactive:
+            _create_interactive_forecast_plot(title=title,
+                                              subtitle=subtitle,
+                                              df_concat=df_concat,
+                                              missing_borders=missing_borders,
+                                              plot_prediction_intervals=plot_prediction_intervals,
+                                              plot_few_observations=plot_few_observations)
         else:
-            # legend
-            ax.legend(loc=legend_position['loc'], bbox_to_anchor=(1, 1))
+            _create_static_forecast_plot(title=title,
+                                         subtitle=subtitle,
+                                         df_concat=df_concat,
+                                         plot_prediction_intervals=plot_prediction_intervals,
+                                         plot_few_observations=plot_few_observations)
 
-        # style
-        ax.set_frame_on(False)
-        ax.tick_params(axis='both', labelsize=10)
 
-        # margin
-        plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
+def _create_interactive_backtesting_plot(title: str,
+                                         subtitle: str,
+                                         df_concat: pd.DataFrame,
+                                         df_bt: pd.DataFrame,
+                                         missing_borders: list[tuple[datetime.datetime, datetime.datetime]],
+                                         plot_prediction_intervals: bool,
+                                         plot_few_observations:  list[tuple[datetime.datetime, datetime.datetime]]) -> None:
+    """Creates a interactive plot for the backtesting results.
 
-        plt.show()
+    Parameters
+    ----------
+    title
+        Title of the plot.
+    subtitle
+        Subtitle of the plot.
+    df_concat
+        DataFrame containing actuals and various preprocessing results.
+    df_bt
+        DataFrame containing the backtesting forecasts.
+    missing_borders
+        Information about missing time frames.
+    plot_prediction_intervals
+        Shows prediction intervals.
+    plot_few_observations
+        Information about few observation time frames.
+    """
+    fig = go.Figure()
+
+    fig.update_layout(
+        plot_bgcolor='white',
+        title=f'{title}<br><sup>{subtitle}</sup>',
+        title_x=0.5,
+        title_font=dict(size=16),
+        xaxis_title='Date',
+        yaxis_title='Value'
+    )
+
+    fig.update_xaxes(
+        mirror=True,
+        ticks='outside',
+        showline=False,
+        gridcolor='lightgrey'
+    )
+    fig.update_yaxes(
+        mirror=True,
+        ticks='outside',
+        showline=False,
+        gridcolor='lightgrey'
+    )
+
+    fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.actuals,
+                             connectgaps=False,
+                             mode='lines', name=plot_labels['time_series'], line=dict(color=prog_color.loc[0, 'darkblue'])))
+
+    if 'removed_actuals' in df_concat.columns:
+        fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.removed_actuals,
+                                 connectgaps=False,
+                                 mode='lines', name=plot_labels['removed_values'], line=dict(color=prog_color.loc[0, 'greyblue'])))
+
+    if plot_prediction_intervals and not any(v is None for v in df_bt.lower):
+        fig.add_trace(go.Scatter(x=df_bt.date, y=df_bt.upper,
+                                 line_color=transparent_rgba,
+                                 mode='lines',
+                                 hoverinfo='skip',
+                                 showlegend=False))
+        pi_color = mpl.colors.to_rgba(prog_color.loc[2, "cyan"], alpha=0.3)
+        fig.add_trace(go.Scatter(x=df_bt.date, y=df_bt.lower,
+                                 line_color=transparent_rgba,
+                                 mode='lines', fill='tonexty', name=plot_labels['pi'],
+                                 fillcolor=f"rgba({pi_color[0]}, {pi_color[1]}, {pi_color[2]}, {pi_color[3]})"))
+
+    fig.add_trace(go.Scatter(x=df_bt.date, y=df_bt.fc,
+                             mode='lines', name='Forecast', line=dict(color=prog_color.loc[0, 'cyan'])))
+
+    if 'replaced_missing' in df_concat.columns:
+        missing_color = mpl.colors.to_rgba(prog_color.loc[2, 'red'], alpha=0.3)
+        missing_color_str = f"rgba({missing_color[0]}, {missing_color[1]}, {missing_color[2]}, {missing_color[3]})"
+        for idx, time_frame in enumerate(missing_borders):
+            missing_dates = df_concat.date[(df_concat.date >= time_frame[0]) & (df_concat.date <= time_frame[1])]
+            fig.add_trace(go.Scatter(x=missing_dates, y=[df_concat.actuals.max()] * len(missing_dates),
+                                     line_color=transparent_rgba,
+                                     mode='lines',
+                                     hoverinfo='skip',
+                                     showlegend=False))
+            fig.add_trace(go.Scatter(x=missing_dates, y=[df_concat.actuals.min()] * len(missing_dates),
+                                     mode='lines', fill='tonexty',
+                                     line_color=transparent_rgba,
+                                     legendgroup='2',
+                                     showlegend=True if idx == 0 else False,
+                                     name='Missings',
+                                     fillcolor=missing_color_str))
+
+    if 'original_outlier' in df_concat.columns:
+        fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.outlier_connection,
+                                 mode='lines', name='Outlier Connection', showlegend=False,
+                                 line=dict(color=prog_color.loc[4, 'red'])))
+        fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.original_outlier,
+                                 mode='markers+lines', name=plot_labels['original_outlier'],
+                                 line=dict(color=prog_color.loc[0, 'red']), marker=dict(symbol='circle')))
+        fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.replace_outlier,
+                                 mode='markers+lines', name=plot_labels['replace_value'],
+                                 line=dict(color=prog_color.loc[0, 'green']), marker=dict(symbol='circle')))
+
+    if 'level_shift' in df_concat.columns:
+        fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.level_shift,
+                                 mode='lines', name='Levels', line=dict(color=prog_color.loc[0, 'gold'])))
+
+    for idx, time_frame in enumerate(plot_few_observations):
+        few_obs_color = mpl.colors.to_rgba(prog_color.loc[1, 'greyblue'], alpha=0.3)
+        few_obs_color_str = f"rgba({few_obs_color[0]}, {few_obs_color[1]}, {few_obs_color[2]}, {few_obs_color[3]})"
+        few_obs_dates = df_concat.date[(df_concat.date >= time_frame[0]) & (df_concat.date <= time_frame[1])]
+
+        fig.add_trace(go.Scatter(x=few_obs_dates, y=[df_concat.actuals.max()] * len(few_obs_dates),
+                                 line_color=transparent_rgba,
+                                 mode='lines',
+                                 hoverinfo='skip',
+                                 showlegend=False))
+        fig.add_trace(go.Scatter(x=few_obs_dates,
+                                 y=[df_concat.actuals.min()] * len(few_obs_dates),
+                                 line_color=transparent_rgba,
+                                 legendgroup='1',
+                                 showlegend=True if idx == 0 else False,
+                                 mode='lines', fill='tonexty', name=plot_labels['few_observations'],
+                                 fillcolor=few_obs_color_str))
+
+    covariate_column = [col for col in df_concat if col.startswith('covariate_lag')]
+    if len(covariate_column) > 0:
+        for idx, cov in enumerate(covariate_column):
+            fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat[cov],
+                                     connectgaps=False,
+                                     yaxis=f'y{idx+2}',
+                                     mode='lines', name=str(cov).replace('covariate_lag_', ''),
+                                     line=dict(color=cov_column_color[idx % len(cov_column_color)])))
+
+        count_y_axis = len(covariate_column) + 1
+        fig.update_layout(create_multiple_yaxis(count_y_axis))
+
+    fig.update_layout(
+        showlegend=True,
+        legend=dict(x=1.05, y=1, traceorder='normal', orientation='v')
+    )
+
+    fig.show()
+
+
+def _create_static_backtesting_plot(title: str,
+                                    subtitle: str,
+                                    df_concat: pd.DataFrame,
+                                    df_bt: pd.DataFrame,
+                                    plot_prediction_intervals: bool,
+                                    plot_few_observations:  list[tuple[datetime.datetime, datetime.datetime]]) -> None:
+    """Creates a static plot for the backtesting results.
+
+    Parameters
+    ----------
+    title
+        Title of the plot.
+    subtitle
+        Subtitle of the plot.
+    df_concat
+        DataFrame containing actuals and various preprocessing results.
+    df_bt
+        DataFrame containing the backtesting forecasts.
+    plot_prediction_intervals
+        Shows prediction intervals.
+    plot_few_observations
+        Information about few observation time frames.
+    """
+    fig, ax = plt.subplots()
+    fig.set_size_inches(12, 6)
+    fig.suptitle(title, fontsize=16)
+    ax.set_title(subtitle)
+
+    ax.plot(df_concat.date, df_concat.actuals, color=prog_color.loc[0, "darkblue"],  label=plot_labels['time_series'])
+    ax.plot(df_bt.date, df_bt.fc, color=prog_color.loc[0, "cyan"], label='Forecast')
+
+    if 'removed_actuals' in df_concat.columns:
+        ax.plot(df_concat.date, df_concat.removed_actuals,
+                color=prog_color.loc[3, 'greyblue'], label=plot_labels['removed_values'])
+
+    if 'replaced_missing' in df_concat.columns:
+        ax.fill_between(df_concat.date, df_concat.actuals.min(), df_concat.actuals.max(),
+                        where=df_concat.replaced_missing.notnull(),
+                        color=prog_color.loc[2, 'red'], alpha=0.30, label='Missings')
+
+    if 'original_outlier' in df_concat.columns:
+        ax.plot(df_concat.date, df_concat.original_outlier, 'o-',
+                color=prog_color.loc[0, 'red'], label=plot_labels['original_outlier'])
+        ax.plot(df_concat.date, df_concat.replace_outlier, 'o-',
+                color=prog_color.loc[0, 'green'], label=plot_labels['replace_value'])
+        ax.plot(df_concat.date, df_concat.outlier_connection, '-',
+                color=prog_color.loc[4, 'red'], zorder=1)
+
+    if 'level_shift' in df_concat.columns:
+        ax.plot(df_concat.date, df_concat.level_shift, color=prog_color.loc[0, 'gold'], label='Levels')
+
+    for idx, time_frame in enumerate(plot_few_observations):
+        ax.fill_between(df_concat.date, df_concat.actuals.min(), df_concat.actuals.max(),
+                        where=(df_concat.date >= time_frame[0]) & (df_concat.date <= time_frame[1]),
+                        color=prog_color.loc[1, 'greyblue'], alpha=0.30,
+                        label=plot_labels['few_observations'] if idx == 0 else None)
+
+    if plot_prediction_intervals and None not in df_bt.lower and None not in df_bt.upper:
+        ax.fill_between(df_bt.date, df_bt.lower, df_bt.upper,
+                        color=prog_color.loc[2, "cyan"], alpha=0.30, label=plot_labels['pi'])
+
+    covariate_column = [col for col in df_concat if col.startswith('covariate_lag')]
+    if len(covariate_column) > 0:
+        _add_covariates_to_static_plot(ax, covariate_column, df_concat)
+    else:
+        ax.legend(loc=legend_position['loc'], bbox_to_anchor=(1, 1))
+
+    ax.set_frame_on(False)
+
+    plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
+
+    plt.show()
 
 
 def plot_backtesting(result: ForecastResult,
@@ -535,7 +1155,8 @@ def plot_backtesting(result: ForecastResult,
                      plot_outliers: bool = False,
                      plot_change_points: bool = False,
                      plot_replaced_missings: bool = False,
-                     plot_covariates: bool = False) -> None:
+                     plot_covariates: bool = False,
+                     as_interactive: bool = False) -> None:
     """Plots actuals and backtesting results from a single time series.
 
     Parameters
@@ -560,22 +1181,11 @@ def plot_backtesting(result: ForecastResult,
         Shows replaced missing values.
     plot_covariates
         Shows the covariates that where used in the model.
+    as_interactive
+        Plots the data in an interactive plot or as static image.
     """
-
-    actuals = result.input.actuals
     plot_models = filter_models(result.models, ranks, model_names)
-
-    values = actuals.values
-    if plot_last_x_data_points_only is not None:
-        values = actuals.values[-plot_last_x_data_points_only:]
-
-    actual_dates = [ac.time_stamp_utc for ac in values]
-    actual_values = [ac.value for ac in values]
-
-    # if the data has missing values, make sure to explicitly store them as nan. Otherwise the plot function will
-    # display interpolated values. To use help function, a temporary df is needed.
-    df_ac = pd.DataFrame({'date': actual_dates, 'actuals': actual_values})
-    df_ac = _fill_missing_values_for_plot(granularity=result.input.actuals.granularity, df=df_ac)
+    df_ac = _prepare_actuals(result.input.actuals, plot_last_x_data_points_only)
 
     plot_few_observations = []
     if plot_change_points:
@@ -583,7 +1193,7 @@ def plot_backtesting(result: ForecastResult,
         change_points = result.ts_characteristics.change_points or []
         few_observations = [copy.deepcopy(x) for x in change_points if x.change_point_type.startswith('FEW_OBS')]
 
-        plot_few_observations = _calculate_few_observation_borders(actual_dates, few_observations)
+        plot_few_observations = _calculate_few_observation_borders(df_ac.date.tolist(), few_observations)
 
         level_shifts = [x for x in change_points if x.change_point_type == 'LEVEL_SHIFT']
         df_ac = _add_level_shifts(df_ac, level_shifts)
@@ -592,79 +1202,41 @@ def plot_backtesting(result: ForecastResult,
         outliers = result.ts_characteristics.outliers or []
         df_ac = _add_outliers(df_ac, outliers, result.changed_values)
 
+    df_ac = _add_changed_start_date(df_ac, result.changed_start_date)
+
+    missing_borders = []
     if plot_replaced_missings:
         df_ac = _add_replaced_missings(df_ac, result.changed_values)
+        if 'replaced_missing' in df_ac.columns:
+            missing_borders = _calculate_replaced_missing_borders(df_ac)
 
     for model in plot_models:
-        forecast = model.model_selection.backtesting
-        model_name = model.model_name
+
+        assert model.model_selection.backtesting, \
+            'Cannot create backtesting plot, at least one model has no backtesting results available.'
         assert model.model_selection.ranking, 'No ranking, plotting not possible.'
-        model_rank = model.model_selection.ranking.rank_position
+        df_bt = _prepare_backtesting(model, iteration)
 
-        word_len_dict = defaultdict(list)
-
-        for word in forecast:
-            word_len_dict[word.fc_step].append(word)
-
-        iterations = max([len(word_len_dict[x]) for x in word_len_dict])
-        if iteration > iterations:
-            raise ValueError('Selected iteration was not calculated.')
-
-        bt_round = [word_len_dict[x][iteration] for x in word_len_dict]
-
-        backtesting_dates = [ac.time_stamp_utc for ac in bt_round]
-        backtesting_fc = [ac.point_forecast_value for ac in bt_round]
-        backtesting_upper = [ac.upper_limit_value for ac in bt_round]
-        backtesting_lower = [ac.lower_limit_value for ac in bt_round]
+        title = f'Backtesting of {result.input.actuals.name} - Iteration: {iteration}'
+        subtitle = f'using {model.model_name} (Rank {model.model_selection.ranking.rank_position})'
 
         if plot_covariates and len(model.covariates) > 0:
-            df_ac = _add_covariates(df_ac, model.covariates, result.input.covariates)
-
-        fig, ax = plt.subplots()
-        fig.set_size_inches(12, 6)
-        fig.suptitle(f'Backtesting of {actuals.name} - Iteration: {iteration}', fontsize=16)
-        ax.set_title(f'using {model_name} (Rank {model_rank})')
-
-        # plot
-        ax.plot(df_ac.date, df_ac.actuals, color=prog_color.loc[0, "darkblue"],  label='Time Series')
-        ax.plot(backtesting_dates, backtesting_fc, color=prog_color.loc[0, "cyan"], label='Forecast')
-
-        if 'replaced_missing' in df_ac.columns:
-            ax.fill_between(df_ac.date, min(df_ac.actuals), max(df_ac.actuals),
-                            where=df_ac.replaced_missing.notnull(),
-                            color=prog_color.loc[2, 'red'], alpha=0.30, label='Missings')
-
-        if 'original_outlier' in df_ac.columns:
-            ax.plot(df_ac.date, df_ac.original_outlier, 'o-',
-                    color=prog_color.loc[0, 'red'], label='Original Outlier')
-            ax.plot(df_ac.date, df_ac.replace_outlier, 'o-',
-                    color=prog_color.loc[0, 'green'], label='Replacement Values')
-            ax.plot(df_ac.date, df_ac.outlier_connection, '-',
-                    color=prog_color.loc[4, 'red'], zorder=1)
-
-        if 'level_shift' in df_ac.columns:
-            ax.plot(df_ac.date, df_ac.level_shift, color=prog_color.loc[0, 'gold'], label='Levels')
-
-        for idx, time_frame in enumerate(plot_few_observations):
-            ax.fill_between(df_ac.date, min(df_ac.actuals), max(df_ac.actuals),
-                            where=(df_ac.date >= time_frame[0]) & (df_ac.date < time_frame[1]),
-                            color=prog_color.loc[1, 'greyblue'], alpha=0.30, label='Few Observations' if idx == 0 else None)
-
-        if plot_prediction_intervals and None not in backtesting_lower and None not in backtesting_upper:
-            ax.fill_between(backtesting_dates, backtesting_lower, backtesting_upper,
-                            color=prog_color.loc[2, "cyan"], alpha=0.30, label='Prediction Interval')
-
-        covariate_column = [col for col in df_ac if col.startswith('covariate_lag')]
-        if len(covariate_column) > 0:
-            _add_covariates_to_plot(ax, covariate_column, df_ac)
+            df_concat = _add_covariates(df_ac, model.covariates, result.input.covariates,
+                                        _calculate_max_covariate_date(result.input.actuals.granularity, df_ac.date.max()))
         else:
-            # legend
-            ax.legend(loc=legend_position['loc'], bbox_to_anchor=(1, 1))
+            df_concat = df_ac
 
-        # style
-        ax.set_frame_on(False)
-
-        # margin
-        plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
-
-        plt.show()
+        if as_interactive:
+            _create_interactive_backtesting_plot(title=title,
+                                                 subtitle=subtitle,
+                                                 df_concat=df_concat, df_bt=df_bt,
+                                                 missing_borders=missing_borders,
+                                                 plot_prediction_intervals=plot_prediction_intervals,
+                                                 plot_few_observations=plot_few_observations)
+        else:
+            _create_static_backtesting_plot(title=title,
+                                            subtitle=subtitle,
+                                            df_concat=df_concat,
+                                            df_bt=df_bt,
+                                            plot_prediction_intervals=plot_prediction_intervals,
+                                            plot_few_observations=plot_few_observations)

@@ -5,7 +5,10 @@ import pandas as pd
 import pytest
 
 from futureexpert.forecast import ChangePoint
-from futureexpert.plot import _add_level_shifts, _calculate_few_observation_borders, _fill_missing_values_for_plot
+from futureexpert.plot import (_add_level_shifts,
+                               _calculate_few_observation_borders,
+                               _calculate_replaced_missing_borders,
+                               _fill_missing_values_for_plot)
 
 granularities = ['yearly', 'quarterly', 'monthly', 'weekly', 'daily', 'hourly', 'halfhourly']
 
@@ -68,9 +71,9 @@ def test_calculate_few_observation_borders__with_start__returns_expected_borders
 
     # Assert
     assert result[0][0] == start_date
-    assert result[0][1] == datetime(2023, 2, 1)
+    assert result[0][1] == datetime(2023, 1, 31)
     assert result[1][0] == datetime(2023, 2, 10)
-    assert result[1][1] == datetime(2023, 2, 20)
+    assert result[1][1] == datetime(2023, 2, 19)
 
 
 def test_calculate_few_observation_borders__with_end__returns_expected_borders():
@@ -99,7 +102,7 @@ def test_calculate_few_observation_borders__with_single_time_frame__returns_expe
 
     # Assert
     assert result[0][0] == datetime(2023, 2, 1)
-    assert result[0][1] == datetime(2023, 3, 1)
+    assert result[0][1] == datetime(2023, 2, 28)
 
 
 def test_calculate_few_observation_borders__with_multiple_time_frame__returns_expected_borders():
@@ -117,9 +120,9 @@ def test_calculate_few_observation_borders__with_multiple_time_frame__returns_ex
     # Assert
     assert len(result) == 2
     assert result[0][0] == datetime(2023, 2, 1)
-    assert result[0][1] == datetime(2023, 3, 1)
+    assert result[0][1] == datetime(2023, 2, 28)
     assert result[1][0] == datetime(2023, 4, 1)
-    assert result[1][1] == datetime(2023, 4, 15)
+    assert result[1][1] == datetime(2023, 4, 14)
 
 
 def test_calculate_add_level_shifts__with_multiple_shifts__returns_expected_level_shifts():
@@ -141,3 +144,23 @@ def test_calculate_add_level_shifts__with_multiple_shifts__returns_expected_leve
     assert result.loc[0:4, 'level_shift'].sum() == 5
     assert result.loc[5:14, 'level_shift'].sum() == 50
     assert result.loc[15:25, 'level_shift'].sum() == 200
+
+
+def test_calculate_replaced_missing_borders___given_valid_input___returns_expected_borders():
+    # Arrange
+    df = create_example_df('monthly')
+
+    df['replaced_missing'] = np.nan
+    df.loc[0:4, 'replaced_missing'] = 4
+
+    df.loc[10:12, 'replaced_missing'] = 4
+
+    # Act
+    result = _calculate_replaced_missing_borders(df)
+
+    # Assert
+    assert len(result) == 2
+    assert result[0][0] == datetime(2020, 1, 1)
+    assert result[0][1] == datetime(2020, 5, 1)
+    assert result[1][0] == datetime(2020, 11, 1)
+    assert result[1][1] == datetime(2021, 1, 1)

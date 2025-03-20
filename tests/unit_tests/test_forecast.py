@@ -1,7 +1,14 @@
+import logging
+
 import pandas as pd
 import pytest
 
-from futureexpert import MAX_TS_LEN_CONFIG, ExpertClient, ForecastingConfig, PreprocessingConfig, ReportConfig
+from futureexpert import (MAX_TS_LEN_CONFIG,
+                          ExpertClient,
+                          ForecastingConfig,
+                          MethodSelectionConfig,
+                          PreprocessingConfig,
+                          ReportConfig)
 from futureexpert._helpers import calculate_max_ts_len, remove_arima_if_not_allowed
 from futureexpert.forecast import (export_forecasts_to_pandas,
                                    export_forecasts_with_overview_to_pandas,
@@ -16,6 +23,56 @@ def test_PreprocessingConfig___given_fixed_seasonalities_and_season_detection___
     # Act
     with pytest.raises(ValueError, match=expected_error_message):
         PreprocessingConfig(use_season_detection=True, fixed_seasonalities=[1, 2])
+
+
+def test_PreprocessingConfig___given_auto_few_obs_and_missing_changepoint_detection___stops_with_error() -> None:
+
+    # Arrange
+    expected_error_message = 'If phase_out_method is set to AUTO_FEW_OBS, then detect_changepoints must be on.'
+
+    # Act
+    with pytest.raises(ValueError, match=expected_error_message):
+        PreprocessingConfig(detect_outliers=False, phase_out_method='AUTO_FEW_OBS')
+
+
+def test_PreprocessingConfig___given_missing_recent_trend_num_obs_and_missing_num_seasons___stops_with_error() -> None:
+
+    # Arrange
+    expected_error_message = 'Both recent_trend_num_observations and recent_trend_num_seasons cannot be None at the same time.'
+
+    # Act
+    with pytest.raises(ValueError, match=expected_error_message):
+        PreprocessingConfig(recent_trend_num_observations=None, recent_trend_num_seasons=None)
+
+
+def test_ReportConfig___given_changed_phase_out_fc_methods_and_missing_phase_out_detection___logs_warning(caplog) -> None:
+
+    # Arrange
+    expected_error_message = ('Phase-out detection must be enabled in PreprocessingConfig'
+                              ' so changes in phase_out_fc_methods in MethodSelectionConfig take effect.')
+    preprocessing = PreprocessingConfig(detect_outliers=False)
+    method_selection = MethodSelectionConfig(phase_out_fc_methods=['ARIMA'])
+
+    # Act
+    with caplog.at_level(logging.WARNING):
+        ReportConfig(title='Test', forecasting=ForecastingConfig(fc_horizon=5),
+                     preprocessing=preprocessing, method_selection=method_selection)
+
+    # Assert
+    assert expected_error_message in caplog.messages
+
+
+def test_ReportConfig___given_empty_phase_out_fc_methods_and_active_phase_out_detection___stops_with_error() -> None:
+
+    # Arrange
+    expected_error_message = 'Phase out forecasting method cannot be empty when phase out detection is enabled.'
+    preprocessing = PreprocessingConfig(phase_out_method='TRAILING_ZEROS')
+    method_selection = MethodSelectionConfig(phase_out_fc_methods=[])
+
+    # Act
+    with pytest.raises(ValueError, match=expected_error_message):
+        ReportConfig(title='Test', forecasting=ForecastingConfig(fc_horizon=5),
+                     preprocessing=preprocessing, method_selection=method_selection)
 
 
 def test_create_forecast_payload___given_lower_upper_bound_None___returns_payload_with_lower_upper_bound_none() -> None:

@@ -12,7 +12,7 @@ import warnings
 from dataclasses import dataclass
 from functools import cached_property
 from types import TracebackType
-from typing import Generator, List, Optional, Sequence, Type, get_type_hints
+from typing import Any, Generator, List, Optional, Sequence, Type, Union, get_args, get_type_hints
 
 import futureexpert
 
@@ -112,6 +112,29 @@ class DocstringRefiner:
                                                                 docstring=ast.get_docstring(class_node, clean=False),
                                                                 class_name=node.name))
 
+    def get_type_hint_expression(self, type_hint: dict[str, Any]) -> str:
+        """Takes type hint and creates a well formatted string."""
+        # types with __origin__ values need special treatment. They are more complex types,
+        # usually Union, Sequence, or Optional. With very few exceptions (Hashable), they
+        # contain more attributes, such as Sequence[int] or Optional[float].
+        if not hasattr(type_hint, '__origin__'):
+            return f"{type_hint.__module__}.{type_hint.__name__}"
+        args = get_args(type_hint)
+        if len(args) == 0:
+            return f"{type_hint.__module__}.{type_hint.__origin__.__name__}"
+        # Optional fields are treated as Unions[RelevantType, None]. Make sure we report "Optional"
+        # instead of "Union" and only the relevant type, not the "None" of that Union.
+        is_optional = (type_hint.__origin__ is Union and
+                       len(args) == 2 and
+                       args[1] is type(None))
+        origin_name = 'Optional' if is_optional else type_hint.__origin__.__name__
+        relevant_args = [args[0]] if is_optional else [arg for arg in args if arg is not type(None)]
+        args_str = ', '.join(
+            self.get_type_hint_expression(arg)
+            for arg in relevant_args
+        )
+        return f"{type_hint.__module__}.{origin_name}[{args_str}]"
+
     def refine_docstrings(self):
         """Refine docstrings of module."""
 
@@ -142,18 +165,27 @@ class DocstringRefiner:
                 message = f'Getting type hints for definition {doc.name} in module {module_dot_path} failed due to {exc}'
                 warnings.warn(message)
                 continue
+            self.add_type_information(doc, type_hints)
 
-            for parameter_name, type_hint in type_hints.items():
-                # Try to supplement the parameter description in the docstring with the corresponding type hint.
-                try:
-                    type_hint_expression = type_hint.__module__ + '.' + type_hint.__name__
-                except Exception:
-                    type_hint_expression = str(type_hint)
+    def add_type_information(self, doc, type_hints):
+        """Adds type information for parameters of a type. If a parameter is missing from the docstring, it adds the
+        name and type of that parameter without any description."""
+        for parameter_name, type_hint in type_hints.items():
+            # Try to supplement the parameter description in the docstring with the corresponding type hint.
+            try:
+                type_hint_expression = self.get_type_hint_expression(type_hint)
+            except Exception:
+                type_hint_expression = str(type_hint)
 
-                to_replace = parameter_name + '\n'
-                replacement = parameter_name + ': ' + type_hint_expression + '\n'
-
+            to_replace = parameter_name + '\n'
+            replacement = parameter_name + ': ' + type_hint_expression + '\n'
+            # If a parameter is not mentioned in the docstring, we append them with name+type, without description.
+            if to_replace in doc.refined_docstring:
                 doc.refined_docstring = doc.refined_docstring.replace(to_replace, replacement)
+            else:
+                if 'parameters' not in doc.refined_docstring.lower():
+                    doc.refined_docstring += '\n\n    Parameters\n    ----------\n    '
+                doc.refined_docstring += (replacement + '\n    ')
 
     def write(self, path: Optional[str] = None):
         """Write module code with refined docstrings.

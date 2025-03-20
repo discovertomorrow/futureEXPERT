@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import io
 import logging
 import math
-import os
 import threading
 import time
 from dataclasses import dataclass
@@ -265,6 +263,56 @@ class FutureApiClient:
         -------
         """
         return get_json(self._api_get_request(f'groups/{group_id}/ts/versions/{version_id}'))
+
+    def get_ts_data(self, group_id: str, version_id: str) -> Any:
+        """Get time series data.
+
+        Parameters
+        ----------
+        group_id
+            The ID of the relevant group.
+        version_id
+            The version of time series.
+        """
+        final_result = []
+        batch_count = 0
+        limit = 100
+
+        while True:
+            skip = batch_count * limit
+            params = {'query': '{"version": {"$oid":"' + version_id + '"}}', 'skip': skip, 'limit': limit}
+            response = self._api_get_request(f'groups/{group_id}/ts/values', params=params)
+
+            if batch_count > 0 and response.status_code == 404:
+                # Already got all results in the previous batch.
+                break
+            results = get_json(response)
+            final_result.extend(results)
+            if len(results) < limit:
+                 # Got all results with the current batch.
+                break
+            batch_count += 1
+
+        return final_result
+
+    def get_group_ts_versions(self, group_id: str, skip: int = 0, limit: int = 100) -> Any:
+        """Get time series versions of the group.
+
+        Parameters
+        ----------
+        group_id
+            The ID of the relevant group.
+        skip
+            The number of versions to skip before returning.
+        limit
+            The maximum number of versions to return. By default 100.
+
+        Returns
+        -------
+        The available time series versions.
+        """
+        params = {'skip': skip, 'limit': limit}
+        return get_json(self._api_get_request(f'groups/{group_id}/ts/versions', params=params))
 
     def get_report_type(self, group_id: str, report_id: int) -> str:
         """Gets the report type of the given report ID.

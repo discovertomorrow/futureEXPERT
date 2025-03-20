@@ -1,6 +1,6 @@
 workflow:
   rules:
-    - if: $CI_COMMIT_BRANCH  == "dev"
+    - if: $CI_COMMIT_BRANCH == "dev"
     - if: $CI_COMMIT_BRANCH == "staging"
     - if: $CI_COMMIT_BRANCH == "release"
     - if: $CI_COMMIT_BRANCH == "github"
@@ -80,7 +80,7 @@ sonarqube:
     - sonar-scanner -Dsonar.qualitygate.wait=true
   needs: [python_build]
 
-notebook execution (required):
+notebooks (required):
   stage: manual
   extends: .defaults
   image: ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
@@ -101,7 +101,7 @@ notebook execution (required):
     - when: manual
       allow_failure: false
   
-notebook-result-validation:
+use-cases:
   stage: manual
   extends: .defaults
   image: ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
@@ -110,13 +110,22 @@ notebook-result-validation:
     FUTURE_USER: $CI_TEST_USER
     FUTURE_ENVIRONMENT: development
   script:
+    - sed -i "s/'TBD'/'67da73efb25d0be3f64eef96'/g" use_cases/demand_planning/demand_planning_NOW+EXPERT.ipynb
+    - for notebook in $(find use_cases -name "*.ipynb" | sort); do jupyter nbconvert --to notebook --execute --inplace "$notebook"; done
     - pytest tests/notebook_execution/.
-  needs: ["notebook execution (required)"]
+  needs: [docker_build]
   rules:
-    - if: $CI_COMMIT_BRANCH =~ /^(release$|release.+|staging|github)/
-      when: never
-    - when: on_success
+    - if: $CI_COMMIT_BRANCH == "staging"
+      variables:
+        FUTURE_ENVIRONMENT: staging
+      when: on_success
       allow_failure: false
+    - if: $CI_COMMIT_BRANCH =~ /^(release$|release.+|github)/
+      when: never
+    - when: manual
+      allow_failure: true
+      variables:
+        FUTURE_ENVIRONMENT: development
 
 api-docs:
   stage: build

@@ -51,6 +51,7 @@ setup(
                       'tenacity >= 8.2.0',          # Apache Software License
                       'httpx >= 0.27.2',            # BSD-3-Clause License
                       'matplotlib >= 3.8.0',        # Python Software Foundation License
+                      'plotly>=5.24.1',             # MIT License
                       'pydantic >= 2.5.0,< 3.0.0',  # MIT License
                       'numpy >= 1.22.4,< 2.0.0',    # BSD-3-Clause License
                       'pandas >= 1.4.3',            # BSD-3-Clause License
