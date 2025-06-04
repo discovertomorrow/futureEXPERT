@@ -34,8 +34,8 @@ def test_demand_planning_notebook___confirm_aggregated_forecasts(
     ]
 
     # Assert
-    assert isclose(sum(forecasts), 803496.0)
-    assert isclose(statistics.stdev(forecasts), 2538.821)
+    assert isclose(sum(forecasts), 793669.0)
+    assert isclose(statistics.stdev(forecasts), 2484.874)
 
 
 def test_sales_forecasting_notebook___confirm_number_of_results(sales_forecasting_result) -> None:
@@ -65,5 +65,5 @@ def test_sales_forecasting___confirm_aggregated_forecasts(
     ]
 
     # Assert
-    assert isclose(sum(forecasts), 588639.846)
-    assert isclose(statistics.stdev(forecasts), 5210.673)
+    assert isclose(sum(forecasts), 585689.218)
+    assert isclose(statistics.stdev(forecasts), 5185.352)

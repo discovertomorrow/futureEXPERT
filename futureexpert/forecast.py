@@ -139,13 +139,13 @@ class ForecastingConfig(BaseConfig):
 
 
 ForecastingMethods = Literal['AdaBoost', 'Aft4Sporadic', 'ARIMA', 'AutoEsCov', 'CART',
-                             'CatBoost', 'Croston', 'ES', 'ExtraTrees', 'Glmnet(l1_ratio=1.0)',
+                             'CatBoost', 'Croston', 'ES', 'ExtraTrees', 'FoundationModel', 'Glmnet(l1_ratio=1.0)',
                              'MA(granularity)', 'InterpolID', 'LightGBM', 'LinearRegression',
                              'MedianAS', 'MedianPattern', 'MLP', 'MostCommonValue', 'MA(3)',
                              'Naive', 'RandomForest', 'MA(season lag)', 'SVM', 'TBATS', 'Theta',
-                                      'TSB', 'XGBoost', 'ZeroForecast']
+                             'TSB', 'XGBoost', 'ZeroForecast']
 
-AdditionalCovMethod = Literal['AdaBoost', 'ARIMA', 'CART', 'CatBoost', 'ExtraTrees',
+AdditionalCovMethod = Literal['AdaBoost', 'ARIMA', 'CART', 'CatBoost', 'ExtraTrees', 'FoundationModel',
                               'Glmnet(l1_ratio=1.0)', 'LightGBM', 'LinearRegression',
                               'MLP', 'RandomForest', 'SVM', 'XGBoost']
 

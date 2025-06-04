@@ -110,7 +110,16 @@ use-cases:
     FUTURE_USER: $CI_TEST_USER
     FUTURE_ENVIRONMENT: development
   script:
-    - sed -i "s/'TBD'/'67da73efb25d0be3f64eef96'/g" use_cases/demand_planning/demand_planning_NOW+EXPERT.ipynb
+    - |
+      if [ "$FUTURE_ENVIRONMENT" = "development" ]; then
+        TS_VERSION="67da73efb25d0be3f64eef96"
+      elif [ "$FUTURE_ENVIRONMENT" = "staging" ]; then
+        TS_VERSION="67dc701225c0c2819b87295d"
+      else
+        echo "Unknown environment: $FUTURE_ENVIRONMENT"
+        exit 1
+      fi
+    - sed -i "s/'TBD'/'$TS_VERSION'/g" use_cases/demand_planning/demand_planning_NOW+EXPERT.ipynb
     - for notebook in $(find use_cases -name "*.ipynb" | sort); do jupyter nbconvert --to notebook --execute --inplace "$notebook"; done
     - pytest tests/notebook_execution/.
   needs: [docker_build]

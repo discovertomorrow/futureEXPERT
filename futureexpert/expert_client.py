@@ -84,6 +84,7 @@ class ReportSummary(pydantic.BaseModel):
     """Report ID and description of a report."""
     report_id: int
     description: str
+    result_type: str
 
 
 class ExpertClient:
@@ -371,7 +372,7 @@ class ExpertClient:
                              data_definition: Optional[DataDefinition] = None,
                              config_ts_creation: Optional[TsCreationConfig] = None,
                              config_checkin: Optional[str] = None,
-                             file_specification: FileSpecification = FileSpecification()) -> CheckInResult:
+                             file_specification: FileSpecification = FileSpecification()) -> str:
         """Checks in time series data that can be used as actuals or covariate data.
 
         Parameters
@@ -391,7 +392,7 @@ class ExpertClient:
 
         Returns
         -------
-        Id of the time series version. Used to identifiy the time series and the values of the time series.
+        Id of the time series version. Used to identifiy the time series.
         """
         upload_feedback = self.upload_data(source=raw_data_source, file_specification=file_specification)
 
@@ -405,9 +406,7 @@ class ExpertClient:
                                            config_checkin=config_checkin,
                                            file_specification=file_specification)
 
-        result = [TimeSeries(**ts) for ts in response['result']['timeSeries']]
-        return CheckInResult(time_series=result,
-                             version_id=response['result']['tsVersion']['_id'])
+        return str(response['result']['tsVersion'])
 
     def _create_checkin_payload_1(self, user_input_id: str,
                                   file_uuid: str,
@@ -492,6 +491,7 @@ class ExpertClient:
             },
             'grouping': {
                 'dataLevel': config.grouping_level,
+                'saveHierarchy': config.save_hierarchy,
                 'filter':  [d.model_dump() for d in config.filter]
             },
             'values': [{snake_to_camel(key): value for key, value in d.model_dump().items()} for d in config.new_variables],
@@ -594,7 +594,7 @@ class ExpertClient:
             report_identifier, ReportIdentifier) else report_identifier
         return self.client.get_report_type(group_id=self.group, report_id=report_id)
 
-    def get_reports(self, skip: int = 0, limit: int = 100) -> list[ReportSummary]:
+    def get_reports(self, skip: int = 0, limit: int = 100) -> pd.DataFrame:
         """Gets the available reports, ordered from newest to oldest.
 
         Parameters
@@ -609,7 +609,8 @@ class ExpertClient:
         The available reports from newest to oldest.
         """
         group_reports = self.client.get_group_reports(group_id=self.group, skip=skip, limit=limit)
-        return [ReportSummary.model_validate(report) for report in group_reports]
+        vallidated_report_summarys = [ReportSummary.model_validate(report) for report in group_reports]
+        return pd.DataFrame([report_summary.model_dump() for report_summary in vallidated_report_summarys])
 
     def get_report_status(self, id: Union[ReportIdentifier, int], include_error_reason: bool = True) -> ReportStatus:
         """Gets the current status of a forecast or matcher report.
@@ -662,7 +663,7 @@ class ExpertClient:
         if include_k_best_models < 1:
             raise ValueError('At least one model is needed.')
 
-        if self.get_report_type(report_identifier=id) != 'MongoForecastingResultSink':
+        if self.get_report_type(report_identifier=id) not in ['forecast', 'MongoForecastingResultSink']:
             raise ValueError('The given report ID does not belong to a FORECAST result. ' +
                              'Please input a different ID or use get_matcher_results().')
 
@@ -684,7 +685,7 @@ class ExpertClient:
             Report identifier or plain report ID.
         """
 
-        if self.get_report_type(report_identifier=id) != 'CovariateSelection':
+        if self.get_report_type(report_identifier=id) not in ['matcher', 'CovariateSelection']:
             raise ValueError('The given report ID does not belong to a MATCHER result. ' +
                              'Please input a different ID or use get_fc_results().')
 
@@ -765,7 +766,7 @@ class ExpertClient:
                                        config_checkin=config_checkin,
                                        file_specification=file_specification)
 
-        version = res2['result']['tsVersion']['_id']
+        version = res2['result']['tsVersion']
         return self.start_forecast(version=version, config=config_fc)
 
     def start_matcher(self, config: MatcherConfig) -> ReportIdentifier:

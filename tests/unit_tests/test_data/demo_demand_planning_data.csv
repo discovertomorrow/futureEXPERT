@@ -1,0 +1,2705 @@
+DATE;MATERIAL;CUSTOMER;REGION;DEMAND
+01.10.2007;C011414575;customer2;North America;312.0
+01.11.2007;C011414575;customer2;North America;234.0
+01.12.2007;C011414575;customer2;North America;102.0
+01.12.2007;C011414575;customer4;Europe;42.0
+01.12.2007;C011414575;customer3;North America;24.0
+01.01.2008;C011414575;customer2;North America;156.0
+01.02.2008;C011414575;customer4;Europe;78.0
+01.03.2008;C011414575;customer2;North America;167.0
+01.03.2008;C011414575;customer4;Europe;46.0
+01.03.2008;C011414575;customer1;Europe;21.0
+01.04.2008;C011414575;customer2;North America;138.0
+01.05.2008;C011414575;customer1;Europe;17.0
+01.05.2008;C011414575;customer2;North America;115.0
+01.05.2008;C011414575;customer3;North America;24.0
+01.06.2008;C011414575;customer2;North America;234.0
+01.07.2008;C011414575;customer1;Europe;234.0
+01.09.2008;C011414575;customer2;North America;312.0
+01.10.2008;C011414575;customer4;Europe;24.0
+01.10.2008;C011414575;customer2;North America;43.0
+01.10.2008;C011414575;customer3;North America;11.0
+01.11.2008;C011414575;customer2;North America;390.0
+01.12.2008;C011414575;customer2;North America;234.0
+01.01.2009;C011414575;customer2;North America;103.0
+01.01.2009;C011414575;customer1;Europe;14.0
+01.01.2009;C011414575;customer4;Europe;39.0
+01.02.2009;C011414575;customer4;Europe;83.0
+01.02.2009;C011414575;customer2;North America;183.0
+01.02.2009;C011414575;customer3;North America;46.0
+01.03.2009;C011414575;customer2;North America;234.0
+01.04.2009;C011414575;customer2;North America;172.0
+01.04.2009;C011414575;customer4;Europe;62.0
+01.05.2009;C011414575;customer2;North America;171.0
+01.05.2009;C011414575;customer4;Europe;63.0
+01.06.2009;C011414575;customer2;North America;231.0
+01.06.2009;C011414575;customer4;Europe;81.0
+01.07.2009;C011414575;customer4;Europe;85.0
+01.07.2009;C011414575;customer2;North America;227.0
+01.08.2009;C011414575;customer2;North America;156.0
+01.09.2009;C011414575;customer2;North America;114.0
+01.09.2009;C011414575;customer4;Europe;42.0
+01.10.2009;C011414575;customer2;North America;234.0
+01.11.2009;C011414575;customer2;North America;234.0
+01.12.2009;C011414575;customer2;North America;82.0
+01.12.2009;C011414575;customer3;North America;20.0
+01.01.2010;C011414575;customer2;North America;234.0
+01.01.2010;C011414575;customer4;Europe;103.0
+01.01.2010;C011414575;customer3;North America;53.0
+01.02.2010;C011414575;customer4;Europe;78.0
+01.03.2010;C011414575;customer2;North America;78.0
+01.04.2010;C011414575;customer2;North America;110.0
+01.04.2010;C011414575;customer4;Europe;32.0
+01.04.2010;C011414575;customer1;Europe;14.0
+01.05.2010;C011414575;customer2;North America;234.0
+01.06.2010;C011414575;customer2;North America;307.0
+01.06.2010;C011414575;customer3;North America;83.0
+01.07.2010;C011414575;customer2;North America;156.0
+01.08.2010;C011414575;customer2;North America;156.0
+01.09.2010;C011414575;customer2;North America;170.0
+01.09.2010;C011414575;customer4;Europe;64.0
+01.10.2010;C011414575;customer2;North America;156.0
+01.11.2010;C011414575;customer2;North America;234.0
+01.12.2010;C011414575;customer4;Europe;46.0
+01.12.2010;C011414575;customer2;North America;110.0
+01.01.2011;C011414575;customer2;North America;204.0
+01.01.2011;C011414575;customer1;Europe;30.0
+01.02.2011;C011414575;customer4;Europe;234.0
+01.04.2011;C011414575;customer2;North America;180.0
+01.04.2011;C011414575;customer4;Europe;54.0
+01.05.2011;C011414575;customer2;North America;179.0
+01.05.2011;C011414575;customer3;North America;55.0
+01.06.2011;C011414575;customer2;North America;234.0
+01.07.2011;C011414575;customer2;North America;130.0
+01.07.2011;C011414575;customer3;North America;26.0
+01.08.2011;C011414575;customer4;Europe;44.0
+01.08.2011;C011414575;customer2;North America;112.0
+01.09.2011;C011414575;customer1;Europe;19.0
+01.09.2011;C011414575;customer2;North America;126.0
+01.09.2011;C011414575;customer3;North America;29.0
+01.10.2011;C011414575;customer2;North America;234.0
+01.11.2011;C011414575;customer2;North America;156.0
+01.12.2011;C011414575;customer4;Europe;39.0
+01.12.2011;C011414575;customer2;North America;117.0
+01.01.2012;C011414575;customer2;North America;265.0
+01.01.2012;C011414575;customer1;Europe;47.0
+01.02.2012;C011414575;customer2;North America;156.0
+01.03.2012;C011414575;customer2;North America;156.0
+01.04.2012;C011414575;customer2;North America;167.0
+01.04.2012;C011414575;customer4;Europe;55.0
+01.05.2012;C011414575;customer2;North America;234.0
+01.06.2012;C011414575;customer2;North America;312.0
+01.07.2012;C011414575;customer2;North America;156.0
+01.08.2012;C011414575;customer2;North America;66.0
+01.08.2012;C011414575;customer3;North America;12.0
+01.09.2012;C011414575;customer2;North America;234.0
+01.10.2012;C011414575;customer2;North America;271.0
+01.10.2012;C011414575;customer1;Europe;41.0
+01.11.2012;C011414575;customer2;North America;78.0
+01.12.2012;C011414575;customer2;North America;113.0
+01.12.2012;C011414575;customer4;Europe;43.0
+01.01.2013;C011414575;customer2;North America;169.0
+01.01.2013;C011414575;customer4;Europe;65.0
+01.02.2013;C011414575;customer2;North America;196.0
+01.02.2013;C011414575;customer3;North America;38.0
+01.03.2013;C011414575;customer2;North America;234.0
+01.04.2013;C011414575;customer2;North America;234.0
+01.05.2013;C011414575;customer2;North America;156.0
+01.06.2013;C011414575;customer4;Europe;46.0
+01.06.2013;C011414575;customer2;North America;110.0
+01.07.2013;C011414575;customer4;Europe;80.0
+01.07.2013;C011414575;customer2;North America;232.0
+01.08.2013;C011414575;customer2;North America;156.0
+01.09.2013;C011414575;customer2;North America;312.0
+01.10.2013;C011414575;customer2;North America;107.0
+01.10.2013;C011414575;customer4;Europe;37.0
+01.10.2013;C011414575;customer1;Europe;12.0
+01.11.2013;C011414575;customer2;North America;468.0
+01.12.2013;C011414575;customer2;North America;72.0
+01.12.2013;C011414575;customer1;Europe;6.0
+01.01.2014;C011414575;customer2;North America;408.0
+01.02.2014;C011414575;customer2;North America;144.0
+01.03.2014;C011414575;customer4;Europe;58.0
+01.03.2014;C011414575;customer2;North America;176.0
+01.04.2014;C011414575;customer3;North America;34.0
+01.04.2014;C011414575;customer2;North America;200.0
+01.05.2014;C011414575;customer4;Europe;49.0
+01.05.2014;C011414575;customer2;North America;107.0
+01.06.2014;C011414575;customer2;North America;283.0
+01.06.2014;C011414575;customer4;Europe;107.0
+01.07.2014;C011414575;customer2;North America;234.0
+01.08.2014;C011414575;customer2;North America;156.0
+01.09.2014;C011414575;customer2;North America;246.0
+01.09.2014;C011414575;customer3;North America;66.0
+01.10.2014;C011414575;customer4;Europe;312.0
+01.11.2014;C011414575;customer4;Europe;94.0
+01.11.2014;C011414575;customer3;North America;62.0
+01.12.2014;C011414575;customer2;North America;234.0
+01.01.2015;C011414575;customer2;North America;234.0
+01.02.2015;C011414575;customer2;North America;219.0
+01.02.2015;C011414575;customer4;Europe;93.0
+01.03.2015;C011414575;customer2;North America;312.0
+01.04.2015;C011414575;customer2;North America;167.0
+01.04.2015;C011414575;customer4;Europe;67.0
+01.05.2015;C011414575;customer2;North America;155.0
+01.05.2015;C011414575;customer4;Europe;54.0
+01.05.2015;C011414575;customer3;North America;25.0
+01.06.2015;C011414575;customer2;North America;306.0
+01.07.2015;C011414575;customer4;Europe;234.0
+01.08.2015;C011414575;customer2;North America;69.0
+01.08.2015;C011414575;customer1;Europe;9.0
+01.09.2015;C011414575;customer4;Europe;46.0
+01.09.2015;C011414575;customer2;North America;110.0
+01.10.2015;C011414575;customer2;North America;209.0
+01.10.2015;C011414575;customer1;Europe;25.0
+01.11.2015;C011414575;customer2;North America;209.0
+01.11.2015;C011414575;customer1;Europe;25.0
+01.12.2015;C011414575;customer2;North America;390.0
+01.01.2016;C011414575;customer2;North America;163.0
+01.01.2016;C011414575;customer4;Europe;52.0
+01.01.2016;C011414575;customer1;Europe;19.0
+01.02.2016;C011414575;customer2;North America;312.0
+01.03.2016;C011414575;customer2;North America;284.0
+01.03.2016;C011414575;customer4;Europe;106.0
+01.04.2016;C011414575;customer2;North America;214.0
+01.04.2016;C011414575;customer4;Europe;98.0
+01.05.2016;C011414575;customer2;North America;248.0
+01.05.2016;C011414575;customer3;North America;64.0
+01.06.2016;C011414575;customer2;North America;214.0
+01.06.2016;C011414575;customer4;Europe;78.0
+01.06.2016;C011414575;customer1;Europe;20.0
+01.07.2016;C011414575;customer3;North America;234.0
+01.08.2016;C011414575;customer2;North America;175.0
+01.08.2016;C011414575;customer4;Europe;59.0
+01.09.2016;C011414575;customer2;North America;312.0
+01.10.2016;C011414575;customer2;North America;152.0
+01.10.2016;C011414575;customer4;Europe;55.0
+01.10.2016;C011414575;customer1;Europe;27.0
+01.11.2016;C011414575;customer2;North America;156.0
+01.12.2016;C011414575;customer4;Europe;37.0
+01.12.2016;C011414575;customer2;North America;119.0
+01.01.2017;C011414575;customer2;North America;234.0
+01.02.2017;C011414575;customer2;North America;241.0
+01.02.2017;C011414575;customer4;Europe;71.0
+01.03.2017;C011414575;customer2;North America;175.0
+01.03.2017;C011414575;customer4;Europe;59.0
+01.04.2017;C011414575;customer4;Europe;312.0
+01.05.2017;C011414575;customer3;North America;312.0
+01.06.2017;C011414575;customer2;North America;114.0
+01.06.2017;C011414575;customer4;Europe;42.0
+01.07.2017;C011414575;customer4;Europe;-12.0
+01.08.2017;C011414575;customer3;North America;234.0
+01.09.2017;C011414575;customer2;North America;156.0
+01.10.2017;C011414575;customer2;North America;59.0
+01.10.2017;C011414575;customer3;North America;19.0
+01.11.2017;C011414575;customer1;Europe;234.0
+01.12.2017;C011414575;customer2;North America;172.0
+01.12.2017;C011414575;customer4;Europe;62.0
+01.01.2018;C011414575;customer2;North America;234.0
+01.02.2018;C011414575;customer2;North America;156.0
+01.03.2018;C011414575;customer2;North America;178.0
+01.03.2018;C011414575;customer4;Europe;56.0
+01.04.2018;C011414575;customer4;Europe;71.0
+01.04.2018;C011414575;customer2;North America;145.0
+01.05.2018;C011414575;customer2;North America;312.0
+01.06.2018;C011414575;customer4;Europe;234.0
+01.07.2018;C011414575;customer2;North America;156.0
+01.08.2018;C011414575;customer2;North America;174.0
+01.08.2018;C011414575;customer4;Europe;60.0
+01.09.2018;C011414575;customer2;North America;234.0
+01.10.2018;C011414575;customer2;North America;176.0
+01.10.2018;C011414575;customer4;Europe;58.0
+01.11.2018;C011414575;customer3;North America;28.0
+01.11.2018;C011414575;customer2;North America;104.0
+01.11.2018;C011414575;customer4;Europe;24.0
+01.12.2018;C011414575;customer2;North America;252.0
+01.12.2018;C011414575;customer3;North America;60.0
+01.01.2019;C011414575;customer2;North America;156.0
+01.02.2019;C011414575;customer4;Europe;106.0
+01.02.2019;C011414575;customer2;North America;284.0
+01.03.2019;C011414575;customer2;North America;156.0
+01.04.2019;C011414575;customer2;North America;234.0
+01.05.2019;C011414575;customer4;Europe;234.0
+01.06.2019;C011414575;customer3;North America;40.0
+01.06.2019;C011414575;customer2;North America;194.0
+01.07.2019;C011414575;customer2;North America;352.0
+01.07.2019;C011414575;customer4;Europe;122.0
+01.08.2019;C011414575;customer2;North America;234.0
+01.09.2019;C011414575;customer2;North America;390.0
+01.10.2019;C011414575;customer2;North America;237.0
+01.10.2019;C011414575;customer4;Europe;75.0
+01.11.2019;C011414575;customer2;North America;156.0
+01.12.2019;C011414575;customer2;North America;312.0
+01.01.2020;C011414575;customer4;Europe;80.0
+01.01.2020;C011414575;customer2;North America;232.0
+01.02.2020;C011414575;customer2;North America;256.0
+01.02.2020;C011414575;customer3;North America;56.0
+01.03.2020;C011414575;customer3;North America;-5.0
+01.04.2020;C011414575;customer2;North America;312.0
+01.05.2020;C011414575;customer2;North America;246.0
+01.06.2020;C011414575;customer2;North America;171.0
+01.06.2020;C011414575;customer4;Europe;63.0
+01.07.2020;C011414575;customer2;North America;234.0
+01.08.2020;C011414575;customer2;North America;234.0
+01.09.2020;C011414575;customer2;North America;390.0
+01.10.2020;C011414575;customer2;North America;234.0
+01.11.2020;C011414575;customer2;North America;234.0
+01.12.2020;C011414575;customer2;North America;244.0
+01.12.2020;C011414575;customer3;North America;68.0
+01.01.2021;C011414575;customer2;North America;234.0
+01.02.2021;C011414575;customer2;North America;312.0
+01.03.2021;C011414575;customer2;North America;119.0
+01.03.2021;C011414575;customer4;Europe;37.0
+01.04.2021;C011414575;customer2;North America;213.0
+01.04.2021;C011414575;customer3;North America;54.0
+01.04.2021;C011414575;customer4;Europe;69.0
+01.05.2021;C011414575;customer2;North America;234.0
+01.06.2021;C011414575;customer2;North America;312.0
+01.07.2021;C011414575;customer2;North America;234.0
+01.08.2021;C011414575;customer3;North America;312.0
+01.09.2021;C011414575;customer2;North America;234.0
+01.10.2021;C011414575;customer4;Europe;20.0
+01.10.2021;C011414575;customer2;North America;58.0
+01.11.2021;C011414575;customer2;North America;227.0
+01.11.2021;C011414575;customer4;Europe;85.0
+01.12.2021;C011414575;customer2;North America;312.0
+01.01.2022;C011414575;customer2;North America;168.0
+01.01.2022;C011414575;customer4;Europe;66.0
+01.02.2022;C011414575;customer3;North America;234.0
+01.03.2022;C011414575;customer2;North America;113.0
+01.03.2022;C011414575;customer4;Europe;43.0
+01.04.2022;C011414575;customer2;North America;57.0
+01.04.2022;C011414575;customer4;Europe;21.0
+01.05.2022;C011414575;customer2;North America;139.0
+01.05.2022;C011414575;customer1;Europe;17.0
+01.06.2022;C011414575;customer2;North America;234.0
+01.07.2022;C011414575;customer4;Europe;390.0
+01.08.2022;C011414575;customer3;North America;197.0
+01.08.2022;C011414575;customer1;Europe;115.0
+01.09.2022;C011414575;customer2;North America;390.0
+01.10.2022;C011414575;customer2;North America;156.0
+01.11.2022;C011414575;customer2;North America;312.0
+01.12.2022;C011414575;customer2;North America;158.0
+01.12.2022;C011414575;customer4;Europe;58.0
+01.12.2022;C011414575;customer3;North America;42.0
+01.01.2023;C011414575;customer2;North America;390.0
+01.02.2023;C011414575;customer2;North America;299.0
+01.02.2023;C011414575;customer3;North America;91.0
+01.03.2023;C011414575;customer2;North America;234.0
+01.04.2023;C011414575;customer2;North America;234.0
+01.05.2023;C011414575;customer2;North America;226.0
+01.05.2023;C011414575;customer4;Europe;86.0
+01.06.2023;C011414575;customer2;North America;172.0
+01.06.2023;C011414575;customer4;Europe;50.0
+01.07.2023;C011414575;customer2;North America;59.0
+01.07.2023;C011414575;customer3;North America;19.0
+01.08.2023;C011414575;customer2;North America;312.0
+01.09.2023;C011414575;customer2;North America;390.0
+01.10.2023;C011414575;customer2;North America;78.0
+01.11.2023;C011414575;customer2;North America;234.0
+01.12.2023;C011414575;customer2;North America;156.0
+01.01.2024;C011414575;customer2;North America;171.0
+01.01.2024;C011414575;customer4;Europe;63.0
+01.02.2024;C011414575;customer2;North America;114.0
+01.02.2024;C011414575;customer4;Europe;42.0
+01.03.2024;C011414575;customer2;North America;294.0
+01.04.2024;C011414575;customer2;North America;234.0
+01.05.2024;C011414575;customer2;North America;246.0
+01.06.2024;C011414575;customer2;North America;106.0
+01.06.2024;C011414575;customer4;Europe;50.0
+01.10.2007;C024897037;customer2;North America;234.0
+01.10.2007;C024897037;customer3;North America;50.0
+01.10.2007;C024897037;customer4;Europe;94.0
+01.11.2007;C024897037;customer2;North America;309.0
+01.11.2007;C024897037;customer4;Europe;105.0
+01.12.2007;C024897037;customer2;North America;196.0
+01.12.2007;C024897037;customer4;Europe;68.0
+01.01.2008;C024897037;customer2;North America;228.0
+01.01.2008;C024897037;customer3;North America;66.0
+01.02.2008;C024897037;customer2;North America;288.0
+01.03.2008;C024897037;customer2;North America;248.0
+01.03.2008;C024897037;customer4;Europe;94.0
+01.04.2008;C024897037;customer2;North America;354.0
+01.05.2008;C024897037;customer3;North America;318.0
+01.06.2008;C024897037;customer2;North America;390.0
+01.07.2008;C024897037;customer4;Europe;378.0
+01.08.2008;C024897037;customer2;North America;306.0
+01.09.2008;C024897037;customer1;Europe;48.0
+01.09.2008;C024897037;customer2;North America;276.0
+01.10.2008;C024897037;customer2;North America;272.0
+01.10.2008;C024897037;customer1;Europe;32.0
+01.10.2008;C024897037;customer3;North America;68.0
+01.11.2008;C024897037;customer3;North America;61.0
+01.11.2008;C024897037;customer2;North America;287.0
+01.12.2008;C024897037;customer2;North America;200.0
+01.12.2008;C024897037;customer4;Europe;76.0
+01.01.2009;C024897037;customer4;Europe;172.0
+01.01.2009;C024897037;customer3;North America;92.0
+01.02.2009;C024897037;customer2;North America;366.0
+01.03.2009;C024897037;customer1;Europe;276.0
+01.04.2009;C024897037;customer2;North America;330.0
+01.05.2009;C024897037;customer4;Europe;68.0
+01.05.2009;C024897037;customer2;North America;179.0
+01.05.2009;C024897037;customer1;Europe;23.0
+01.06.2009;C024897037;customer2;North America;414.0
+01.07.2009;C024897037;customer2;North America;216.0
+01.07.2009;C024897037;customer4;Europe;90.0
+01.08.2009;C024897037;customer2;North America;145.0
+01.08.2009;C024897037;customer4;Europe;47.0
+01.09.2009;C024897037;customer4;Europe;45.0
+01.09.2009;C024897037;customer2;North America;125.0
+01.09.2009;C024897037;customer3;North America;22.0
+01.10.2009;C024897037;customer2;North America;300.0
+01.11.2009;C024897037;customer2;North America;324.0
+01.12.2009;C024897037;customer2;North America;182.0
+01.12.2009;C024897037;customer4;Europe;64.0
+01.01.2010;C024897037;customer2;North America;186.0
+01.02.2010;C024897037;customer1;Europe;32.0
+01.02.2010;C024897037;customer2;North America;172.0
+01.03.2010;C024897037;customer4;Europe;36.0
+01.03.2010;C024897037;customer2;North America;78.0
+01.04.2010;C024897037;customer4;Europe;150.0
+01.05.2010;C024897037;customer2;North America;126.0
+01.05.2010;C024897037;customer1;Europe;18.0
+01.06.2010;C024897037;customer2;North America;198.0
+01.07.2010;C024897037;customer4;Europe;39.0
+01.07.2010;C024897037;customer2;North America;81.0
+01.07.2010;C024897037;customer3;North America;24.0
+01.08.2010;C024897037;customer2;North America;42.0
+01.08.2010;C024897037;customer4;Europe;17.0
+01.08.2010;C024897037;customer3;North America;7.0
+01.09.2010;C024897037;customer2;North America;102.0
+01.10.2010;C024897037;customer2;North America;282.0
+01.11.2010;C024897037;customer3;North America;228.0
+01.12.2010;C024897037;customer2;North America;120.0
+01.01.2011;C024897037;customer2;North America;175.0
+01.01.2011;C024897037;customer3;North America;41.0
+01.02.2011;C024897037;customer2;North America;228.0
+01.03.2011;C024897037;customer4;Europe;150.0
+01.04.2011;C024897037;customer2;North America;258.0
+01.05.2011;C024897037;customer2;North America;264.0
+01.06.2011;C024897037;customer1;Europe;46.0
+01.06.2011;C024897037;customer2;North America;314.0
+01.07.2011;C024897037;customer2;North America;270.0
+01.08.2011;C024897037;customer2;North America;240.0
+01.09.2011;C024897037;customer2;North America;288.0
+01.10.2011;C024897037;customer2;North America;366.0
+01.11.2011;C024897037;customer2;North America;342.0
+01.12.2011;C024897037;customer2;North America;157.0
+01.12.2011;C024897037;customer4;Europe;52.0
+01.12.2011;C024897037;customer3;North America;43.0
+01.01.2012;C024897037;customer4;Europe;312.0
+01.02.2012;C024897037;customer2;North America;342.0
+01.03.2012;C024897037;customer2;North America;318.0
+01.04.2012;C024897037;customer2;North America;408.0
+01.05.2012;C024897037;customer2;North America;288.0
+01.06.2012;C024897037;customer2;North America;396.0
+01.07.2012;C024897037;customer2;North America;250.0
+01.07.2012;C024897037;customer3;North America;74.0
+01.07.2012;C024897037;customer4;Europe;84.0
+01.08.2012;C024897037;customer2;North America;158.0
+01.08.2012;C024897037;customer4;Europe;59.0
+01.08.2012;C024897037;customer1;Europe;16.0
+01.08.2012;C024897037;customer3;North America;25.0
+01.09.2012;C024897037;customer4;Europe;85.0
+01.09.2012;C024897037;customer2;North America;203.0
+01.10.2012;C024897037;customer2;North America;235.0
+01.10.2012;C024897037;customer4;Europe;89.0
+01.11.2012;C024897037;customer2;North America;360.0
+01.12.2012;C024897037;customer2;North America;178.0
+01.12.2012;C024897037;customer3;North America;56.0
+01.01.2013;C024897037;customer4;Europe;282.0
+01.02.2013;C024897037;customer2;North America;312.0
+01.03.2013;C024897037;customer3;North America;44.0
+01.03.2013;C024897037;customer2;North America;162.0
+01.03.2013;C024897037;customer4;Europe;46.0
+01.04.2013;C024897037;customer2;North America;312.0
+01.05.2013;C024897037;customer2;North America;258.0
+01.06.2013;C024897037;customer2;North America;295.0
+01.06.2013;C024897037;customer3;North America;71.0
+01.07.2013;C024897037;customer2;North America;330.0
+01.08.2013;C024897037;customer2;North America;161.0
+01.08.2013;C024897037;customer4;Europe;61.0
+01.09.2013;C024897037;customer2;North America;175.0
+01.09.2013;C024897037;customer4;Europe;71.0
+01.10.2013;C024897037;customer2;North America;348.0
+01.11.2013;C024897037;customer2;North America;300.0
+01.11.2013;C024897037;customer1;Europe;42.0
+01.12.2013;C024897037;customer2;North America;186.0
+01.01.2014;C024897037;customer2;North America;156.0
+01.01.2014;C024897037;customer3;North America;44.0
+01.01.2014;C024897037;customer4;Europe;64.0
+01.02.2014;C024897037;customer2;North America;248.0
+01.02.2014;C024897037;customer3;North America;64.0
+01.03.2014;C024897037;customer2;North America;165.0
+01.03.2014;C024897037;customer4;Europe;51.0
+01.04.2014;C024897037;customer3;North America;204.0
+01.05.2014;C024897037;customer2;North America;173.0
+01.05.2014;C024897037;customer4;Europe;70.0
+01.05.2014;C024897037;customer1;Europe;27.0
+01.06.2014;C024897037;customer4;Europe;342.0
+01.07.2014;C024897037;customer2;North America;318.0
+01.08.2014;C024897037;customer1;Europe;234.0
+01.09.2014;C024897037;customer2;North America;97.0
+01.09.2014;C024897037;customer3;North America;14.0
+01.09.2014;C024897037;customer4;Europe;33.0
+01.10.2014;C024897037;customer4;Europe;306.0
+01.11.2014;C024897037;customer2;North America;306.0
+01.12.2014;C024897037;customer2;North America;192.0
+01.01.2015;C024897037;customer3;North America;264.0
+01.02.2015;C024897037;customer2;North America;354.0
+01.03.2015;C024897037;customer3;North America;306.0
+01.04.2015;C024897037;customer2;North America;366.0
+01.05.2015;C024897037;customer2;North America;216.0
+01.06.2015;C024897037;customer2;North America;432.0
+01.07.2015;C024897037;customer2;North America;290.0
+01.07.2015;C024897037;customer3;North America;70.0
+01.08.2015;C024897037;customer2;North America;294.0
+01.09.2015;C024897037;customer2;North America;294.0
+01.10.2015;C024897037;customer2;North America;348.0
+01.11.2015;C024897037;customer3;North America;67.0
+01.11.2015;C024897037;customer2;North America;269.0
+01.12.2015;C024897037;customer2;North America;246.0
+01.01.2016;C024897037;customer2;North America;263.0
+01.01.2016;C024897037;customer1;Europe;37.0
+01.02.2016;C024897037;customer2;North America;360.0
+01.03.2016;C024897037;customer2;North America;234.0
+01.04.2016;C024897037;customer2;North America;396.0
+01.05.2016;C024897037;customer2;North America;312.0
+01.06.2016;C024897037;customer2;North America;218.0
+01.06.2016;C024897037;customer4;Europe;93.0
+01.06.2016;C024897037;customer3;North America;49.0
+01.07.2016;C024897037;customer4;Europe;348.0
+01.08.2016;C024897037;customer2;North America;173.0
+01.08.2016;C024897037;customer4;Europe;73.0
+01.09.2016;C024897037;customer2;North America;276.0
+01.10.2016;C024897037;customer2;North America;286.0
+01.10.2016;C024897037;customer4;Europe;80.0
+01.11.2016;C024897037;customer2;North America;318.0
+01.12.2016;C024897037;customer2;North America;204.0
+01.01.2017;C024897037;customer4;Europe;252.0
+01.02.2017;C024897037;customer2;North America;207.0
+01.02.2017;C024897037;customer4;Europe;69.0
+01.03.2017;C024897037;customer2;North America;222.0
+01.04.2017;C024897037;customer2;North America;294.0
+01.05.2017;C024897037;customer2;North America;276.0
+01.06.2017;C024897037;customer2;North America;342.0
+01.07.2017;C024897037;customer3;North America;45.0
+01.07.2017;C024897037;customer2;North America;231.0
+01.07.2017;C024897037;customer4;Europe;90.0
+01.08.2017;C024897037;customer2;North America;270.0
+01.09.2017;C024897037;customer4;Europe;80.0
+01.09.2017;C024897037;customer2;North America;172.0
+01.10.2017;C024897037;customer3;North America;38.0
+01.10.2017;C024897037;customer4;Europe;71.0
+01.10.2017;C024897037;customer2;North America;191.0
+01.11.2017;C024897037;customer2;North America;336.0
+01.12.2017;C024897037;customer2;North America;129.0
+01.12.2017;C024897037;customer4;Europe;49.0
+01.12.2017;C024897037;customer3;North America;26.0
+01.01.2018;C024897037;customer2;North America;180.0
+01.02.2018;C024897037;customer2;North America;336.0
+01.03.2018;C024897037;customer2;North America;270.0
+01.04.2018;C024897037;customer2;North America;360.0
+01.05.2018;C024897037;customer4;Europe;72.0
+01.05.2018;C024897037;customer2;North America;246.0
+01.06.2018;C024897037;customer3;North America;390.0
+01.07.2018;C024897037;customer2;North America;348.0
+01.08.2018;C024897037;customer2;North America;267.0
+01.08.2018;C024897037;customer1;Europe;39.0
+01.09.2018;C024897037;customer4;Europe;300.0
+01.10.2018;C024897037;customer2;North America;276.0
+01.10.2018;C024897037;customer3;North America;72.0
+01.11.2018;C024897037;customer2;North America;222.0
+01.11.2018;C024897037;customer4;Europe;72.0
+01.12.2018;C024897037;customer2;North America;246.0
+01.01.2019;C024897037;customer4;Europe;81.0
+01.01.2019;C024897037;customer2;North America;189.0
+01.02.2019;C024897037;customer2;North America;210.0
+01.02.2019;C024897037;customer3;North America;55.0
+01.02.2019;C024897037;customer4;Europe;77.0
+01.03.2019;C024897037;customer2;North America;240.0
+01.03.2019;C024897037;customer4;Europe;84.0
+01.04.2019;C024897037;customer3;North America;86.0
+01.04.2019;C024897037;customer2;North America;304.0
+01.05.2019;C024897037;customer2;North America;348.0
+01.06.2019;C024897037;customer2;North America;378.0
+01.07.2019;C024897037;customer4;Europe;432.0
+01.08.2019;C024897037;customer2;North America;226.0
+01.08.2019;C024897037;customer4;Europe;80.0
+01.09.2019;C024897037;customer4;Europe;324.0
+01.10.2019;C024897037;customer2;North America;219.0
+01.10.2019;C024897037;customer3;North America;69.0
+01.10.2019;C024897037;customer4;Europe;72.0
+01.11.2019;C024897037;customer2;North America;342.0
+01.12.2019;C024897037;customer2;North America;270.0
+01.01.2020;C024897037;customer2;North America;199.0
+01.01.2020;C024897037;customer3;North America;51.0
+01.01.2020;C024897037;customer1;Europe;20.0
+01.02.2020;C024897037;customer2;North America;284.0
+01.02.2020;C024897037;customer3;North America;76.0
+01.03.2020;C024897037;customer2;North America;336.0
+01.04.2020;C024897037;customer4;Europe;117.0
+01.04.2020;C024897037;customer2;North America;273.0
+01.05.2020;C024897037;customer2;North America;282.0
+01.06.2020;C024897037;customer4;Europe;85.0
+01.06.2020;C024897037;customer3;North America;72.0
+01.06.2020;C024897037;customer2;North America;251.0
+01.07.2020;C024897037;customer2;North America;300.0
+01.08.2020;C024897037;customer2;North America;253.0
+01.08.2020;C024897037;customer1;Europe;29.0
+01.09.2020;C024897037;customer4;Europe;264.0
+01.10.2020;C024897037;customer2;North America;246.0
+01.10.2020;C024897037;customer4;Europe;84.0
+01.11.2020;C024897037;customer3;North America;59.0
+01.11.2020;C024897037;customer4;Europe;74.0
+01.11.2020;C024897037;customer2;North America;203.0
+01.12.2020;C024897037;customer2;North America;204.0
+01.01.2021;C024897037;customer2;North America;100.0
+01.01.2021;C024897037;customer3;North America;29.0
+01.01.2021;C024897037;customer1;Europe;20.0
+01.01.2021;C024897037;customer4;Europe;43.0
+01.02.2021;C024897037;customer2;North America;264.0
+01.03.2021;C024897037;customer2;North America;153.0
+01.03.2021;C024897037;customer3;North America;36.0
+01.03.2021;C024897037;customer4;Europe;51.0
+01.04.2021;C024897037;customer2;North America;318.0
+01.05.2021;C024897037;customer4;Europe;258.0
+01.06.2021;C024897037;customer2;North America;372.0
+01.07.2021;C024897037;customer3;North America;312.0
+01.08.2021;C024897037;customer3;North America;42.0
+01.08.2021;C024897037;customer2;North America;132.0
+01.09.2021;C024897037;customer2;North America;144.0
+01.10.2021;C024897037;customer3;North America;55.0
+01.10.2021;C024897037;customer4;Europe;84.0
+01.10.2021;C024897037;customer2;North America;185.0
+01.11.2021;C024897037;customer2;North America;270.0
+01.12.2021;C024897037;customer1;Europe;216.0
+01.01.2022;C024897037;customer2;North America;258.0
+01.02.2022;C024897037;customer2;North America;300.0
+01.03.2022;C024897037;customer2;North America;206.0
+01.03.2022;C024897037;customer3;North America;46.0
+01.04.2022;C024897037;customer3;North America;366.0
+01.05.2022;C024897037;customer2;North America;282.0
+01.06.2022;C024897037;customer2;North America;348.0
+01.07.2022;C024897037;customer2;North America;432.0
+01.08.2022;C024897037;customer2;North America;318.0
+01.09.2022;C024897037;customer3;North America;65.0
+01.09.2022;C024897037;customer2;North America;223.0
+01.10.2022;C024897037;customer2;North America;414.0
+01.11.2022;C024897037;customer4;Europe;97.0
+01.11.2022;C024897037;customer2;North America;269.0
+01.12.2022;C024897037;customer2;North America;246.0
+01.01.2023;C024897037;customer2;North America;318.0
+01.02.2023;C024897037;customer2;North America;420.0
+01.03.2023;C024897037;customer2;North America;312.0
+01.04.2023;C024897037;customer2;North America;456.0
+01.05.2023;C024897037;customer2;North America;318.0
+01.06.2023;C024897037;customer3;North America;280.0
+01.06.2023;C024897037;customer1;Europe;158.0
+01.07.2023;C024897037;customer2;North America;402.0
+01.08.2023;C024897037;customer2;North America;207.0
+01.08.2023;C024897037;customer4;Europe;99.0
+01.09.2023;C024897037;customer2;North America;215.0
+01.09.2023;C024897037;customer3;North America;49.0
+01.10.2023;C024897037;customer2;North America;281.0
+01.10.2023;C024897037;customer4;Europe;73.0
+01.11.2023;C024897037;customer2;North America;378.0
+01.12.2023;C024897037;customer4;Europe;60.0
+01.12.2023;C024897037;customer2;North America;174.0
+01.01.2024;C024897037;customer2;North America;175.0
+01.01.2024;C024897037;customer4;Europe;107.0
+01.02.2024;C024897037;customer2;North America;177.0
+01.02.2024;C024897037;customer4;Europe;64.0
+01.02.2024;C024897037;customer3;North America;71.0
+01.03.2024;C024897037;customer2;North America;252.0
+01.04.2024;C024897037;customer2;North America;232.0
+01.04.2024;C024897037;customer4;Europe;104.0
+01.05.2024;C024897037;customer3;North America;93.0
+01.05.2024;C024897037;customer2;North America;225.0
+01.06.2024;C024897037;customer4;Europe;111.0
+01.06.2024;C024897037;customer2;North America;237.0
+01.04.2015;C021120183;customer3;North America;56.0
+01.04.2015;C021120183;customer4;Europe;82.0
+01.05.2015;C021120183;customer2;North America;24.0
+01.07.2015;C021120183;customer2;North America;30.0
+01.09.2015;C021120183;customer2;North America;16.0
+01.09.2015;C021120183;customer1;Europe;2.0
+01.11.2015;C021120183;customer2;North America;40.0
+01.11.2015;C021120183;customer4;Europe;17.0
+01.11.2015;C021120183;customer3;North America;9.0
+01.12.2015;C021120183;customer2;North America;72.0
+01.03.2016;C021120183;customer2;North America;33.0
+01.03.2016;C021120183;customer3;North America;9.0
+01.03.2016;C021120183;customer4;Europe;12.0
+01.10.2016;C021120183;customer2;North America;10.0
+01.10.2016;C021120183;customer3;North America;2.0
+01.11.2016;C021120183;customer1;Europe;17.0
+01.11.2016;C021120183;customer2;North America;103.0
+01.02.2017;C021120183;customer4;Europe;6.0
+01.02.2017;C021120183;customer2;North America;25.0
+01.02.2017;C021120183;customer3;North America;5.0
+01.03.2017;C021120183;customer3;North America;2.0
+01.03.2017;C021120183;customer2;North America;4.0
+01.04.2017;C021120183;customer4;Europe;5.0
+01.04.2017;C021120183;customer2;North America;7.0
+01.11.2017;C021120183;customer2;North America;30.0
+01.03.2018;C021120183;customer2;North America;72.0
+01.06.2018;C021120183;customer2;North America;29.0
+01.06.2018;C021120183;customer4;Europe;7.0
+01.11.2018;C021120183;customer2;North America;66.0
+01.02.2019;C021120183;customer4;Europe;14.0
+01.02.2019;C021120183;customer1;Europe;4.0
+01.03.2019;C021120183;customer2;North America;78.0
+01.08.2019;C021120183;customer2;North America;4.0
+01.08.2019;C021120183;customer4;Europe;2.0
+01.12.2019;C021120183;customer4;Europe;51.0
+01.12.2019;C021120183;customer3;North America;27.0
+01.02.2020;C021120183;customer2;North America;114.0
+01.04.2020;C021120183;customer4;Europe;76.0
+01.04.2020;C021120183;customer2;North America;140.0
+01.06.2020;C021120183;customer2;North America;72.0
+01.11.2020;C021120183;customer2;North America;150.0
+01.02.2021;C021120183;customer2;North America;63.0
+01.02.2021;C021120183;customer1;Europe;9.0
+01.03.2021;C021120183;customer2;North America;84.0
+01.05.2021;C021120183;customer2;North America;18.0
+01.08.2021;C021120183;customer2;North America;48.0
+01.11.2021;C021120183;customer2;North America;39.0
+01.11.2021;C021120183;customer4;Europe;15.0
+01.12.2021;C021120183;customer2;North America;17.0
+01.12.2021;C021120183;customer3;North America;1.0
+01.05.2022;C021120183;customer2;North America;144.0
+01.08.2022;C021120183;customer2;North America;114.0
+01.09.2022;C021120183;customer3;North America;2.0
+01.09.2022;C021120183;customer4;Europe;4.0
+01.11.2022;C021120183;customer4;Europe;84.0
+01.12.2022;C021120183;customer2;North America;8.0
+01.12.2022;C021120183;customer4;Europe;4.0
+01.02.2023;C021120183;customer2;North America;72.0
+01.03.2023;C021120183;customer2;North America;50.0
+01.03.2023;C021120183;customer3;North America;10.0
+01.07.2023;C021120183;customer4;Europe;36.0
+01.09.2023;C021120183;customer2;North America;38.0
+01.09.2023;C021120183;customer4;Europe;7.0
+01.09.2023;C021120183;customer3;North America;7.0
+01.09.2023;C021120183;customer1;Europe;2.0
+01.04.2024;C021120183;customer2;North America;33.0
+01.04.2024;C021120183;customer4;Europe;9.0
+01.02.2008;C026568362;customer2;North America;204.0
+01.03.2008;C026568362;customer2;North America;162.0
+01.04.2008;C026568362;customer2;North America;187.0
+01.04.2008;C026568362;customer1;Europe;23.0
+01.05.2008;C026568362;customer2;North America;117.0
+01.05.2008;C026568362;customer3;North America;27.0
+01.06.2008;C026568362;customer2;North America;148.0
+01.06.2008;C026568362;customer4;Europe;50.0
+01.07.2008;C026568362;customer3;North America;34.0
+01.07.2008;C026568362;customer2;North America;134.0
+01.08.2008;C026568362;customer2;North America;144.0
+01.09.2008;C026568362;customer2;North America;108.0
+01.10.2008;C026568362;customer3;North America;34.0
+01.10.2008;C026568362;customer2;North America;140.0
+01.11.2008;C026568362;customer4;Europe;35.0
+01.11.2008;C026568362;customer2;North America;97.0
+01.11.2008;C026568362;customer1;Europe;12.0
+01.12.2008;C026568362;customer2;North America;70.0
+01.12.2008;C026568362;customer4;Europe;26.0
+01.01.2009;C026568362;customer2;North America;77.0
+01.01.2009;C026568362;customer3;North America;13.0
+01.02.2009;C026568362;customer2;North America;96.0
+01.02.2009;C026568362;customer4;Europe;42.0
+01.03.2009;C026568362;customer2;North America;45.0
+01.03.2009;C026568362;customer3;North America;15.0
+01.04.2009;C026568362;customer4;Europe;34.0
+01.04.2009;C026568362;customer2;North America;80.0
+01.05.2009;C026568362;customer2;North America;58.0
+01.05.2009;C026568362;customer3;North America;8.0
+01.06.2009;C026568362;customer2;North America;93.0
+01.06.2009;C026568362;customer4;Europe;39.0
+01.07.2009;C026568362;customer2;North America;99.0
+01.07.2009;C026568362;customer4;Europe;33.0
+01.08.2009;C026568362;customer2;North America;97.0
+01.08.2009;C026568362;customer4;Europe;47.0
+01.09.2009;C026568362;customer2;North America;96.0
+01.10.2009;C026568362;customer2;North America;168.0
+01.11.2009;C026568362;customer2;North America;131.0
+01.11.2009;C026568362;customer4;Europe;49.0
+01.12.2009;C026568362;customer2;North America;106.0
+01.12.2009;C026568362;customer3;North America;26.0
+01.01.2010;C026568362;customer2;North America;113.0
+01.01.2010;C026568362;customer4;Europe;37.0
+01.02.2010;C026568362;customer4;Europe;67.0
+01.02.2010;C026568362;customer2;North America;143.0
+01.03.2010;C026568362;customer2;North America;108.0
+01.04.2010;C026568362;customer2;North America;204.0
+01.05.2010;C026568362;customer2;North America;117.0
+01.05.2010;C026568362;customer4;Europe;45.0
+01.06.2010;C026568362;customer4;Europe;70.0
+01.06.2010;C026568362;customer2;North America;170.0
+01.07.2010;C026568362;customer2;North America;186.0
+01.07.2010;C026568362;customer3;North America;47.0
+01.07.2010;C026568362;customer1;Europe;13.0
+01.08.2010;C026568362;customer4;Europe;234.0
+01.09.2010;C026568362;customer4;Europe;67.0
+01.09.2010;C026568362;customer2;North America;215.0
+01.10.2010;C026568362;customer4;Europe;188.0
+01.10.2010;C026568362;customer3;North America;130.0
+01.11.2010;C026568362;customer3;North America;324.0
+01.12.2010;C026568362;customer2;North America;246.0
+01.01.2011;C026568362;customer2;North America;282.0
+01.02.2011;C026568362;customer2;North America;248.0
+01.02.2011;C026568362;customer4;Europe;94.0
+01.03.2011;C026568362;customer2;North America;318.0
+01.04.2011;C026568362;customer2;North America;318.0
+01.05.2011;C026568362;customer2;North America;324.0
+01.06.2011;C026568362;customer2;North America;287.0
+01.06.2011;C026568362;customer3;North America;85.0
+01.07.2011;C026568362;customer4;Europe;330.0
+01.08.2011;C026568362;customer2;North America;189.0
+01.08.2011;C026568362;customer4;Europe;81.0
+01.09.2011;C026568362;customer2;North America;240.0
+01.10.2011;C026568362;customer2;North America;348.0
+01.11.2011;C026568362;customer4;Europe;93.0
+01.11.2011;C026568362;customer2;North America;231.0
+01.12.2011;C026568362;customer3;North America;276.0
+01.01.2012;C026568362;customer3;North America;48.0
+01.01.2012;C026568362;customer2;North America;246.0
+01.02.2012;C026568362;customer2;North America;342.0
+01.03.2012;C026568362;customer3;North America;276.0
+01.04.2012;C026568362;customer4;Europe;82.0
+01.04.2012;C026568362;customer2;North America;266.0
+01.05.2012;C026568362;customer2;North America;237.0
+01.05.2012;C026568362;customer4;Europe;105.0
+01.06.2012;C026568362;customer3;North America;378.0
+01.07.2012;C026568362;customer2;North America;360.0
+01.08.2012;C026568362;customer2;North America;260.0
+01.08.2012;C026568362;customer3;North America;58.0
+01.09.2012;C026568362;customer2;North America;276.0
+01.10.2012;C026568362;customer2;North America;354.0
+01.11.2012;C026568362;customer2;North America;217.0
+01.11.2012;C026568362;customer4;Europe;89.0
+01.11.2012;C026568362;customer3;North America;54.0
+01.12.2012;C026568362;customer2;North America;318.0
+01.01.2013;C026568362;customer3;North America;224.0
+01.01.2013;C026568362;customer1;Europe;112.0
+01.02.2013;C026568362;customer2;North America;360.0
+01.03.2013;C026568362;customer2;North America;288.0
+01.04.2013;C026568362;customer2;North America;225.0
+01.04.2013;C026568362;customer3;North America;37.0
+01.04.2013;C026568362;customer4;Europe;86.0
+01.05.2013;C026568362;customer2;North America;324.0
+01.06.2013;C026568362;customer4;Europe;96.0
+01.06.2013;C026568362;customer2;North America;238.0
+01.06.2013;C026568362;customer1;Europe;26.0
+01.07.2013;C026568362;customer2;North America;247.0
+01.07.2013;C026568362;customer4;Europe;101.0
+01.08.2013;C026568362;customer2;North America;288.0
+01.09.2013;C026568362;customer2;North America;306.0
+01.10.2013;C026568362;customer1;Europe;51.0
+01.10.2013;C026568362;customer2;North America;321.0
+01.11.2013;C026568362;customer2;North America;360.0
+01.12.2013;C026568362;customer2;North America;230.0
+01.12.2013;C026568362;customer4;Europe;88.0
+01.01.2014;C026568362;customer2;North America;342.0
+01.02.2014;C026568362;customer2;North America;384.0
+01.03.2014;C026568362;customer2;North America;306.0
+01.04.2014;C026568362;customer2;North America;342.0
+01.05.2014;C026568362;customer2;North America;246.0
+01.05.2014;C026568362;customer3;North America;66.0
+01.06.2014;C026568362;customer2;North America;216.0
+01.06.2014;C026568362;customer3;North America;51.0
+01.06.2014;C026568362;customer4;Europe;68.0
+01.06.2014;C026568362;customer1;Europe;25.0
+01.07.2014;C026568362;customer4;Europe;92.0
+01.07.2014;C026568362;customer2;North America;274.0
+01.08.2014;C026568362;customer2;North America;306.0
+01.09.2014;C026568362;customer4;Europe;330.0
+01.10.2014;C026568362;customer2;North America;360.0
+01.11.2014;C026568362;customer4;Europe;116.0
+01.11.2014;C026568362;customer2;North America;268.0
+01.12.2014;C026568362;customer2;North America;248.0
+01.12.2014;C026568362;customer4;Europe;82.0
+01.01.2015;C026568362;customer3;North America;40.0
+01.01.2015;C026568362;customer4;Europe;90.0
+01.01.2015;C026568362;customer2;North America;224.0
+01.02.2015;C026568362;customer2;North America;366.0
+01.03.2015;C026568362;customer2;North America;366.0
+01.04.2015;C026568362;customer1;Europe;28.0
+01.04.2015;C026568362;customer2;North America;264.0
+01.04.2015;C026568362;customer4;Europe;104.0
+01.05.2015;C026568362;customer3;North America;78.0
+01.05.2015;C026568362;customer2;North America;300.0
+01.06.2015;C026568362;customer2;North America;414.0
+01.07.2015;C026568362;customer2;North America;405.0
+01.07.2015;C026568362;customer1;Europe;51.0
+01.08.2015;C026568362;customer2;North America;390.0
+01.09.2015;C026568362;customer2;North America;384.0
+01.10.2015;C026568362;customer2;North America;402.0
+01.10.2015;C026568362;customer1;Europe;42.0
+01.11.2015;C026568362;customer2;North America;402.0
+01.12.2015;C026568362;customer2;North America;390.0
+01.01.2016;C026568362;customer2;North America;408.0
+01.02.2016;C026568362;customer2;North America;356.0
+01.02.2016;C026568362;customer3;North America;82.0
+01.03.2016;C026568362;customer2;North America;396.0
+01.04.2016;C026568362;customer4;Europe;420.0
+01.05.2016;C026568362;customer2;North America;285.0
+01.05.2016;C026568362;customer4;Europe;129.0
+01.06.2016;C026568362;customer2;North America;414.0
+01.07.2016;C026568362;customer4;Europe;134.0
+01.07.2016;C026568362;customer2;North America;328.0
+01.08.2016;C026568362;customer1;Europe;366.0
+01.09.2016;C026568362;customer4;Europe;103.0
+01.09.2016;C026568362;customer2;North America;228.0
+01.09.2016;C026568362;customer1;Europe;29.0
+01.10.2016;C026568362;customer2;North America;268.0
+01.10.2016;C026568362;customer4;Europe;98.0
+01.11.2016;C026568362;customer2;North America;396.0
+01.12.2016;C026568362;customer2;North America;249.0
+01.12.2016;C026568362;customer4;Europe;75.0
+01.01.2017;C026568362;customer2;North America;372.0
+01.02.2017;C026568362;customer2;North America;432.0
+01.03.2017;C026568362;customer2;North America;354.0
+01.04.2017;C026568362;customer2;North America;302.0
+01.04.2017;C026568362;customer4;Europe;88.0
+01.05.2017;C026568362;customer2;North America;384.0
+01.06.2017;C026568362;customer2;North America;426.0
+01.07.2017;C026568362;customer2;North America;286.0
+01.07.2017;C026568362;customer4;Europe;110.0
+01.08.2017;C026568362;customer2;North America;196.0
+01.08.2017;C026568362;customer3;North America;59.0
+01.08.2017;C026568362;customer4;Europe;50.0
+01.08.2017;C026568362;customer1;Europe;25.0
+01.09.2017;C026568362;customer2;North America;366.0
+01.10.2017;C026568362;customer2;North America;251.0
+01.10.2017;C026568362;customer4;Europe;66.0
+01.10.2017;C026568362;customer3;North America;67.0
+01.11.2017;C026568362;customer2;North America;348.0
+01.12.2017;C026568362;customer2;North America;287.0
+01.12.2017;C026568362;customer3;North America;67.0
+01.01.2018;C026568362;customer4;Europe;336.0
+01.02.2018;C026568362;customer2;North America;294.0
+01.02.2018;C026568362;customer4;Europe;108.0
+01.03.2018;C026568362;customer2;North America;354.0
+01.04.2018;C026568362;customer2;North America;288.0
+01.04.2018;C026568362;customer4;Europe;114.0
+01.05.2018;C026568362;customer2;North America;354.0
+01.06.2018;C026568362;customer2;North America;361.0
+01.06.2018;C026568362;customer3;North America;77.0
+01.07.2018;C026568362;customer2;North America;468.0
+01.08.2018;C026568362;customer2;North America;290.0
+01.08.2018;C026568362;customer3;North America;82.0
+01.09.2018;C026568362;customer2;North America;396.0
+01.10.2018;C026568362;customer2;North America;384.0
+01.11.2018;C026568362;customer2;North America;426.0
+01.12.2018;C026568362;customer2;North America;318.0
+01.01.2019;C026568362;customer2;North America;384.0
+01.02.2019;C026568362;customer2;North America;414.0
+01.03.2019;C026568362;customer2;North America;262.0
+01.03.2019;C026568362;customer4;Europe;104.0
+01.04.2019;C026568362;customer2;North America;378.0
+01.05.2019;C026568362;customer2;North America;345.0
+01.05.2019;C026568362;customer1;Europe;39.0
+01.06.2019;C026568362;customer2;North America;408.0
+01.07.2019;C026568362;customer2;North America;408.0
+01.08.2019;C026568362;customer2;North America;272.0
+01.08.2019;C026568362;customer3;North America;52.0
+01.08.2019;C026568362;customer4;Europe;84.0
+01.09.2019;C026568362;customer4;Europe;354.0
+01.10.2019;C026568362;customer2;North America;456.0
+01.11.2019;C026568362;customer4;Europe;462.0
+01.12.2019;C026568362;customer2;North America;354.0
+01.01.2020;C026568362;customer2;North America;396.0
+01.02.2020;C026568362;customer2;North America;305.0
+01.02.2020;C026568362;customer4;Europe;109.0
+01.03.2020;C026568362;customer1;Europe;366.0
+01.04.2020;C026568362;customer2;North America;349.0
+01.04.2020;C026568362;customer1;Europe;47.0
+01.05.2020;C026568362;customer2;North America;196.0
+01.05.2020;C026568362;customer4;Europe;104.0
+01.06.2020;C026568362;customer2;North America;378.0
+01.07.2020;C026568362;customer2;North America;354.0
+01.08.2020;C026568362;customer4;Europe;99.0
+01.08.2020;C026568362;customer2;North America;249.0
+01.09.2020;C026568362;customer2;North America;324.0
+01.10.2020;C026568362;customer2;North America;402.0
+01.11.2020;C026568362;customer2;North America;354.0
+01.12.2020;C026568362;customer2;North America;324.0
+01.01.2021;C026568362;customer2;North America;306.0
+01.01.2021;C026568362;customer1;Europe;42.0
+01.02.2021;C026568362;customer2;North America;289.0
+01.02.2021;C026568362;customer3;North America;71.0
+01.03.2021;C026568362;customer2;North America;236.0
+01.03.2021;C026568362;customer4;Europe;100.0
+01.04.2021;C026568362;customer2;North America;263.0
+01.04.2021;C026568362;customer4;Europe;109.0
+01.05.2021;C026568362;customer2;North America;269.0
+01.05.2021;C026568362;customer3;North America;73.0
+01.06.2021;C026568362;customer2;North America;346.0
+01.06.2021;C026568362;customer3;North America;80.0
+01.07.2021;C026568362;customer2;North America;384.0
+01.08.2021;C026568362;customer2;North America;360.0
+01.09.2021;C026568362;customer4;Europe;263.0
+01.09.2021;C026568362;customer1;Europe;91.0
+01.10.2021;C026568362;customer2;North America;349.0
+01.10.2021;C026568362;customer4;Europe;125.0
+01.11.2021;C026568362;customer2;North America;444.0
+01.12.2021;C026568362;customer2;North America;372.0
+01.01.2022;C026568362;customer2;North America;372.0
+01.02.2022;C026568362;customer2;North America;426.0
+01.03.2022;C026568362;customer2;North America;396.0
+01.04.2022;C026568362;customer3;North America;146.0
+01.04.2022;C026568362;customer4;Europe;244.0
+01.05.2022;C026568362;customer2;North America;378.0
+01.06.2022;C026568362;customer4;Europe;107.0
+01.06.2022;C026568362;customer2;North America;295.0
+01.07.2022;C026568362;customer2;North America;305.0
+01.07.2022;C026568362;customer4;Europe;97.0
+01.08.2022;C026568362;customer2;North America;324.0
+01.09.2022;C026568362;customer2;North America;253.0
+01.09.2022;C026568362;customer4;Europe;101.0
+01.10.2022;C026568362;customer2;North America;402.0
+01.11.2022;C026568362;customer3;North America;62.0
+01.11.2022;C026568362;customer2;North America;228.0
+01.11.2022;C026568362;customer4;Europe;100.0
+01.12.2022;C026568362;customer2;North America;194.0
+01.12.2022;C026568362;customer4;Europe;76.0
+01.12.2022;C026568362;customer3;North America;36.0
+01.01.2023;C026568362;customer2;North America;336.0
+01.02.2023;C026568362;customer2;North America;348.0
+01.03.2023;C026568362;customer2;North America;354.0
+01.04.2023;C026568362;customer3;North America;390.0
+01.05.2023;C026568362;customer2;North America;245.0
+01.05.2023;C026568362;customer4;Europe;77.0
+01.05.2023;C026568362;customer3;North America;50.0
+01.06.2023;C026568362;customer2;North America;420.0
+01.07.2023;C026568362;customer2;North America;313.0
+01.07.2023;C026568362;customer4;Europe;95.0
+01.08.2023;C026568362;customer2;North America;263.0
+01.08.2023;C026568362;customer4;Europe;97.0
+01.09.2023;C026568362;customer2;North America;330.0
+01.10.2023;C026568362;customer2;North America;390.0
+01.11.2023;C026568362;customer1;Europe;131.0
+01.11.2023;C026568362;customer3;North America;241.0
+01.12.2023;C026568362;customer2;North America;288.0
+01.01.2024;C026568362;customer2;North America;330.0
+01.02.2024;C026568362;customer3;North America;75.0
+01.02.2024;C026568362;customer2;North America;273.0
+01.03.2024;C026568362;customer2;North America;366.0
+01.04.2024;C026568362;customer2;North America;372.0
+01.05.2024;C026568362;customer4;Europe;110.0
+01.05.2024;C026568362;customer2;North America;262.0
+01.06.2024;C026568362;customer2;North America;321.0
+01.06.2024;C026568362;customer3;North America;87.0
+01.10.2007;C048529686;customer2;North America;1926.0
+01.11.2007;C048529686;customer2;North America;1452.0
+01.12.2007;C048529686;customer4;Europe;386.0
+01.12.2007;C048529686;customer2;North America;1000.0
+01.01.2008;C048529686;customer2;North America;1638.0
+01.02.2008;C048529686;customer2;North America;1184.0
+01.02.2008;C048529686;customer4;Europe;448.0
+01.03.2008;C048529686;customer2;North America;1986.0
+01.04.2008;C048529686;customer2;North America;1407.0
+01.04.2008;C048529686;customer4;Europe;567.0
+01.05.2008;C048529686;customer2;North America;1674.0
+01.06.2008;C048529686;customer2;North America;1854.0
+01.07.2008;C048529686;customer2;North America;2286.0
+01.08.2008;C048529686;customer2;North America;970.0
+01.08.2008;C048529686;customer4;Europe;356.0
+01.09.2008;C048529686;customer2;North America;1196.0
+01.09.2008;C048529686;customer3;North America;311.0
+01.09.2008;C048529686;customer1;Europe;155.0
+01.10.2008;C048529686;customer2;North America;1740.0
+01.11.2008;C048529686;customer2;North America;1644.0
+01.12.2008;C048529686;customer2;North America;831.0
+01.12.2008;C048529686;customer4;Europe;321.0
+01.01.2009;C048529686;customer3;North America;1578.0
+01.02.2009;C048529686;customer2;North America;1049.0
+01.02.2009;C048529686;customer4;Europe;427.0
+01.03.2009;C048529686;customer2;North America;1602.0
+01.04.2009;C048529686;customer2;North America;1429.0
+01.04.2009;C048529686;customer4;Europe;563.0
+01.05.2009;C048529686;customer2;North America;1692.0
+01.06.2009;C048529686;customer2;North America;1233.0
+01.06.2009;C048529686;customer4;Europe;441.0
+01.07.2009;C048529686;customer3;North America;356.0
+01.07.2009;C048529686;customer2;North America;1552.0
+01.08.2009;C048529686;customer2;North America;1217.0
+01.08.2009;C048529686;customer4;Europe;493.0
+01.09.2009;C048529686;customer2;North America;864.0
+01.09.2009;C048529686;customer3;North America;224.0
+01.09.2009;C048529686;customer4;Europe;370.0
+01.10.2009;C048529686;customer2;North America;1373.0
+01.10.2009;C048529686;customer4;Europe;589.0
+01.11.2009;C048529686;customer2;North America;1458.0
+01.12.2009;C048529686;customer4;Europe;311.0
+01.12.2009;C048529686;customer2;North America;847.0
+01.01.2010;C048529686;customer2;North America;1626.0
+01.02.2010;C048529686;customer2;North America;1824.0
+01.03.2010;C048529686;customer2;North America;1584.0
+01.04.2010;C048529686;customer2;North America;1914.0
+01.05.2010;C048529686;customer2;North America;1138.0
+01.05.2010;C048529686;customer4;Europe;422.0
+01.06.2010;C048529686;customer2;North America;1279.0
+01.06.2010;C048529686;customer4;Europe;467.0
+01.07.2010;C048529686;customer2;North America;1463.0
+01.07.2010;C048529686;customer3;North America;331.0
+01.08.2010;C048529686;customer4;Europe;516.0
+01.08.2010;C048529686;customer2;North America;1356.0
+01.09.2010;C048529686;customer2;North America;1956.0
+01.10.2010;C048529686;customer2;North America;1265.0
+01.10.2010;C048529686;customer3;North America;355.0
+01.10.2010;C048529686;customer1;Europe;168.0
+01.11.2010;C048529686;customer2;North America;1219.0
+01.11.2010;C048529686;customer4;Europe;484.0
+01.11.2010;C048529686;customer3;North America;319.0
+01.12.2010;C048529686;customer4;Europe;385.0
+01.12.2010;C048529686;customer2;North America;968.0
+01.12.2010;C048529686;customer1;Europe;129.0
+01.01.2011;C048529686;customer2;North America;1116.0
+01.01.2011;C048529686;customer4;Europe;430.0
+01.01.2011;C048529686;customer1;Europe;134.0
+01.02.2011;C048529686;customer2;North America;1311.0
+01.02.2011;C048529686;customer4;Europe;531.0
+01.03.2011;C048529686;customer4;Europe;2124.0
+01.04.2011;C048529686;customer2;North America;2088.0
+01.05.2011;C048529686;customer2;North America;1392.0
+01.05.2011;C048529686;customer4;Europe;492.0
+01.06.2011;C048529686;customer2;North America;1793.0
+01.06.2011;C048529686;customer3;North America;463.0
+01.07.2011;C048529686;customer2;North America;1643.0
+01.07.2011;C048529686;customer4;Europe;577.0
+01.08.2011;C048529686;customer2;North America;2526.0
+01.09.2011;C048529686;customer2;North America;1613.0
+01.09.2011;C048529686;customer4;Europe;643.0
+01.10.2011;C048529686;customer2;North America;2304.0
+01.11.2011;C048529686;customer2;North America;1954.0
+01.11.2011;C048529686;customer3;North America;476.0
+01.12.2011;C048529686;customer2;North America;1752.0
+01.01.2012;C048529686;customer2;North America;1523.0
+01.01.2012;C048529686;customer4;Europe;631.0
+01.02.2012;C048529686;customer2;North America;1735.0
+01.02.2012;C048529686;customer3;North America;425.0
+01.03.2012;C048529686;customer2;North America;2346.0
+01.04.2012;C048529686;customer2;North America;2136.0
+01.05.2012;C048529686;customer2;North America;2016.0
+01.06.2012;C048529686;customer2;North America;1869.0
+01.06.2012;C048529686;customer3;North America;429.0
+01.07.2012;C048529686;customer2;North America;2568.0
+01.08.2012;C048529686;customer2;North America;1642.0
+01.08.2012;C048529686;customer3;North America;404.0
+01.09.2012;C048529686;customer2;North America;2286.0
+01.10.2012;C048529686;customer3;North America;2010.0
+01.11.2012;C048529686;customer2;North America;1450.0
+01.11.2012;C048529686;customer4;Europe;524.0
+01.12.2012;C048529686;customer3;North America;406.0
+01.12.2012;C048529686;customer2;North America;1652.0
+01.01.2013;C048529686;customer2;North America;2166.0
+01.02.2013;C048529686;customer2;North America;2064.0
+01.03.2013;C048529686;customer2;North America;1757.0
+01.03.2013;C048529686;customer4;Europe;667.0
+01.04.2013;C048529686;customer2;North America;2502.0
+01.05.2013;C048529686;customer2;North America;2412.0
+01.06.2013;C048529686;customer2;North America;2110.0
+01.06.2013;C048529686;customer1;Europe;260.0
+01.07.2013;C048529686;customer2;North America;1909.0
+01.07.2013;C048529686;customer3;North America;431.0
+01.08.2013;C048529686;customer2;North America;2178.0
+01.09.2013;C048529686;customer2;North America;2322.0
+01.10.2013;C048529686;customer2;North America;2098.0
+01.10.2013;C048529686;customer1;Europe;290.0
+01.11.2013;C048529686;customer2;North America;2100.0
+01.12.2013;C048529686;customer2;North America;2094.0
+01.01.2014;C048529686;customer2;North America;2436.0
+01.02.2014;C048529686;customer4;Europe;706.0
+01.02.2014;C048529686;customer2;North America;1856.0
+01.03.2014;C048529686;customer2;North America;2562.0
+01.04.2014;C048529686;customer4;Europe;715.0
+01.04.2014;C048529686;customer2;North America;1985.0
+01.05.2014;C048529686;customer2;North America;1746.0
+01.05.2014;C048529686;customer4;Europe;677.0
+01.05.2014;C048529686;customer1;Europe;205.0
+01.06.2014;C048529686;customer4;Europe;617.0
+01.06.2014;C048529686;customer2;North America;1681.0
+01.07.2014;C048529686;customer2;North America;1986.0
+01.07.2014;C048529686;customer4;Europe;714.0
+01.08.2014;C048529686;customer2;North America;2045.0
+01.08.2014;C048529686;customer3;North America;475.0
+01.09.2014;C048529686;customer2;North America;2514.0
+01.10.2014;C048529686;customer2;North America;1701.0
+01.10.2014;C048529686;customer4;Europe;645.0
+01.11.2014;C048529686;customer2;North America;2586.0
+01.12.2014;C048529686;customer2;North America;1644.0
+01.01.2015;C048529686;customer2;North America;1776.0
+01.01.2015;C048529686;customer3;North America;417.0
+01.01.2015;C048529686;customer1;Europe;219.0
+01.02.2015;C048529686;customer2;North America;1852.0
+01.02.2015;C048529686;customer1;Europe;254.0
+01.02.2015;C048529686;customer4;Europe;738.0
+01.03.2015;C048529686;customer2;North America;2604.0
+01.04.2015;C048529686;customer3;North America;529.0
+01.04.2015;C048529686;customer2;North America;2159.0
+01.05.2015;C048529686;customer3;North America;505.0
+01.05.2015;C048529686;customer2;North America;2189.0
+01.06.2015;C048529686;customer2;North America;2436.0
+01.07.2015;C048529686;customer2;North America;2172.0
+01.07.2015;C048529686;customer3;North America;504.0
+01.08.2015;C048529686;customer2;North America;1623.0
+01.08.2015;C048529686;customer4;Europe;639.0
+01.09.2015;C048529686;customer2;North America;1635.0
+01.09.2015;C048529686;customer4;Europe;633.0
+01.10.2015;C048529686;customer2;North America;2112.0
+01.11.2015;C048529686;customer2;North America;2292.0
+01.12.2015;C048529686;customer2;North America;1650.0
+01.12.2015;C048529686;customer1;Europe;210.0
+01.01.2016;C048529686;customer2;North America;1859.0
+01.01.2016;C048529686;customer3;North America;439.0
+01.02.2016;C048529686;customer2;North America;1976.0
+01.02.2016;C048529686;customer4;Europe;742.0
+01.03.2016;C048529686;customer2;North America;2310.0
+01.03.2016;C048529686;customer1;Europe;276.0
+01.04.2016;C048529686;customer2;North America;2520.0
+01.05.2016;C048529686;customer2;North America;2220.0
+01.06.2016;C048529686;customer2;North America;2436.0
+01.07.2016;C048529686;customer2;North America;2430.0
+01.08.2016;C048529686;customer2;North America;2238.0
+01.09.2016;C048529686;customer3;North America;2454.0
+01.10.2016;C048529686;customer4;Europe;2382.0
+01.11.2016;C048529686;customer2;North America;2178.0
+01.12.2016;C048529686;customer2;North America;2130.0
+01.01.2017;C048529686;customer2;North America;2190.0
+01.02.2017;C048529686;customer2;North America;1815.0
+01.02.2017;C048529686;customer4;Europe;687.0
+01.02.2017;C048529686;customer3;North America;456.0
+01.03.2017;C048529686;customer2;North America;2808.0
+01.04.2017;C048529686;customer2;North America;2844.0
+01.05.2017;C048529686;customer2;North America;2868.0
+01.06.2017;C048529686;customer2;North America;2784.0
+01.07.2017;C048529686;customer2;North America;2898.0
+01.08.2017;C048529686;customer2;North America;2538.0
+01.09.2017;C048529686;customer4;Europe;763.0
+01.09.2017;C048529686;customer2;North America;2045.0
+01.10.2017;C048529686;customer2;North America;2688.0
+01.11.2017;C048529686;customer2;North America;2466.0
+01.12.2017;C048529686;customer2;North America;1831.0
+01.12.2017;C048529686;customer3;North America;479.0
+01.01.2018;C048529686;customer2;North America;2466.0
+01.02.2018;C048529686;customer3;North America;2670.0
+01.03.2018;C048529686;customer2;North America;2020.0
+01.03.2018;C048529686;customer4;Europe;866.0
+01.04.2018;C048529686;customer2;North America;2481.0
+01.04.2018;C048529686;customer3;North America;603.0
+01.05.2018;C048529686;customer2;North America;2910.0
+01.06.2018;C048529686;customer2;North America;2019.0
+01.06.2018;C048529686;customer4;Europe;723.0
+01.07.2018;C048529686;customer2;North America;2380.0
+01.07.2018;C048529686;customer1;Europe;296.0
+01.08.2018;C048529686;customer2;North America;2041.0
+01.08.2018;C048529686;customer4;Europe;815.0
+01.09.2018;C048529686;customer2;North America;2748.0
+01.10.2018;C048529686;customer2;North America;2988.0
+01.11.2018;C048529686;customer2;North America;2289.0
+01.11.2018;C048529686;customer3;North America;567.0
+01.12.2018;C048529686;customer2;North America;2400.0
+01.01.2019;C048529686;customer2;North America;2652.0
+01.02.2019;C048529686;customer2;North America;2862.0
+01.03.2019;C048529686;customer2;North America;2748.0
+01.04.2019;C048529686;customer2;North America;3036.0
+01.05.2019;C048529686;customer2;North America;2616.0
+01.06.2019;C048529686;customer2;North America;2394.0
+01.07.2019;C048529686;customer1;Europe;2700.0
+01.08.2019;C048529686;customer2;North America;2424.0
+01.09.2019;C048529686;customer2;North America;2616.0
+01.10.2019;C048529686;customer2;North America;2676.0
+01.11.2019;C048529686;customer2;North America;2574.0
+01.12.2019;C048529686;customer2;North America;1782.0
+01.12.2019;C048529686;customer1;Europe;204.0
+01.01.2020;C048529686;customer2;North America;2556.0
+01.02.2020;C048529686;customer3;North America;2694.0
+01.03.2020;C048529686;customer2;North America;2544.0
+01.04.2020;C048529686;customer2;North America;2868.0
+01.05.2020;C048529686;customer2;North America;1874.0
+01.05.2020;C048529686;customer4;Europe;724.0
+01.06.2020;C048529686;customer2;North America;1929.0
+01.06.2020;C048529686;customer4;Europe;711.0
+01.07.2020;C048529686;customer2;North America;2248.0
+01.07.2020;C048529686;customer3;North America;572.0
+01.08.2020;C048529686;customer2;North America;2466.0
+01.09.2020;C048529686;customer2;North America;2598.0
+01.10.2020;C048529686;customer3;North America;460.0
+01.10.2020;C048529686;customer1;Europe;256.0
+01.10.2020;C048529686;customer2;North America;1876.0
+01.11.2020;C048529686;customer2;North America;2616.0
+01.12.2020;C048529686;customer4;Europe;2304.0
+01.01.2021;C048529686;customer2;North America;1948.0
+01.01.2021;C048529686;customer4;Europe;692.0
+01.02.2021;C048529686;customer2;North America;1548.0
+01.02.2021;C048529686;customer3;North America;400.0
+01.02.2021;C048529686;customer4;Europe;544.0
+01.02.2021;C048529686;customer1;Europe;178.0
+01.03.2021;C048529686;customer3;North America;505.0
+01.03.2021;C048529686;customer2;North America;1997.0
+01.04.2021;C048529686;customer2;North America;2589.0
+01.04.2021;C048529686;customer3;North America;657.0
+01.05.2021;C048529686;customer2;North America;1870.0
+01.05.2021;C048529686;customer4;Europe;740.0
+01.06.2021;C048529686;customer2;North America;3096.0
+01.07.2021;C048529686;customer4;Europe;3030.0
+01.08.2021;C048529686;customer2;North America;2634.0
+01.09.2021;C048529686;customer2;North America;1846.0
+01.09.2021;C048529686;customer4;Europe;692.0
+01.10.2021;C048529686;customer4;Europe;755.0
+01.10.2021;C048529686;customer2;North America;2095.0
+01.11.2021;C048529686;customer4;Europe;2460.0
+01.12.2021;C048529686;customer2;North America;1986.0
+01.01.2022;C048529686;customer4;Europe;677.0
+01.01.2022;C048529686;customer2;North America;1825.0
+01.02.2022;C048529686;customer4;Europe;688.0
+01.02.2022;C048529686;customer3;North America;468.0
+01.02.2022;C048529686;customer2;North America;1766.0
+01.03.2022;C048529686;customer2;North America;2886.0
+01.04.2022;C048529686;customer2;North America;2928.0
+01.05.2022;C048529686;customer2;North America;2694.0
+01.06.2022;C048529686;customer2;North America;2472.0
+01.06.2022;C048529686;customer1;Europe;324.0
+01.07.2022;C048529686;customer2;North America;1893.0
+01.07.2022;C048529686;customer4;Europe;708.0
+01.07.2022;C048529686;customer1;Europe;237.0
+01.08.2022;C048529686;customer3;North America;1097.0
+01.08.2022;C048529686;customer4;Europe;1645.0
+01.09.2022;C048529686;customer2;North America;2742.0
+01.10.2022;C048529686;customer2;North America;1649.0
+01.10.2022;C048529686;customer4;Europe;628.0
+01.10.2022;C048529686;customer3;North America;453.0
+01.11.2022;C048529686;customer2;North America;2802.0
+01.12.2022;C048529686;customer2;North America;1933.0
+01.12.2022;C048529686;customer1;Europe;239.0
+01.01.2023;C048529686;customer2;North America;2682.0
+01.02.2023;C048529686;customer4;Europe;812.0
+01.02.2023;C048529686;customer2;North America;1996.0
+01.03.2023;C048529686;customer2;North America;1743.0
+01.03.2023;C048529686;customer4;Europe;647.0
+01.03.2023;C048529686;customer3;North America;436.0
+01.04.2023;C048529686;customer2;North America;2910.0
+01.05.2023;C048529686;customer3;North America;2478.0
+01.06.2023;C048529686;customer2;North America;1830.0
+01.06.2023;C048529686;customer3;North America;498.0
+01.07.2023;C048529686;customer2;North America;2922.0
+01.08.2023;C048529686;customer2;North America;2017.0
+01.08.2023;C048529686;customer4;Europe;773.0
+01.09.2023;C048529686;customer4;Europe;2146.0
+01.09.2023;C048529686;customer1;Europe;680.0
+01.10.2023;C048529686;customer2;North America;2730.0
+01.11.2023;C048529686;customer2;North America;1931.0
+01.11.2023;C048529686;customer4;Europe;733.0
+01.12.2023;C048529686;customer2;North America;2085.0
+01.12.2023;C048529686;customer3;North America;501.0
+01.01.2024;C048529686;customer2;North America;2586.0
+01.02.2024;C048529686;customer2;North America;2604.0
+01.02.2024;C048529686;customer1;Europe;324.0
+01.03.2024;C048529686;customer1;Europe;2856.0
+01.04.2024;C048529686;customer3;North America;3114.0
+01.05.2024;C048529686;customer2;North America;2188.0
+01.05.2024;C048529686;customer3;North America;554.0
+01.06.2024;C048529686;customer4;Europe;541.0
+01.06.2024;C048529686;customer2;North America;1542.0
+01.06.2024;C048529686;customer3;North America;371.0
+01.10.2007;C048097345;customer2;North America;8652.0
+01.11.2007;C048097345;customer2;North America;7284.0
+01.12.2007;C048097345;customer2;North America;4348.0
+01.12.2007;C048097345;customer4;Europe;1622.0
+01.01.2008;C048097345;customer3;North America;1563.0
+01.01.2008;C048097345;customer2;North America;6087.0
+01.02.2008;C048097345;customer2;North America;8682.0
+01.03.2008;C048097345;customer2;North America;8724.0
+01.04.2008;C048097345;customer2;North America;9354.0
+01.05.2008;C048097345;customer2;North America;8880.0
+01.06.2008;C048097345;customer3;North America;8040.0
+01.07.2008;C048097345;customer2;North America;7053.0
+01.07.2008;C048097345;customer4;Europe;2661.0
+01.08.2008;C048097345;customer2;North America;8322.0
+01.09.2008;C048097345;customer2;North America;8310.0
+01.10.2008;C048097345;customer4;Europe;8598.0
+01.11.2008;C048097345;customer1;Europe;2669.0
+01.11.2008;C048097345;customer3;North America;5359.0
+01.12.2008;C048097345;customer2;North America;5361.0
+01.12.2008;C048097345;customer3;North America;1317.0
+01.01.2009;C048097345;customer2;North America;6033.0
+01.01.2009;C048097345;customer3;North America;1497.0
+01.02.2009;C048097345;customer2;North America;8694.0
+01.03.2009;C048097345;customer2;North America;6013.0
+01.03.2009;C048097345;customer4;Europe;2219.0
+01.04.2009;C048097345;customer2;North America;6299.0
+01.04.2009;C048097345;customer3;North America;1527.0
+01.04.2009;C048097345;customer4;Europe;2350.0
+01.05.2009;C048097345;customer2;North America;6350.0
+01.05.2009;C048097345;customer4;Europe;2446.0
+01.06.2009;C048097345;customer2;North America;7878.0
+01.07.2009;C048097345;customer2;North America;8344.0
+01.07.2009;C048097345;customer1;Europe;986.0
+01.08.2009;C048097345;customer2;North America;6894.0
+01.09.2009;C048097345;customer2;North America;5978.0
+01.09.2009;C048097345;customer4;Europe;2212.0
+01.10.2009;C048097345;customer2;North America;5946.0
+01.10.2009;C048097345;customer4;Europe;2304.0
+01.11.2009;C048097345;customer2;North America;7284.0
+01.12.2009;C048097345;customer4;Europe;4674.0
+01.01.2010;C048097345;customer2;North America;4930.0
+01.01.2010;C048097345;customer3;North America;1226.0
+01.02.2010;C048097345;customer2;North America;6018.0
+01.03.2010;C048097345;customer2;North America;2912.0
+01.03.2010;C048097345;customer3;North America;739.0
+01.03.2010;C048097345;customer4;Europe;1024.0
+01.03.2010;C048097345;customer1;Europe;359.0
+01.04.2010;C048097345;customer4;Europe;1683.0
+01.04.2010;C048097345;customer2;North America;4677.0
+01.05.2010;C048097345;customer2;North America;4080.0
+01.06.2010;C048097345;customer2;North America;4320.0
+01.07.2010;C048097345;customer2;North America;6480.0
+01.08.2010;C048097345;customer2;North America;5304.0
+01.09.2010;C048097345;customer2;North America;5130.0
+01.10.2010;C048097345;customer3;North America;1172.0
+01.10.2010;C048097345;customer2;North America;4936.0
+01.11.2010;C048097345;customer2;North America;4348.0
+01.11.2010;C048097345;customer4;Europe;1622.0
+01.12.2010;C048097345;customer2;North America;4992.0
+01.01.2011;C048097345;customer2;North America;5251.0
+01.01.2011;C048097345;customer4;Europe;2033.0
+01.02.2011;C048097345;customer4;Europe;7356.0
+01.03.2011;C048097345;customer2;North America;7626.0
+01.04.2011;C048097345;customer2;North America;7489.0
+01.04.2011;C048097345;customer1;Europe;863.0
+01.05.2011;C048097345;customer2;North America;7914.0
+01.06.2011;C048097345;customer2;North America;8448.0
+01.07.2011;C048097345;customer2;North America;6347.0
+01.07.2011;C048097345;customer4;Europe;2251.0
+01.08.2011;C048097345;customer2;North America;6148.0
+01.08.2011;C048097345;customer4;Europe;2264.0
+01.09.2011;C048097345;customer2;North America;6851.0
+01.09.2011;C048097345;customer3;North America;1777.0
+01.10.2011;C048097345;customer1;Europe;8028.0
+01.11.2011;C048097345;customer2;North America;8562.0
+01.12.2011;C048097345;customer2;North America;6301.0
+01.12.2011;C048097345;customer1;Europe;779.0
+01.01.2012;C048097345;customer2;North America;8706.0
+01.02.2012;C048097345;customer2;North America;9612.0
+01.03.2012;C048097345;customer4;Europe;9714.0
+01.04.2012;C048097345;customer2;North America;7287.0
+01.04.2012;C048097345;customer4;Europe;2757.0
+01.05.2012;C048097345;customer2;North America;6852.0
+01.05.2012;C048097345;customer1;Europe;889.0
+01.05.2012;C048097345;customer3;North America;1697.0
+01.06.2012;C048097345;customer2;North America;7879.0
+01.06.2012;C048097345;customer3;North America;1889.0
+01.07.2012;C048097345;customer2;North America;10368.0
+01.08.2012;C048097345;customer2;North America;8802.0
+01.09.2012;C048097345;customer2;North America;9510.0
+01.10.2012;C048097345;customer2;North America;6715.0
+01.10.2012;C048097345;customer3;North America;1649.0
+01.11.2012;C048097345;customer2;North America;8934.0
+01.12.2012;C048097345;customer2;North America;6072.0
+01.12.2012;C048097345;customer1;Europe;714.0
+01.01.2013;C048097345;customer2;North America;5985.0
+01.01.2013;C048097345;customer4;Europe;2169.0
+01.02.2013;C048097345;customer2;North America;8748.0
+01.03.2013;C048097345;customer2;North America;5072.0
+01.03.2013;C048097345;customer4;Europe;1985.0
+01.03.2013;C048097345;customer3;North America;1313.0
+01.04.2013;C048097345;customer2;North America;10392.0
+01.05.2013;C048097345;customer2;North America;7233.0
+01.05.2013;C048097345;customer3;North America;1785.0
+01.06.2013;C048097345;customer2;North America;6644.0
+01.06.2013;C048097345;customer3;North America;1678.0
+01.07.2013;C048097345;customer2;North America;8856.0
+01.08.2013;C048097345;customer4;Europe;1979.0
+01.08.2013;C048097345;customer2;North America;5188.0
+01.08.2013;C048097345;customer3;North America;1293.0
+01.09.2013;C048097345;customer2;North America;7243.0
+01.09.2013;C048097345;customer1;Europe;947.0
+01.10.2013;C048097345;customer2;North America;9138.0
+01.11.2013;C048097345;customer2;North America;8328.0
+01.12.2013;C048097345;customer2;North America;6390.0
+01.01.2014;C048097345;customer2;North America;8418.0
+01.02.2014;C048097345;customer2;North America;8922.0
+01.03.2014;C048097345;customer2;North America;8850.0
+01.04.2014;C048097345;customer2;North America;5643.0
+01.04.2014;C048097345;customer3;North America;1367.0
+01.04.2014;C048097345;customer4;Europe;2086.0
+01.05.2014;C048097345;customer2;North America;9036.0
+01.06.2014;C048097345;customer4;Europe;2277.0
+01.06.2014;C048097345;customer2;North America;6063.0
+01.07.2014;C048097345;customer4;Europe;9576.0
+01.08.2014;C048097345;customer3;North America;1733.0
+01.08.2014;C048097345;customer2;North America;6841.0
+01.09.2014;C048097345;customer2;North America;6221.0
+01.09.2014;C048097345;customer4;Europe;2383.0
+01.10.2014;C048097345;customer2;North America;9402.0
+01.11.2014;C048097345;customer2;North America;6988.0
+01.11.2014;C048097345;customer3;North America;1778.0
+01.12.2014;C048097345;customer2;North America;4937.0
+01.12.2014;C048097345;customer4;Europe;1789.0
+01.01.2015;C048097345;customer2;North America;9042.0
+01.02.2015;C048097345;customer2;North America;7071.0
+01.02.2015;C048097345;customer4;Europe;2763.0
+01.03.2015;C048097345;customer2;North America;10098.0
+01.04.2015;C048097345;customer2;North America;10020.0
+01.05.2015;C048097345;customer2;North America;8304.0
+01.06.2015;C048097345;customer2;North America;6812.0
+01.06.2015;C048097345;customer4;Europe;2608.0
+01.07.2015;C048097345;customer2;North America;7029.0
+01.07.2015;C048097345;customer4;Europe;2859.0
+01.08.2015;C048097345;customer2;North America;6663.0
+01.08.2015;C048097345;customer4;Europe;2313.0
+01.09.2015;C048097345;customer1;Europe;1065.0
+01.09.2015;C048097345;customer2;North America;7983.0
+01.10.2015;C048097345;customer2;North America;9204.0
+01.11.2015;C048097345;customer2;North America;8856.0
+01.12.2015;C048097345;customer3;North America;1193.0
+01.12.2015;C048097345;customer2;North America;4889.0
+01.12.2015;C048097345;customer1;Europe;650.0
+01.01.2016;C048097345;customer2;North America;6960.0
+01.01.2016;C048097345;customer3;North America;1692.0
+01.02.2016;C048097345;customer4;Europe;9690.0
+01.03.2016;C048097345;customer2;North America;9618.0
+01.04.2016;C048097345;customer4;Europe;2722.0
+01.04.2016;C048097345;customer2;North America;7364.0
+01.05.2016;C048097345;customer2;North America;7672.0
+01.05.2016;C048097345;customer3;North America;1892.0
+01.06.2016;C048097345;customer2;North America;9552.0
+01.07.2016;C048097345;customer2;North America;5883.0
+01.07.2016;C048097345;customer3;North America;1419.0
+01.07.2016;C048097345;customer4;Europe;2184.0
+01.08.2016;C048097345;customer3;North America;9096.0
+01.09.2016;C048097345;customer2;North America;7279.0
+01.09.2016;C048097345;customer3;North America;1859.0
+01.10.2016;C048097345;customer2;North America;9486.0
+01.11.2016;C048097345;customer2;North America;9402.0
+01.12.2016;C048097345;customer2;North America;6150.0
+01.01.2017;C048097345;customer2;North America;7381.0
+01.01.2017;C048097345;customer1;Europe;905.0
+01.02.2017;C048097345;customer1;Europe;1103.0
+01.02.2017;C048097345;customer2;North America;8749.0
+01.03.2017;C048097345;customer1;Europe;9252.0
+01.04.2017;C048097345;customer2;North America;7513.0
+01.04.2017;C048097345;customer4;Europe;2855.0
+01.05.2017;C048097345;customer4;Europe;5611.0
+01.05.2017;C048097345;customer3;North America;3767.0
+01.06.2017;C048097345;customer2;North America;10092.0
+01.07.2017;C048097345;customer2;North America;10506.0
+01.08.2017;C048097345;customer2;North America;10260.0
+01.09.2017;C048097345;customer2;North America;9744.0
+01.10.2017;C048097345;customer3;North America;1956.0
+01.10.2017;C048097345;customer2;North America;8052.0
+01.11.2017;C048097345;customer4;Europe;9942.0
+01.12.2017;C048097345;customer2;North America;8088.0
+01.01.2018;C048097345;customer2;North America;9642.0
+01.02.2018;C048097345;customer2;North America;10194.0
+01.03.2018;C048097345;customer2;North America;9900.0
+01.04.2018;C048097345;customer2;North America;10908.0
+01.05.2018;C048097345;customer2;North America;10140.0
+01.06.2018;C048097345;customer2;North America;10542.0
+01.07.2018;C048097345;customer2;North America;11364.0
+01.08.2018;C048097345;customer2;North America;9404.0
+01.08.2018;C048097345;customer1;Europe;1144.0
+01.09.2018;C048097345;customer4;Europe;11118.0
+01.10.2018;C048097345;customer2;North America;12132.0
+01.11.2018;C048097345;customer2;North America;11520.0
+01.12.2018;C048097345;customer2;North America;9564.0
+01.01.2019;C048097345;customer2;North America;10296.0
+01.02.2019;C048097345;customer2;North America;8509.0
+01.02.2019;C048097345;customer4;Europe;3155.0
+01.03.2019;C048097345;customer2;North America;8265.0
+01.03.2019;C048097345;customer4;Europe;3165.0
+01.04.2019;C048097345;customer2;North America;12306.0
+01.05.2019;C048097345;customer2;North America;8081.0
+01.05.2019;C048097345;customer4;Europe;3067.0
+01.06.2019;C048097345;customer2;North America;11232.0
+01.07.2019;C048097345;customer2;North America;8264.0
+01.07.2019;C048097345;customer4;Europe;3118.0
+01.08.2019;C048097345;customer2;North America;10680.0
+01.09.2019;C048097345;customer2;North America;11448.0
+01.10.2019;C048097345;customer2;North America;7129.0
+01.10.2019;C048097345;customer4;Europe;2669.0
+01.10.2019;C048097345;customer3;North America;1824.0
+01.11.2019;C048097345;customer4;Europe;2910.0
+01.11.2019;C048097345;customer2;North America;7812.0
+01.12.2019;C048097345;customer3;North America;1496.0
+01.12.2019;C048097345;customer2;North America;6021.0
+01.12.2019;C048097345;customer4;Europe;2251.0
+01.01.2020;C048097345;customer2;North America;10134.0
+01.02.2020;C048097345;customer3;North America;10842.0
+01.03.2020;C048097345;customer2;North America;9168.0
+01.03.2020;C048097345;customer3;North America;2370.0
+01.04.2020;C048097345;customer2;North America;12006.0
+01.05.2020;C048097345;customer2;North America;10566.0
+01.06.2020;C048097345;customer2;North America;10536.0
+01.07.2020;C048097345;customer4;Europe;10416.0
+01.08.2020;C048097345;customer2;North America;7969.0
+01.08.2020;C048097345;customer3;North America;1979.0
+01.09.2020;C048097345;customer2;North America;7302.0
+01.09.2020;C048097345;customer4;Europe;2766.0
+01.10.2020;C048097345;customer3;North America;1596.0
+01.10.2020;C048097345;customer2;North America;6273.0
+01.10.2020;C048097345;customer4;Europe;2409.0
+01.11.2020;C048097345;customer2;North America;10032.0
+01.12.2020;C048097345;customer1;Europe;7818.0
+01.01.2021;C048097345;customer2;North America;6063.0
+01.01.2021;C048097345;customer4;Europe;2369.0
+01.01.2021;C048097345;customer1;Europe;766.0
+01.02.2021;C048097345;customer4;Europe;2510.0
+01.02.2021;C048097345;customer2;North America;6700.0
+01.03.2021;C048097345;customer2;North America;9972.0
+01.04.2021;C048097345;customer2;North America;11250.0
+01.05.2021;C048097345;customer2;North America;7182.0
+01.05.2021;C048097345;customer4;Europe;2592.0
+01.06.2021;C048097345;customer2;North America;7676.0
+01.06.2021;C048097345;customer3;North America;1924.0
+01.07.2021;C048097345;customer3;North America;1887.0
+01.07.2021;C048097345;customer2;North America;7683.0
+01.08.2021;C048097345;customer4;Europe;8556.0
+01.09.2021;C048097345;customer4;Europe;1890.0
+01.09.2021;C048097345;customer2;North America;5256.0
+01.09.2021;C048097345;customer3;North America;1272.0
+01.10.2021;C048097345;customer4;Europe;2284.0
+01.10.2021;C048097345;customer2;North America;6248.0
+01.11.2021;C048097345;customer2;North America;6226.0
+01.11.2021;C048097345;customer4;Europe;2318.0
+01.12.2021;C048097345;customer2;North America;5841.0
+01.12.2021;C048097345;customer4;Europe;2205.0
+01.01.2022;C048097345;customer2;North America;10182.0
+01.02.2022;C048097345;customer2;North America;8922.0
+01.02.2022;C048097345;customer1;Europe;1056.0
+01.03.2022;C048097345;customer2;North America;11292.0
+01.04.2022;C048097345;customer2;North America;9350.0
+01.04.2022;C048097345;customer4;Europe;3502.0
+01.05.2022;C048097345;customer2;North America;10470.0
+01.06.2022;C048097345;customer2;North America;10284.0
+01.06.2022;C048097345;customer1;Europe;1254.0
+01.07.2022;C048097345;customer4;Europe;2779.0
+01.07.2022;C048097345;customer2;North America;7422.0
+01.07.2022;C048097345;customer3;North America;1775.0
+01.08.2022;C048097345;customer2;North America;11460.0
+01.09.2022;C048097345;customer2;North America;12042.0
+01.10.2022;C048097345;customer2;North America;11742.0
+01.11.2022;C048097345;customer4;Europe;11358.0
+01.12.2022;C048097345;customer2;North America;9984.0
+01.01.2023;C048097345;customer2;North America;10994.0
+01.01.2023;C048097345;customer1;Europe;1390.0
+01.02.2023;C048097345;customer2;North America;8819.0
+01.02.2023;C048097345;customer4;Europe;3439.0
+01.03.2023;C048097345;customer2;North America;12798.0
+01.04.2023;C048097345;customer2;North America;11442.0
+01.04.2023;C048097345;customer3;North America;2904.0
+01.05.2023;C048097345;customer4;Europe;3071.0
+01.05.2023;C048097345;customer2;North America;8133.0
+01.05.2023;C048097345;customer1;Europe;1042.0
+01.06.2023;C048097345;customer3;North America;2265.0
+01.06.2023;C048097345;customer2;North America;9063.0
+01.07.2023;C048097345;customer2;North America;13272.0
+01.08.2023;C048097345;customer2;North America;11742.0
+01.09.2023;C048097345;customer2;North America;9015.0
+01.09.2023;C048097345;customer4;Europe;3405.0
+01.10.2023;C048097345;customer2;North America;8077.0
+01.10.2023;C048097345;customer1;Europe;1039.0
+01.10.2023;C048097345;customer4;Europe;3034.0
+01.11.2023;C048097345;customer2;North America;11646.0
+01.12.2023;C048097345;customer2;North America;9264.0
+01.01.2024;C048097345;customer2;North America;9049.0
+01.01.2024;C048097345;customer3;North America;2255.0
+01.02.2024;C048097345;customer2;North America;11562.0
+01.03.2024;C048097345;customer2;North America;11364.0
+01.04.2024;C048097345;customer2;North America;12372.0
+01.05.2024;C048097345;customer3;North America;1634.0
+01.05.2024;C048097345;customer2;North America;6638.0
+01.05.2024;C048097345;customer4;Europe;2558.0
+01.06.2024;C048097345;customer2;North America;10218.0
+01.12.2007;C017968454;customer4;Europe;184.0
+01.12.2007;C017968454;customer2;North America;548.0
+01.02.2008;C017968454;customer2;North America;18.0
+01.03.2008;C017968454;customer4;Europe;99.0
+01.03.2008;C017968454;customer2;North America;287.0
+01.03.2008;C017968454;customer1;Europe;28.0
+01.05.2008;C017968454;customer2;North America;303.0
+01.05.2008;C017968454;customer3;North America;75.0
+01.06.2008;C017968454;customer2;North America;18.0
+01.07.2008;C017968454;customer4;Europe;72.0
+01.08.2008;C017968454;customer2;North America;437.0
+01.08.2008;C017968454;customer4;Europe;151.0
+01.02.2009;C017968454;customer2;North America;1344.0
+01.06.2009;C017968454;customer4;Europe;108.0
+01.07.2009;C017968454;customer2;North America;221.0
+01.07.2009;C017968454;customer4;Europe;91.0
+01.08.2009;C017968454;customer2;North America;45.0
+01.08.2009;C017968454;customer3;North America;9.0
+01.11.2009;C017968454;customer4;Europe;36.0
+01.02.2010;C017968454;customer2;North America;264.0
+01.03.2010;C017968454;customer2;North America;66.0
+01.05.2010;C017968454;customer2;North America;84.0
+01.06.2010;C017968454;customer4;Europe;11.0
+01.06.2010;C017968454;customer2;North America;13.0
+01.11.2010;C017968454;customer2;North America;312.0
+01.02.2011;C017968454;customer2;North America;642.0
+01.05.2011;C017968454;customer2;North America;59.0
+01.05.2011;C017968454;customer4;Europe;31.0
+01.06.2011;C017968454;customer2;North America;30.0
+01.11.2011;C017968454;customer2;North America;255.0
+01.11.2011;C017968454;customer1;Europe;24.0
+01.11.2011;C017968454;customer4;Europe;81.0
+01.02.2012;C017968454;customer2;North America;168.0
+01.02.2012;C017968454;customer3;North America;42.0
+01.03.2012;C017968454;customer2;North America;33.0
+01.03.2012;C017968454;customer3;North America;3.0
+01.05.2012;C017968454;customer2;North America;54.0
+01.08.2012;C017968454;customer2;North America;648.0
+01.10.2012;C017968454;customer2;North America;108.0
+01.12.2012;C017968454;customer2;North America;1180.0
+01.12.2012;C017968454;customer4;Europe;452.0
+01.02.2013;C017968454;customer2;North America;972.0
+01.05.2013;C017968454;customer2;North America;96.0
+01.07.2013;C017968454;customer2;North America;534.0
+01.08.2013;C017968454;customer2;North America;138.0
+01.10.2013;C017968454;customer4;Europe;1.0
+01.10.2013;C017968454;customer2;North America;5.0
+01.11.2013;C017968454;customer2;North America;292.0
+01.11.2013;C017968454;customer4;Europe;98.0
+01.02.2014;C017968454;customer2;North America;132.0
+01.03.2014;C017968454;customer2;North America;155.0
+01.03.2014;C017968454;customer3;North America;31.0
+01.04.2014;C017968454;customer2;North America;8.0
+01.04.2014;C017968454;customer4;Europe;3.0
+01.04.2014;C017968454;customer3;North America;1.0
+01.05.2014;C017968454;customer1;Europe;108.0
+01.07.2014;C017968454;customer2;North America;36.0
+01.08.2014;C017968454;customer2;North America;216.0
+01.11.2014;C017968454;customer2;North America;18.0
+01.01.2015;C017968454;customer2;North America;570.0
+01.02.2015;C017968454;customer2;North America;24.0
+01.02.2015;C017968454;customer4;Europe;6.0
+01.03.2015;C017968454;customer2;North America;54.0
+01.03.2015;C017968454;customer3;North America;10.0
+01.03.2015;C017968454;customer4;Europe;20.0
+01.04.2015;C017968454;customer4;Europe;119.0
+01.04.2015;C017968454;customer3;North America;88.0
+01.04.2015;C017968454;customer1;Europe;45.0
+01.05.2015;C017968454;customer1;Europe;294.0
+01.06.2015;C017968454;customer2;North America;56.0
+01.06.2015;C017968454;customer4;Europe;16.0
+01.07.2015;C017968454;customer2;North America;97.0
+01.07.2015;C017968454;customer4;Europe;29.0
+01.08.2015;C017968454;customer2;North America;174.0
+01.09.2015;C017968454;customer2;North America;16.0
+01.09.2015;C017968454;customer4;Europe;12.0
+01.09.2015;C017968454;customer3;North America;2.0
+01.10.2015;C017968454;customer4;Europe;12.0
+01.11.2015;C017968454;customer3;North America;252.0
+01.02.2016;C017968454;customer4;Europe;84.0
+01.03.2016;C017968454;customer2;North America;351.0
+01.03.2016;C017968454;customer3;North America;93.0
+01.05.2016;C017968454;customer2;North America;526.0
+01.05.2016;C017968454;customer3;North America;116.0
+01.06.2016;C017968454;customer2;North America;53.0
+01.06.2016;C017968454;customer4;Europe;19.0
+01.02.2017;C017968454;customer2;North America;240.0
+01.06.2017;C017968454;customer2;North America;199.0
+01.06.2017;C017968454;customer4;Europe;83.0
+01.09.2017;C017968454;customer2;North America;27.0
+01.09.2017;C017968454;customer4;Europe;9.0
+01.11.2017;C017968454;customer2;North America;66.0
+01.01.2018;C017968454;customer2;North America;44.0
+01.01.2018;C017968454;customer1;Europe;5.0
+01.01.2018;C017968454;customer3;North America;17.0
+01.03.2018;C017968454;customer2;North America;349.0
+01.03.2018;C017968454;customer3;North America;98.0
+01.03.2018;C017968454;customer4;Europe;105.0
+01.05.2018;C017968454;customer2;North America;120.0
+01.10.2018;C017968454;customer4;Europe;444.0
+01.11.2018;C017968454;customer2;North America;254.0
+01.11.2018;C017968454;customer1;Europe;31.0
+01.11.2018;C017968454;customer3;North America;63.0
+01.01.2019;C017968454;customer2;North America;82.0
+01.01.2019;C017968454;customer4;Europe;32.0
+01.02.2019;C017968454;customer2;North America;409.0
+01.02.2019;C017968454;customer1;Europe;53.0
+01.03.2019;C017968454;customer2;North America;240.0
+01.05.2019;C017968454;customer2;North America;213.0
+01.05.2019;C017968454;customer4;Europe;81.0
+01.08.2019;C017968454;customer2;North America;78.0
+01.09.2019;C017968454;customer3;North America;12.0
+01.10.2019;C017968454;customer2;North America;153.0
+01.10.2019;C017968454;customer4;Europe;53.0
+01.10.2019;C017968454;customer1;Europe;16.0
+01.11.2019;C017968454;customer2;North America;240.0
+01.01.2020;C017968454;customer2;North America;108.0
+01.02.2020;C017968454;customer2;North America;87.0
+01.02.2020;C017968454;customer4;Europe;31.0
+01.02.2020;C017968454;customer3;North America;20.0
+01.03.2020;C017968454;customer1;Europe;24.0
+01.05.2020;C017968454;customer2;North America;205.0
+01.05.2020;C017968454;customer3;North America;41.0
+01.07.2020;C017968454;customer4;Europe;48.0
+01.08.2020;C017968454;customer4;Europe;70.0
+01.08.2020;C017968454;customer2;North America;169.0
+01.08.2020;C017968454;customer1;Europe;31.0
+01.09.2020;C017968454;customer1;Europe;192.0
+01.1.2020;C017968454;customer2;North America;1980.0
+01.12.2020;C017968454;customer2;North America;246.0
+01.02.2021;C017968454;customer4;Europe;23.0
+01.02.2021;C017968454;customer3;North America;19.0
+01.08.2021;C017968454;customer2;North America;783.0
+01.08.2021;C017968454;customer3;North America;195.0
+01.09.2021;C017968454;customer2;North America;78.0
+01.10.2021;C017968454;customer2;North America;149.0
+01.10.2021;C017968454;customer4;Europe;56.0
+01.10.2021;C017968454;customer3;North America;23.0
+01.12.2021;C017968454;customer4;Europe;104.0
+01.12.2021;C017968454;customer2;North America;268.0
+01.02.2022;C017968454;customer2;North America;870.0
+01.03.2022;C017968454;customer4;Europe;216.0
+01.03.2022;C017968454;customer3;North America;144.0
+01.05.2022;C017968454;customer2;North America;130.0
+01.05.2022;C017968454;customer1;Europe;20.0
+01.06.2022;C017968454;customer2;North America;354.0
+01.09.2022;C017968454;customer2;North America;153.0
+01.09.2022;C017968454;customer3;North America;33.0
+01.10.2022;C017968454;customer2;North America;510.0
+01.12.2022;C017968454;customer2;North America;26.0
+01.12.2022;C017968454;customer3;North America;4.0
+01.02.2023;C017968454;customer2;North America;48.0
+01.04.2023;C017968454;customer2;North America;24.0
+01.04.2023;C017968454;customer4;Europe;6.0
+01.05.2023;C017968454;customer4;Europe;3.0
+01.05.2023;C017968454;customer2;North America;9.0
+01.10.2023;C017968454;customer2;North America;11.0
+01.06.2024;C017968454;customer2;North America;12.0
+01.03.2012;C013391652;customer4;Europe;6.0
+01.06.2012;C013391652;customer2;North America;12.0
+01.08.2012;C013391652;customer2;North America;3.0
+01.08.2012;C013391652;customer4;Europe;3.0
+01.10.2012;C013391652;customer2;North America;6.0
+01.05.2013;C013391652;customer2;North America;5.0
+01.05.2013;C013391652;customer3;North America;1.0
+01.10.2013;C013391652;customer2;North America;6.0
+01.10.2013;C013391652;customer4;Europe;6.0
+01.02.2016;C013391652;customer2;North America;6.0
+01.11.2016;C013391652;customer2;North America;5.0
+01.11.2016;C013391652;customer4;Europe;1.0
+01.01.2017;C013391652;customer2;North America;6.0
+01.03.2017;C013391652;customer2;North America;12.0
+01.05.2017;C013391652;customer4;Europe;6.0
+01.10.2017;C013391652;customer2;North America;16.0
+01.10.2017;C013391652;customer1;Europe;2.0
+01.02.2018;C013391652;customer2;North America;6.0
+01.06.2018;C013391652;customer2;North America;6.0
+01.07.2018;C013391652;customer2;North America;6.0
+01.04.2019;C013391652;customer2;North America;7.0
+01.04.2019;C013391652;customer4;Europe;3.0
+01.04.2019;C013391652;customer1;Europe;2.0
+01.07.2019;C013391652;customer2;North America;6.0
+01.10.2019;C013391652;customer2;North America;6.0
+01.06.2020;C013391652;customer2;North America;6.0
+01.09.2020;C013391652;customer4;Europe;5.0
+01.09.2020;C013391652;customer3;North America;1.0
+01.04.2022;C013391652;customer2;North America;6.0
+01.06.2022;C013391652;customer1;Europe;2.0
+01.06.2022;C013391652;customer4;Europe;2.0
+01.06.2022;C013391652;customer2;North America;2.0
+01.11.2022;C013391652;customer4;Europe;3.0
+01.11.2022;C013391652;customer3;North America;2.0
+01.11.2022;C013391652;customer2;North America;13.0
+01.01.2023;C013391652;customer4;Europe;9.0
+01.01.2023;C013391652;customer1;Europe;2.0
+01.01.2023;C013391652;customer3;North America;1.0
+01.02.2023;C013391652;customer2;North America;6.0
+01.04.2023;C013391652;customer3;North America;2.0
+01.04.2023;C013391652;customer2;North America;4.0
+01.05.2023;C013391652;customer2;North America;6.0
+01.01.2024;C013391652;customer4;Europe;6.0
+01.01.2024;C013391652;customer2;North America;6.0
+01.04.2024;C013391652;customer2;North America;12.0
+01.12.2016;C042056164;customer2;North America;68.0
+01.12.2016;C042056164;customer4;Europe;28.0
+01.01.2017;C042056164;customer2;North America;111.0
+01.01.2017;C042056164;customer4;Europe;39.0
+01.02.2017;C042056164;customer2;North America;100.0
+01.02.2017;C042056164;customer4;Europe;50.0
+01.03.2017;C042056164;customer2;North America;144.0
+01.04.2017;C042056164;customer2;North America;228.0
+01.05.2017;C042056164;customer4;Europe;180.0
+01.06.2017;C042056164;customer2;North America;98.0
+01.06.2017;C042056164;customer4;Europe;33.0
+01.06.2017;C042056164;customer3;North America;25.0
+01.07.2017;C042056164;customer4;Europe;204.0
+01.08.2017;C042056164;customer2;North America;144.0
+01.08.2017;C042056164;customer1;Europe;24.0
+01.09.2017;C042056164;customer2;North America;126.0
+01.09.2017;C042056164;customer4;Europe;48.0
+01.10.2017;C042056164;customer2;North America;204.0
+01.11.2017;C042056164;customer2;North America;180.0
+01.12.2017;C042056164;customer3;North America;132.0
+01.01.2018;C042056164;customer2;North America;150.0
+01.01.2018;C042056164;customer3;North America;42.0
+01.02.2018;C042056164;customer2;North America;142.0
+01.02.2018;C042056164;customer4;Europe;50.0
+01.03.2018;C042056164;customer3;North America;29.0
+01.03.2018;C042056164;customer2;North America;94.0
+01.03.2018;C042056164;customer4;Europe;33.0
+01.04.2018;C042056164;customer2;North America;162.0
+01.04.2018;C042056164;customer4;Europe;60.0
+01.05.2018;C042056164;customer2;North America;161.0
+01.05.2018;C042056164;customer3;North America;31.0
+01.06.2018;C042056164;customer2;North America;156.0
+01.07.2018;C042056164;customer2;North America;198.0
+01.08.2018;C042056164;customer2;North America;138.0
+01.08.2018;C042056164;customer3;North America;42.0
+01.09.2018;C042056164;customer4;Europe;59.0
+01.09.2018;C042056164;customer2;North America;133.0
+01.10.2018;C042056164;customer3;North America;48.0
+01.10.2018;C042056164;customer2;North America;186.0
+01.11.2018;C042056164;customer2;North America;145.0
+01.11.2018;C042056164;customer3;North America;41.0
+01.12.2018;C042056164;customer2;North America;168.0
+01.01.2019;C042056164;customer2;North America;151.0
+01.01.2019;C042056164;customer3;North America;41.0
+01.02.2019;C042056164;customer2;North America;198.0
+01.03.2019;C042056164;customer2;North America;110.0
+01.03.2019;C042056164;customer4;Europe;43.0
+01.03.2019;C042056164;customer1;Europe;9.0
+01.04.2019;C042056164;customer4;Europe;70.0
+01.04.2019;C042056164;customer2;North America;182.0
+01.05.2019;C042056164;customer2;North America;222.0
+01.06.2019;C042056164;customer3;North America;156.0
+01.07.2019;C042056164;customer4;Europe;53.0
+01.07.2019;C042056164;customer2;North America;127.0
+01.08.2019;C042056164;customer2;North America;166.0
+01.08.2019;C042056164;customer3;North America;32.0
+01.09.2019;C042056164;customer2;North America;92.0
+01.09.2019;C042056164;customer4;Europe;49.0
+01.09.2019;C042056164;customer1;Europe;15.0
+01.10.2019;C042056164;customer2;North America;179.0
+01.10.2019;C042056164;customer3;North America;43.0
+01.11.2019;C042056164;customer4;Europe;52.0
+01.11.2019;C042056164;customer2;North America;118.0
+01.11.2019;C042056164;customer3;North America;28.0
+01.12.2019;C042056164;customer2;North America;162.0
+01.01.2020;C042056164;customer2;North America;140.0
+01.01.2020;C042056164;customer1;Europe;16.0
+01.02.2020;C042056164;customer2;North America;186.0
+01.03.2020;C042056164;customer4;Europe;113.0
+01.03.2020;C042056164;customer3;North America;61.0
+01.04.2020;C042056164;customer2;North America;192.0
+01.05.2020;C042056164;customer2;North America;168.0
+01.06.2020;C042056164;customer4;Europe;132.0
+01.07.2020;C042056164;customer2;North America;180.0
+01.08.2020;C042056164;customer4;Europe;144.0
+01.09.2020;C042056164;customer2;North America;123.0
+01.09.2020;C042056164;customer3;North America;39.0
+01.10.2020;C042056164;customer2;North America;155.0
+01.10.2020;C042056164;customer4;Europe;49.0
+01.11.2020;C042056164;customer2;North America;176.0
+01.11.2020;C042056164;customer1;Europe;22.0
+01.12.2020;C042056164;customer2;North America;162.0
+01.01.2021;C042056164;customer2;North America;192.0
+01.02.2021;C042056164;customer1;Europe;180.0
+01.03.2021;C042056164;customer3;North America;26.0
+01.03.2021;C042056164;customer2;North America;104.0
+01.03.2021;C042056164;customer4;Europe;38.0
+01.04.2021;C042056164;customer3;North America;46.0
+01.04.2021;C042056164;customer2;North America;158.0
+01.05.2021;C042056164;customer2;North America;192.0
+01.06.2021;C042056164;customer2;North America;138.0
+01.07.2021;C042056164;customer2;North America;177.0
+01.07.2021;C042056164;customer1;Europe;21.0
+01.08.2021;C042056164;customer4;Europe;39.0
+01.08.2021;C042056164;customer2;North America;135.0
+01.09.2021;C042056164;customer2;North America;180.0
+01.10.2021;C042056164;customer4;Europe;198.0
+01.11.2021;C042056164;customer2;North America;165.0
+01.11.2021;C042056164;customer1;Europe;21.0
+01.12.2021;C042056164;customer4;Europe;49.0
+01.12.2021;C042056164;customer2;North America;131.0
+01.01.2022;C042056164;customer2;North America;185.0
+01.01.2022;C042056164;customer1;Europe;25.0
+01.02.2022;C042056164;customer2;North America;150.0
+01.03.2022;C042056164;customer2;North America;137.0
+01.03.2022;C042056164;customer1;Europe;25.0
+01.04.2022;C042056164;customer1;Europe;204.0
+01.05.2022;C042056164;customer2;North America;133.0
+01.05.2022;C042056164;customer4;Europe;47.0
+01.06.2022;C042056164;customer2;North America;140.0
+01.06.2022;C042056164;customer3;North America;34.0
+01.07.2022;C042056164;customer4;Europe;174.0
+01.08.2022;C042056164;customer3;North America;27.0
+01.08.2022;C042056164;customer4;Europe;32.0
+01.08.2022;C042056164;customer2;North America;97.0
+01.08.2022;C042056164;customer1;Europe;12.0
+01.09.2022;C042056164;customer2;North America;124.0
+01.09.2022;C042056164;customer4;Europe;44.0
+01.10.2022;C042056164;customer2;North America;204.0
+01.11.2022;C042056164;customer2;North America;164.0
+01.11.2022;C042056164;customer1;Europe;16.0
+01.12.2022;C042056164;customer4;Europe;132.0
+01.01.2023;C042056164;customer4;Europe;168.0
+01.02.2023;C042056164;customer2;North America;138.0
+01.02.2023;C042056164;customer4;Europe;48.0
+01.03.2023;C042056164;customer2;North America;156.0
+01.04.2023;C042056164;customer2;North America;246.0
+01.05.2023;C042056164;customer2;North America;163.0
+01.05.2023;C042056164;customer4;Europe;59.0
+01.06.2023;C042056164;customer2;North America;180.0
+01.07.2023;C042056164;customer2;North America;154.0
+01.07.2023;C042056164;customer4;Europe;50.0
+01.08.2023;C042056164;customer2;North America;189.0
+01.08.2023;C042056164;customer1;Europe;15.0
+01.09.2023;C042056164;customer2;North America;222.0
+01.10.2023;C042056164;customer2;North America;178.0
+01.10.2023;C042056164;customer4;Europe;74.0
+01.11.2023;C042056164;customer4;Europe;204.0
+01.12.2023;C042056164;customer2;North America;139.0
+01.12.2023;C042056164;customer3;North America;41.0
+01.01.2024;C042056164;customer2;North America;161.0
+01.01.2024;C042056164;customer3;North America;43.0
+01.02.2024;C042056164;customer3;North America;30.0
+01.02.2024;C042056164;customer2;North America;138.0
+01.03.2024;C042056164;customer4;Europe;204.0
+01.04.2024;C042056164;customer4;Europe;59.0
+01.04.2024;C042056164;customer2;North America;146.0
+01.04.2024;C042056164;customer3;North America;29.0
+01.05.2024;C042056164;customer2;North America;228.0
+01.06.2024;C042056164;customer2;North America;234.0
+01.04.2010;C005824274;customer2;North America;8.0
+01.04.2010;C005824274;customer4;Europe;4.0
+01.09.2010;C005824274;customer2;North America;9.0
+01.09.2010;C005824274;customer3;North America;3.0
+01.12.2010;C005824274;customer2;North America;12.0
+01.04.2011;C005824274;customer2;North America;24.0
+01.09.2011;C005824274;customer2;North America;9.0
+01.09.2011;C005824274;customer1;Europe;3.0
+01.04.2012;C005824274;customer2;North America;7.0
+01.04.2012;C005824274;customer4;Europe;5.0
+01.08.2012;C005824274;customer1;Europe;12.0
+01.09.2012;C005824274;customer2;North America;17.0
+01.09.2012;C005824274;customer3;North America;7.0
+01.12.2012;C005824274;customer2;North America;12.0
+01.04.2013;C005824274;customer2;North America;24.0
+01.09.2013;C005824274;customer2;North America;12.0
+01.10.2013;C005824274;customer2;North America;24.0
+01.11.2013;C005824274;customer2;North America;6.0
+01.11.2013;C005824274;customer4;Europe;6.0
+01.12.2013;C005824274;customer4;Europe;5.0
+01.12.2013;C005824274;customer2;North America;7.0
+01.04.2014;C005824274;customer2;North America;24.0
+01.07.2014;C005824274;customer2;North America;12.0
+01.09.2014;C005824274;customer2;North America;20.0
+01.09.2014;C005824274;customer4;Europe;4.0
+01.12.2014;C005824274;customer2;North America;10.0
+01.12.2014;C005824274;customer4;Europe;2.0
+01.04.2015;C005824274;customer2;North America;24.0
+01.09.2015;C005824274;customer2;North America;17.0
+01.09.2015;C005824274;customer3;North America;7.0
+01.03.2016;C005824274;customer2;North America;24.0
+01.04.2016;C005824274;customer3;North America;2.0
+01.04.2016;C005824274;customer2;North America;15.0
+01.04.2016;C005824274;customer4;Europe;7.0
+01.09.2016;C005824274;customer2;North America;24.0
+01.12.2016;C005824274;customer2;North America;24.0
+01.03.2017;C005824274;customer1;Europe;24.0
+01.04.2017;C005824274;customer4;Europe;7.0
+01.04.2017;C005824274;customer2;North America;17.0
+01.09.2017;C005824274;customer2;North America;8.0
+01.09.2017;C005824274;customer3;North America;4.0
+01.12.2017;C005824274;customer2;North America;24.0
+01.01.2018;C005824274;customer4;Europe;5.0
+01.01.2018;C005824274;customer3;North America;7.0
+01.04.2018;C005824274;customer2;North America;24.0
+01.09.2018;C005824274;customer2;North America;24.0
+01.10.2018;C005824274;customer2;North America;24.0
+01.12.2018;C005824274;customer2;North America;9.0
+01.12.2018;C005824274;customer4;Europe;3.0
+01.04.2019;C005824274;customer4;Europe;24.0
+01.09.2019;C005824274;customer2;North America;24.0
+01.12.2019;C005824274;customer4;Europe;24.0
+01.04.2020;C005824274;customer2;North America;24.0
+01.07.2020;C005824274;customer4;Europe;12.0
+01.09.2020;C005824274;customer2;North America;24.0
+01.12.2020;C005824274;customer2;North America;24.0
+01.04.2021;C005824274;customer2;North America;17.0
+01.04.2021;C005824274;customer3;North America;7.0
+01.09.2021;C005824274;customer2;North America;24.0
+01.12.2021;C005824274;customer2;North America;12.0
+01.04.2022;C005824274;customer2;North America;21.0
+01.04.2022;C005824274;customer3;North America;3.0
+01.06.2022;C005824274;customer2;North America;10.0
+01.06.2022;C005824274;customer4;Europe;2.0
+01.09.2022;C005824274;customer2;North America;17.0
+01.09.2022;C005824274;customer4;Europe;7.0
+01.12.2022;C005824274;customer2;North America;20.0
+01.12.2022;C005824274;customer3;North America;4.0
+01.04.2023;C005824274;customer2;North America;24.0
+01.09.2023;C005824274;customer2;North America;12.0
+01.09.2023;C005824274;customer4;Europe;12.0
+01.12.2023;C005824274;customer2;North America;24.0
+01.04.2024;C005824274;customer4;Europe;3.0
+01.04.2024;C005824274;customer2;North America;8.0
+01.04.2024;C005824274;customer3;North America;1.0
+01.01.2008;C023019522;customer2;North America;12.0
+01.02.2008;C023019522;customer2;North America;12.0
+01.05.2008;C023019522;customer3;North America;12.0
+01.08.2008;C023019522;customer2;North America;18.0
+01.01.2009;C023019522;customer2;North America;12.0
+01.02.2009;C023019522;customer2;North America;12.0
+01.05.2009;C023019522;customer2;North America;6.0
+01.08.2009;C023019522;customer2;North America;8.0
+01.08.2009;C023019522;customer4;Europe;4.0
+01.01.2010;C023019522;customer4;Europe;1.0
+01.01.2010;C023019522;customer3;North America;3.0
+01.01.2010;C023019522;customer2;North America;2.0
+01.02.2010;C023019522;customer2;North America;6.0
+01.05.2010;C023019522;customer2;North America;12.0
+01.08.2010;C023019522;customer2;North America;18.0
+01.01.2011;C023019522;customer2;North America;12.0
+01.02.2011;C023019522;customer4;Europe;3.0
+01.02.2011;C023019522;customer3;North America;3.0
+01.05.2011;C023019522;customer3;North America;12.0
+01.08.2011;C023019522;customer2;North America;11.0
+01.08.2011;C023019522;customer4;Europe;1.0
+01.11.2011;C023019522;customer2;North America;11.0
+01.11.2011;C023019522;customer1;Europe;1.0
+01.02.2012;C023019522;customer2;North America;18.0
+01.05.2012;C023019522;customer4;Europe;6.0
+01.08.2012;C023019522;customer2;North America;14.0
+01.08.2012;C023019522;customer4;Europe;4.0
+01.01.2013;C023019522;customer2;North America;18.0
+01.02.2013;C023019522;customer2;North America;12.0
+01.05.2013;C023019522;customer2;North America;8.0
+01.05.2013;C023019522;customer3;North America;2.0
+01.05.2013;C023019522;customer4;Europe;2.0
+01.08.2013;C023019522;customer2;North America;10.0
+01.08.2013;C023019522;customer3;North America;2.0
+01.12.2013;C023019522;customer2;North America;6.0
+01.01.2014;C023019522;customer2;North America;9.0
+01.01.2014;C023019522;customer4;Europe;3.0
+01.02.2014;C023019522;customer2;North America;10.0
+01.02.2014;C023019522;customer3;North America;2.0
+01.05.2014;C023019522;customer2;North America;5.0
+01.05.2014;C023019522;customer4;Europe;1.0
+01.08.2014;C023019522;customer4;Europe;2.0
+01.08.2014;C023019522;customer2;North America;4.0
+01.12.2014;C023019522;customer3;North America;6.0
+01.01.2015;C023019522;customer2;North America;6.0
+01.01.2015;C023019522;customer4;Europe;3.0
+01.01.2015;C023019522;customer3;North America;3.0
+01.02.2015;C023019522;customer2;North America;11.0
+01.02.2015;C023019522;customer3;North America;1.0
+01.03.2015;C023019522;customer2;North America;7.0
+01.03.2015;C023019522;customer3;North America;5.0
+01.04.2015;C023019522;customer2;North America;12.0
+01.05.2015;C023019522;customer2;North America;11.0
+01.05.2015;C023019522;customer3;North America;1.0
+01.08.2015;C023019522;customer2;North America;12.0
+01.01.2016;C023019522;customer2;North America;5.0
+01.01.2016;C023019522;customer4;Europe;1.0
+01.05.2016;C023019522;customer2;North America;5.0
+01.05.2016;C023019522;customer4;Europe;1.0
+01.08.2016;C023019522;customer2;North America;12.0
+01.10.2016;C023019522;customer2;North America;2.0
+01.10.2016;C023019522;customer4;Europe;4.0
+01.01.2017;C023019522;customer4;Europe;6.0
+01.02.2017;C023019522;customer2;North America;5.0
+01.02.2017;C023019522;customer4;Europe;1.0
+01.03.2017;C023019522;customer2;North America;12.0
+01.05.2017;C023019522;customer4;Europe;5.0
+01.05.2017;C023019522;customer2;North America;7.0
+01.08.2017;C023019522;customer2;North America;6.0
+01.01.2018;C023019522;customer2;North America;6.0
+01.02.2018;C023019522;customer2;North America;18.0
+01.02.2018;C023019522;customer4;Europe;6.0
+01.05.2018;C023019522;customer2;North America;18.0
+01.08.2018;C023019522;customer2;North America;12.0
+01.01.2019;C023019522;customer2;North America;6.0
+01.02.2019;C023019522;customer4;Europe;2.0
+01.02.2019;C023019522;customer2;North America;10.0
+01.05.2019;C023019522;customer2;North America;9.0
+01.05.2019;C023019522;customer4;Europe;3.0
+01.08.2019;C023019522;customer2;North America;10.0
+01.08.2019;C023019522;customer4;Europe;2.0
+01.09.2019;C023019522;customer2;North America;12.0
+01.01.2020;C023019522;customer2;North America;12.0
+01.02.2020;C023019522;customer4;Europe;2.0
+01.02.2020;C023019522;customer2;North America;10.0
+01.05.2020;C023019522;customer2;North America;3.0
+01.05.2020;C023019522;customer3;North America;1.0
+01.05.2020;C023019522;customer4;Europe;2.0
+01.08.2020;C023019522;customer2;North America;12.0
+01.01.2021;C023019522;customer2;North America;3.0
+01.01.2021;C023019522;customer4;Europe;3.0
+01.02.2021;C023019522;customer2;North America;18.0
+01.05.2021;C023019522;customer2;North America;6.0
+01.07.2021;C023019522;customer4;Europe;3.0
+01.07.2021;C023019522;customer2;North America;3.0
+01.08.2021;C023019522;customer2;North America;18.0
+01.10.2021;C023019522;customer2;North America;4.0
+01.10.2021;C023019522;customer3;North America;2.0
+01.01.2022;C023019522;customer2;North America;2.0
+01.01.2022;C023019522;customer4;Europe;3.0
+01.01.2022;C023019522;customer3;North America;1.0
+01.03.2022;C023019522;customer2;North America;12.0
+01.08.2022;C023019522;customer2;North America;12.0
+01.02.2023;C023019522;customer4;Europe;3.0
+01.02.2023;C023019522;customer2;North America;9.0
+01.05.2023;C023019522;customer2;North America;9.0
+01.05.2023;C023019522;customer4;Europe;3.0
+01.07.2023;C023019522;customer2;North America;6.0
+01.08.2023;C023019522;customer2;North America;6.0
+01.12.2023;C023019522;customer2;North America;5.0
+01.12.2023;C023019522;customer4;Europe;1.0
+01.01.2024;C023019522;customer2;North America;6.0
+01.02.2024;C023019522;customer2;North America;12.0
+01.04.2024;C023019522;customer2;North America;6.0
+01.05.2024;C023019522;customer2;North America;12.0
+01.08.2012;C010825983;customer2;North America;48.0
+01.10.2012;C010825983;customer2;North America;191.0
+01.10.2012;C010825983;customer3;North America;49.0
+01.03.2013;C010825983;customer2;North America;144.0
+01.12.2013;C010825983;customer2;North America;44.0
+01.12.2013;C010825983;customer1;Europe;4.0
+01.04.2014;C010825983;customer2;North America;48.0
+01.05.2014;C010825983;customer2;North America;96.0
+01.09.2014;C010825983;customer2;North America;22.0
+01.09.2014;C010825983;customer3;North America;2.0
+01.03.2015;C010825983;customer2;North America;48.0
+01.09.2015;C010825983;customer2;North America;88.0
+01.09.2015;C010825983;customer4;Europe;32.0
+01.03.2016;C010825983;customer2;North America;48.0
+01.09.2016;C010825983;customer2;North America;107.0
+01.09.2016;C010825983;customer4;Europe;37.0
+01.03.2017;C010825983;customer2;North America;24.0
+01.08.2017;C010825983;customer2;North America;58.0
+01.08.2017;C010825983;customer4;Europe;14.0
+01.10.2017;C010825983;customer2;North America;528.0
+01.03.2018;C010825983;customer4;Europe;12.0
+01.03.2018;C010825983;customer2;North America;29.0
+01.03.2018;C010825983;customer1;Europe;7.0
+01.05.2018;C010825983;customer2;North America;144.0
+01.08.2018;C010825983;customer2;North America;24.0
+01.02.2019;C010825983;customer3;North America;7.0
+01.02.2019;C010825983;customer2;North America;11.0
+01.02.2019;C010825983;customer4;Europe;6.0
+01.03.2019;C010825983;customer1;Europe;15.0
+01.03.2019;C010825983;customer4;Europe;33.0
+01.11.2019;C010825983;customer4;Europe;36.0
+01.11.2019;C010825983;customer2;North America;132.0
+01.02.2020;C010825983;customer2;North America;144.0
+01.03.2020;C010825983;customer1;Europe;120.0
+01.04.2020;C010825983;customer2;North America;24.0
+01.05.2020;C010825983;customer3;North America;9.0
+01.05.2020;C010825983;customer1;Europe;5.0
+01.05.2020;C010825983;customer4;Europe;10.0
+01.08.2020;C010825983;customer2;North America;24.0
+01.09.2020;C010825983;customer2;North America;74.0
+01.09.2020;C010825983;customer3;North America;22.0
+01.03.2021;C010825983;customer2;North America;189.0
+01.03.2021;C010825983;customer4;Europe;51.0
+01.04.2021;C010825983;customer2;North America;24.0
+01.10.2021;C010825983;customer2;North America;24.0
+01.04.2022;C010825983;customer2;North America;90.0
+01.04.2022;C010825983;customer1;Europe;6.0
+01.09.2022;C010825983;customer2;North America;24.0
+01.03.2023;C010825983;customer2;North America;42.0
+01.03.2023;C010825983;customer3;North America;6.0
+01.06.2023;C010825983;customer2;North America;120.0
+01.09.2023;C010825983;customer2;North America;108.0
+01.09.2023;C010825983;customer4;Europe;36.0
+01.11.2023;C010825983;customer2;North America;19.0
+01.11.2023;C010825983;customer4;Europe;5.0
+01.03.2024;C010825983;customer3;North America;120.0
+01.12.2016;C042056164;customer4;Europe;29.0
+01.12.2016;C042056164;customer2;North America;67.0
+01.01.2017;C042056164;customer2;North America;150.0
+01.02.2017;C042056164;customer2;North America;132.0
+01.02.2017;C042056164;customer1;Europe;18.0
+01.03.2017;C042056164;customer2;North America;114.0
+01.03.2017;C042056164;customer3;North America;30.0
+01.04.2017;C042056164;customer2;North America;228.0
+01.05.2017;C042056164;customer2;North America;180.0
+01.06.2017;C042056164;customer2;North America;156.0
+01.07.2017;C042056164;customer2;North America;204.0
+01.08.2017;C042056164;customer2;North America;168.0
+01.09.2017;C042056164;customer2;North America;174.0
+01.10.2017;C042056164;customer2;North America;204.0
+01.11.2017;C042056164;customer2;North America;123.0
+01.11.2017;C042056164;customer1;Europe;12.0
+01.11.2017;C042056164;customer4;Europe;45.0
+01.12.2017;C042056164;customer2;North America;87.0
+01.12.2017;C042056164;customer4;Europe;45.0
+01.01.2018;C042056164;customer2;North America;192.0
+01.02.2018;C042056164;customer2;North America;159.0
+01.02.2018;C042056164;customer3;North America;33.0
+01.03.2018;C042056164;customer2;North America;156.0
+01.04.2018;C042056164;customer2;North America;159.0
+01.04.2018;C042056164;customer4;Europe;63.0
+01.05.2018;C042056164;customer2;North America;139.0
+01.05.2018;C042056164;customer4;Europe;53.0
+01.06.2018;C042056164;customer2;North America;156.0
+01.07.2018;C042056164;customer2;North America;198.0
+01.08.2018;C042056164;customer2;North America;122.0
+01.08.2018;C042056164;customer4;Europe;58.0
+01.09.2018;C042056164;customer4;Europe;117.0
+01.09.2018;C042056164;customer3;North America;75.0
+01.10.2018;C042056164;customer2;North America;193.0
+01.10.2018;C042056164;customer3;North America;41.0
+01.11.2018;C042056164;customer2;North America;144.0
+01.11.2018;C042056164;customer1;Europe;12.0
+01.11.2018;C042056164;customer3;North America;30.0
+01.12.2018;C042056164;customer2;North America;168.0
+01.01.2019;C042056164;customer2;North America;192.0
+01.02.2019;C042056164;customer2;North America;123.0
+01.02.2019;C042056164;customer4;Europe;43.0
+01.02.2019;C042056164;customer3;North America;32.0
+01.03.2019;C042056164;customer2;North America;162.0
+01.04.2019;C042056164;customer2;North America;149.0
+01.04.2019;C042056164;customer4;Europe;59.0
+01.04.2019;C042056164;customer3;North America;44.0
+01.05.2019;C042056164;customer2;North America;173.0
+01.05.2019;C042056164;customer4;Europe;49.0
+01.06.2019;C042056164;customer2;North America;112.0
+01.06.2019;C042056164;customer4;Europe;44.0
+01.07.2019;C042056164;customer2;North America;180.0
+01.08.2019;C042056164;customer2;North America;198.0
+01.09.2019;C042056164;customer2;North America;156.0
+01.10.2019;C042056164;customer2;North America;198.0
+01.10.2019;C042056164;customer1;Europe;24.0
+01.11.2019;C042056164;customer2;North America;198.0
+01.12.2019;C042056164;customer1;Europe;13.0
+01.12.2019;C042056164;customer2;North America;89.0
+01.12.2019;C042056164;customer4;Europe;39.0
+01.12.2019;C042056164;customer3;North America;21.0
+01.01.2020;C042056164;customer2;North America;156.0
+01.02.2020;C042056164;customer2;North America;186.0
+01.03.2020;C042056164;customer2;North America;133.0
+01.03.2020;C042056164;customer3;North America;41.0
+01.04.2020;C042056164;customer4;Europe;53.0
+01.04.2020;C042056164;customer2;North America;139.0
+01.05.2020;C042056164;customer2;North America;168.0
+01.06.2020;C042056164;customer2;North America;132.0
+01.07.2020;C042056164;customer3;North America;180.0
+01.08.2020;C042056164;customer2;North America;144.0
+01.09.2020;C042056164;customer4;Europe;162.0
+01.10.2020;C042056164;customer2;North America;204.0
+01.11.2020;C042056164;customer2;North America;179.0
+01.11.2020;C042056164;customer1;Europe;19.0
+01.12.2020;C042056164;customer2;North America;137.0
+01.12.2020;C042056164;customer3;North America;25.0
+01.01.2021;C042056164;customer2;North America;192.0
+01.02.2021;C042056164;customer2;North America;180.0
+01.03.2021;C042056164;customer3;North America;168.0
+01.04.2021;C042056164;customer4;Europe;51.0
+01.04.2021;C042056164;customer2;North America;140.0
+01.04.2021;C042056164;customer1;Europe;13.0
+01.05.2021;C042056164;customer2;North America;114.0
+01.05.2021;C042056164;customer3;North America;27.0
+01.05.2021;C042056164;customer4;Europe;51.0
+01.06.2021;C042056164;customer2;North America;106.0
+01.06.2021;C042056164;customer3;North America;32.0
+01.07.2021;C042056164;customer4;Europe;61.0
+01.07.2021;C042056164;customer2;North America;137.0
+01.08.2021;C042056164;customer2;North America;131.0
+01.08.2021;C042056164;customer3;North America;43.0
+01.09.2021;C042056164;customer2;North America;143.0
+01.09.2021;C042056164;customer3;North America;37.0
+01.10.2021;C042056164;customer2;North America;152.0
+01.10.2021;C042056164;customer3;North America;46.0
+01.11.2021;C042056164;customer2;North America;186.0
+01.12.2021;C042056164;customer2;North America;129.0
+01.12.2021;C042056164;customer4;Europe;51.0
+01.01.2022;C042056164;customer3;North America;37.0
+01.01.2022;C042056164;customer2;North America;173.0
+01.02.2022;C042056164;customer3;North America;150.0
+01.03.2022;C042056164;customer2;North America;116.0
+01.03.2022;C042056164;customer4;Europe;46.0
+01.04.2022;C042056164;customer2;North America;204.0
+01.05.2022;C042056164;customer2;North America;180.0
+01.06.2022;C042056164;customer2;North America;174.0
+01.07.2022;C042056164;customer2;North America;174.0
+01.08.2022;C042056164;customer2;North America;168.0
+01.09.2022;C042056164;customer2;North America;168.0
+01.10.2022;C042056164;customer2;North America;204.0
+01.11.2022;C042056164;customer2;North America;180.0
+01.12.2022;C042056164;customer2;North America;132.0
+01.01.2023;C042056164;customer2;North America;119.0
+01.01.2023;C042056164;customer4;Europe;49.0
+01.02.2023;C042056164;customer2;North America;152.0
+01.02.2023;C042056164;customer3;North America;34.0
+01.03.2023;C042056164;customer2;North America;156.0
+01.04.2023;C042056164;customer4;Europe;246.0
+01.05.2023;C042056164;customer2;North America;222.0
+01.06.2023;C042056164;customer2;North America;180.0
+01.07.2023;C042056164;customer2;North America;204.0
+01.08.2023;C042056164;customer2;North America;163.0
+01.08.2023;C042056164;customer3;North America;41.0
+01.09.2023;C042056164;customer2;North America;222.0
+01.10.2023;C042056164;customer4;Europe;252.0
+01.11.2023;C042056164;customer4;Europe;204.0
+01.12.2023;C042056164;customer4;Europe;42.0
+01.12.2023;C042056164;customer2;North America;112.0
+01.12.2023;C042056164;customer3;North America;26.0
+01.01.2024;C042056164;customer2;North America;204.0
+01.02.2024;C042056164;customer2;North America;115.0
+01.02.2024;C042056164;customer4;Europe;53.0
+01.03.2024;C042056164;customer2;North America;144.0
+01.03.2024;C042056164;customer4;Europe;60.0
+01.04.2024;C042056164;customer4;Europe;57.0
+01.04.2024;C042056164;customer2;North America;177.0
+01.05.2024;C042056164;customer2;North America;156.0
+01.05.2024;C042056164;customer4;Europe;72.0
+01.06.2024;C042056164;customer4;Europe;234.0
+01.11.2012;C018904994;customer3;North America;12.0
+01.11.2012;C018904994;customer2;North America;30.0
+01.01.2013;C018904994;customer2;North America;114.0
+01.03.2013;C018904994;customer2;North America;40.0
+01.03.2013;C018904994;customer1;Europe;2.0
+01.05.2013;C018904994;customer3;North America;330.0
+01.06.2013;C018904994;customer4;Europe;96.0
+01.06.2013;C018904994;customer2;North America;210.0
+01.06.2013;C018904994;customer3;North America;42.0
+01.12.2013;C018904994;customer4;Europe;569.0
+01.12.2013;C018904994;customer1;Europe;187.0
+01.05.2014;C018904994;customer2;North America;948.0
+01.08.2014;C018904994;customer2;North America;90.0
+01.10.2014;C018904994;customer2;North America;12.0
+01.05.2015;C018904994;customer3;North America;17.0
+01.05.2015;C018904994;customer2;North America;42.0
+01.05.2015;C018904994;customer4;Europe;13.0
+01.09.2015;C018904994;customer2;North America;312.0
+01.12.2015;C018904994;customer2;North America;132.0
+01.05.2016;C018904994;customer2;North America;236.0
+01.05.2016;C018904994;customer3;North America;52.0
+01.08.2016;C018904994;customer2;North America;13.0
+01.08.2016;C018904994;customer4;Europe;5.0
+01.09.2016;C018904994;customer2;North America;283.0
+01.09.2016;C018904994;customer4;Europe;89.0
+01.06.2017;C018904994;customer2;North America;414.0
+01.08.2017;C018904994;customer3;North America;822.0
+01.10.2017;C018904994;customer2;North America;2671.0
+01.10.2017;C018904994;customer1;Europe;323.0
+01.05.2018;C018904994;customer4;Europe;390.0
+01.05.2018;C018904994;customer1;Europe;119.0
+01.05.2018;C018904994;customer2;North America;979.0
+01.08.2018;C018904994;customer1;Europe;105.0
+01.08.2018;C018904994;customer3;North America;225.0
+01.09.2018;C018904994;customer2;North America;336.0
+01.09.2018;C018904994;customer3;North America;84.0
+01.11.2018;C018904994;customer2;North America;30.0
+01.02.2019;C018904994;customer2;North America;168.0
+01.05.2019;C018904994;customer3;North America;40.0
+01.05.2019;C018904994;customer2;North America;176.0
+01.11.2019;C018904994;customer2;North America;1392.0
+01.02.2020;C018904994;customer4;Europe;894.0
+01.03.2020;C018904994;customer3;North America;1.0
+01.03.2020;C018904994;customer2;North America;5.0
+01.05.2020;C018904994;customer2;North America;339.0
+01.05.2020;C018904994;customer4;Europe;135.0
+01.06.2020;C018904994;customer2;North America;6.0
+01.08.2020;C018904994;customer2;North America;354.0
+01.09.2020;C018904994;customer2;North America;228.0
+01.01.2021;C018904994;customer2;North America;138.0
+01.10.2021;C018904994;customer4;Europe;132.0
+01.02.2022;C018904994;customer2;North America;7.0
+01.02.2022;C018904994;customer3;North America;5.0
+01.04.2022;C018904994;customer2;North America;168.0
+01.08.2022;C018904994;customer2;North America;51.0
+01.08.2022;C018904994;customer3;North America;9.0
+01.09.2022;C018904994;customer2;North America;12.0
+01.06.2023;C018904994;customer2;North America;2232.0
+01.08.2023;C018904994;customer3;North America;336.0
+01.08.2023;C018904994;customer2;North America;1158.0
+01.08.2023;C018904994;customer4;Europe;426.0
+01.09.2023;C018904994;customer4;Europe;72.0
+01.09.2023;C018904994;customer2;North America;231.0
+01.09.2023;C018904994;customer3;North America;57.0
+01.11.2023;C018904994;customer2;North America;348.0
+01.12.2023;C018904994;customer4;Europe;9.0
+01.12.2023;C018904994;customer2;North America;27.0
+01.01.2024;C018904994;customer2;North America;8.0
+01.01.2024;C018904994;customer4;Europe;4.0
+01.03.2024;C018904994;customer2;North America;6.0
+01.07.2023;C031595988;customer2;North America;0.0
+01.02.2024;C031595988;customer2;North America;186.0
+01.03.2024;C031595988;customer2;North America;140.0
+01.03.2024;C031595988;customer4;Europe;55.0
+01.03.2024;C031595988;customer1;Europe;15.0
+01.04.2024;C031595988;customer4;Europe;180.0
+01.05.2024;C031595988;customer2;North America;216.0
+01.06.2024;C031595988;customer2;North America;143.0
+01.06.2024;C031595988;customer4;Europe;49.0
+01.01.2015;C010887784;customer2;North America;203.0
+01.06.2015;C010887784;customer2;North America;248.0
+01.06.2015;C010887784;customer4;Europe;65.0
+01.06.2015;C010887784;customer3;North America;61.0
+01.11.2015;C010887784;customer2;North America;224.0
+01.12.2016;C010887784;customer2;North America;272.0
+01.07.2017;C010887784;customer2;North America;290.0
+01.09.2017;C010887784;customer4;Europe;110.0
+01.09.2017;C010887784;customer2;North America;291.0
+01.07.2018;C010887784;customer4;Europe;294.0
+01.11.2018;C010887784;customer2;North America;374.0
+01.02.2019;C010887784;customer2;North America;213.0
+01.02.2019;C010887784;customer3;North America;41.0
+01.03.2019;C010887784;customer2;North America;235.0
+01.03.2019;C010887784;customer3;North America;61.0
+01.11.2019;C010887784;customer4;Europe;63.0
+01.11.2019;C010887784;customer2;North America;179.0
+01.12.2019;C010887784;customer3;North America;43.0
+01.12.2019;C010887784;customer2;North America;168.0
+01.12.2019;C010887784;customer4;Europe;74.0
+01.02.2020;C010887784;customer4;Europe;52.0
+01.02.2020;C010887784;customer2;North America;142.0
+01.06.2020;C010887784;customer2;North America;241.0
+01.06.2020;C010887784;customer3;North America;63.0
+01.07.2020;C010887784;customer2;North America;223.0
+01.07.2020;C010887784;customer3;North America;58.0
+01.02.2021;C010887784;customer2;North America;187.0
+01.02.2021;C010887784;customer4;Europe;90.0
+01.06.2021;C010887784;customer2;North America;240.0
+01.06.2021;C010887784;customer4;Europe;93.0
+01.11.2021;C010887784;customer4;Europe;383.0
+01.07.2022;C010887784;customer4;Europe;557.0
+01.03.2023;C010887784;customer2;North America;599.0
+01.04.2023;C010887784;customer2;North America;337.0
+01.04.2023;C010887784;customer4;Europe;124.0
+01.06.2023;C010887784;customer2;North America;328.0
+01.06.2023;C010887784;customer3;North America;69.0
+01.06.2023;C010887784;customer4;Europe;123.0
+01.09.2023;C010887784;customer4;Europe;210.0
+01.09.2023;C010887784;customer2;North America;533.0
+01.06.2024;C010887784;customer2;North America;993.0
+01.01.2010;C011414576;customer1;Europe;70.0
+01.02.2010;C011414576;customer0;North America;68.0
+01.03.2010;C011414576;customer3;North America;6.0
+01.03.2010;C011414576;customer2;North America;59.0
+01.04.2010;C011414576;customer2;North America;67.0
+01.05.2010;C011414576;customer2;North America;63.0
+01.06.2010;C011414576;customer2;North America;66.0
+01.07.2010;C011414576;customer2;North America;43.0
+01.07.2010;C011414576;customer0;Europe;19.0
+01.08.2010;C011414576;customer0;North America;18.0
+01.08.2010;C011414576;customer2;North America;46.0
+01.09.2010;C011414576;customer2;North America;43.0
+01.09.2010;C011414576;customer0;Europe;17.0
+01.10.2010;C011414576;customer2;North America;59.0
+01.11.2010;C011414576;customer2;North America;44.0
+01.11.2010;C011414576;customer0;North America;17.0
+01.12.2010;C011414576;customer2;North America;38.0
+01.12.2010;C011414576;customer0;North America;19.0
+01.01.2011;C011414576;customer0;North America;19.0
+01.01.2011;C011414576;customer2;North America;37.0
+01.02.2011;C011414576;customer3;North America;54.0
+01.03.2011;C011414576;customer2;North America;52.0
+01.04.2011;C011414576;customer1;Europe;55.0
+01.05.2011;C011414576;customer2;North America;50.0
+01.06.2011;C011414576;customer2;North America;48.0
+01.07.2011;C011414576;customer2;North America;51.0
+01.08.2011;C011414576;customer0;Europe;17.0
+01.08.2011;C011414576;customer2;North America;30.0
+01.09.2011;C011414576;customer2;North America;31.0
+01.09.2011;C011414576;customer1;Europe;14.0
+01.10.2011;C011414576;customer2;North America;44.0
+01.11.2011;C011414576;customer2;North America;42.0
+01.12.2011;C011414576;customer2;North America;43.0
+01.01.2012;C011414576;customer0;North America;40.0
+01.02.2012;C011414576;customer2;North America;34.0
+01.02.2012;C011414576;customer3;North America;5.0
+01.03.2012;C011414576;customer1;Europe;31.0
+01.03.2012;C011414576;customer3;North America;10.0
+01.04.2012;C011414576;customer1;Europe;38.0
+01.05.2012;C011414576;customer2;North America;37.0
+01.06.2012;C011414576;customer2;North America;35.0
+01.07.2012;C011414576;customer2;North America;20.0
+01.07.2012;C011414576;customer3;North America;2.0
+01.07.2012;C011414576;customer1;Europe;5.0
+01.07.2012;C011414576;customer0;North America;7.0
+01.08.2012;C011414576;customer0;Europe;33.0
+01.09.2012;C011414576;customer2;North America;31.0
+01.10.2012;C011414576;customer2;North America;30.0
+01.11.2012;C011414576;customer2;North America;29.0
+01.12.2012;C011414576;customer2;North America;28.0
+01.01.2013;C011414576;customer2;North America;27.0
+01.02.2013;C011414576;customer2;North America;26.0
+01.03.2013;C011414576;customer2;North America;24.0
+01.03.2013;C011414576;customer3;North America;1.0
+01.05.2013;C011414576;customer2;North America;24.0
+01.07.2013;C011414576;customer1;Europe;22.0
+01.09.2013;C011414576;customer1;Europe;2.0
+01.09.2013;C011414576;customer2;North America;19.0
+01.10.2013;C011414576;customer0;North America;20.0
+01.12.2013;C011414576;customer2;North America;19.0
+01.02.2014;C011414576;customer2;North America;18.0
+01.03.2014;C011414576;customer2;North America;17.0
+01.05.2014;C011414576;customer2;North America;16.0
+01.07.2014;C011414576;customer2;North America;15.0
+01.09.2014;C011414576;customer2;North America;14.0
+01.11.2014;C011414576;customer2;North America;13.0
+01.01.2015;C011414576;customer2;North America;12.0
+01.03.2015;C011414576;customer2;North America;10.0
+01.03.2015;C011414576;customer1;Europe;1.0
+01.05.2015;C011414576;customer2;North America;10.0
+01.07.2015;C011414576;customer2;North America;9.0
+01.11.2015;C011414576;customer2;North America;1.0
+01.03.2016;C046568618;customer2;North America;21
+01.03.2016;C046568618;customer4;Europe;6
+01.03.2016;C046568618;customer3;North America;5
+01.03.2016;C046568618;customer1;Europe;6
+01.04.2016;C046568618;customer2;North America;30
+01.05.2016;C046568618;customer2;North America;36
+01.06.2016;C046568618;customer1;Europe;7
+01.06.2016;C046568618;customer2;North America;17
+01.06.2016;C046568618;customer4;Europe;3
+01.07.2016;C046568618;customer1;Europe;8
+01.07.2016;C046568618;customer2;North America;26
+01.08.2016;C046568618;customer2;North America;33
+01.09.2016;C046568618;customer2;North America;33
+01.09.2016;C046568618;customer4;Europe;1
+01.10.2016;C046568618;customer2;North America;20
+01.10.2016;C046568618;customer4;Europe;7
+01.10.2016;C046568618;customer1;Europe;7
+01.11.2016;C046568618;customer2;North America;34
+01.12.2016;C046568618;customer2;North America;27
+01.01.2017;C046568618;customer2;North America;36
+01.02.2017;C046568618;customer2;North America;32
+01.03.2017;C046568618;customer2;North America;34
+01.04.2017;C046568618;customer2;North America;20
+01.05.2017;C046568618;customer4;Europe;10
+01.05.2017;C046568618;customer2;North America;24
+01.06.2017;C046568618;customer1;Europe;7
+01.06.2017;C046568618;customer2;North America;29
+01.07.2017;C046568618;customer2;North America;41
+01.08.2017;C046568618;customer2;North America;42
+01.09.2017;C046568618;customer2;North America;24
+01.09.2017;C046568618;customer4;Europe;12
+01.09.2017;C046568618;customer3;North America;3
+01.10.2017;C046568618;customer2;North America;32
+01.10.2017;C046568618;customer1;Europe;6
+01.11.2017;C046568618;customer2;North America;27
+01.11.2017;C046568618;customer3;North America;6
+01.12.2017;C046568618;customer2;North America;32
+01.01.2018;C046568618;customer4;Europe;42
+01.02.2018;C046568618;customer2;North America;34
+01.02.2018;C046568618;customer1;Europe;10
+01.03.2018;C046568618;customer2;North America;30
+01.03.2018;C046568618;customer4;Europe;7
+01.04.2018;C046568618;customer2;North America;26
+01.04.2018;C046568618;customer1;Europe;8
+01.05.2018;C046568618;customer2;North America;29
+01.05.2018;C046568618;customer1;Europe;11
+01.05.2018;C046568618;customer4;Europe;2
+01.06.2018;C046568618;customer2;North America;38
+01.07.2018;C046568618;customer2;North America;42
+01.08.2018;C046568618;customer2;North America;44
+01.09.2018;C046568618;customer2;North America;41
+01.10.2018;C046568618;customer1;Europe;12
+01.10.2018;C046568618;customer2;North America;36
+01.11.2018;C046568618;customer2;North America;29
+01.11.2018;C046568618;customer4;Europe;11
+01.12.2018;C046568618;customer1;Europe;11
+01.12.2018;C046568618;customer2;North America;21
+01.12.2018;C046568618;customer4;Europe;9
+01.12.2018;C046568618;customer3;North America;1
+01.01.2019;C046568618;customer4;Europe;42
+01.02.2019;C046568618;customer2;North America;36
+01.03.2019;C046568618;customer2;North America;21
+01.03.2019;C046568618;customer1;Europe;15
+01.03.2019;C046568618;customer4;Europe;7
+01.04.2019;C046568618;customer2;North America;21
+01.04.2019;C046568618;customer1;Europe;8
+01.04.2019;C046568618;customer4;Europe;7
+01.04.2019;C046568618;customer3;North America;1
+01.05.2019;C046568618;customer1;Europe;20
+01.05.2019;C046568618;customer2;North America;22
+01.06.2019;C046568618;customer2;North America;37
+01.07.2019;C046568618;customer3;North America;4
+01.07.2019;C046568618;customer2;North America;42
+01.08.2019;C046568618;customer2;North America;46
+01.09.2019;C046568618;customer2;North America;26
+01.09.2019;C046568618;customer4;Europe;14
+01.10.2019;C046568618;customer2;North America;32
+01.10.2019;C046568618;customer4;Europe;9
+01.11.2019;C046568618;customer2;North America;25
+01.11.2019;C046568618;customer1;Europe;12
+01.12.2019;C046568618;customer2;North America;42
+01.01.2020;C046568618;customer2;North America;42
+01.02.2020;C046568618;customer2;North America;50
+01.03.2020;C046568618;customer2;North America;36
+01.03.2020;C046568618;customer4;Europe;8
+01.04.2020;C046568618;customer1;Europe;45
+01.05.2020;C046568618;customer1;Europe;45
+01.06.2020;C046568618;customer2;North America;39
+01.07.2020;C046568618;customer1;Europe;11
+01.07.2020;C046568618;customer2;North America;30
+01.08.2020;C046568618;customer2;North America;40
+01.09.2020;C046568618;customer2;North America;39
+01.10.2020;C046568618;customer2;North America;32
+01.10.2020;C046568618;customer1;Europe;14
+01.11.2020;C046568618;customer2;North America;36
+01.11.2020;C046568618;customer1;Europe;4
+01.12.2020;C046568618;customer2;North America;29
+01.12.2020;C046568618;customer1;Europe;6
+01.01.2021;C046568618;customer2;North America;45
+01.02.2021;C046568618;customer2;North America;44
+01.03.2021;C046568618;customer4;Europe;46
+01.04.2021;C046568618;customer3;North America;2
+01.04.2021;C046568618;customer2;North America;36
+01.05.2021;C046568618;customer2;North America;42
+01.06.2021;C046568618;customer2;North America;37
+01.07.2021;C046568618;customer2;North America;35
+01.07.2021;C046568618;customer3;North America;3
+01.08.2021;C046568618;customer1;Europe;42
+01.09.2021;C046568618;customer1;Europe;13
+01.09.2021;C046568618;customer2;North America;30
+01.10.2021;C046568618;customer2;North America;44
+01.11.2021;C046568618;customer2;North America;38
+01.12.2021;C046568618;customer2;North America;32
+01.12.2021;C046568618;customer4;Europe;12
+01.01.2022;C046568618;customer1;Europe;9
+01.01.2022;C046568618;customer2;North America;32
+01.01.2022;C046568618;customer4;Europe;6
+01.02.2022;C046568618;customer2;North America;39
+01.02.2022;C046568618;customer4;Europe;15
+01.03.2022;C046568618;customer2;North America;42
+01.03.2022;C046568618;customer1;Europe;13
+01.04.2022;C046568618;customer1;Europe;9
+01.04.2022;C046568618;customer2;North America;37
+01.05.2022;C046568618;customer2;North America;46
+01.06.2022;C046568618;customer2;North America;43
+01.07.2022;C046568618;customer2;North America;47
+01.08.2022;C046568618;customer2;North America;48
+01.09.2022;C046568618;customer1;Europe;16
+01.09.2022;C046568618;customer2;North America;32
+01.10.2022;C046568618;customer4;Europe;50
+01.11.2022;C046568618;customer2;North America;46
+01.12.2022;C046568618;customer2;North America;42
+01.01.2023;C046568618;customer2;North America;51
+01.02.2023;C046568618;customer2;North America;52
+01.03.2023;C046568618;customer2;North America;51
+01.04.2023;C046568618;customer2;North America;38
+01.05.2023;C046568618;customer2;North America;49
+01.06.2023;C046568618;customer1;Europe;19
+01.06.2023;C046568618;customer2;North America;23
+01.07.2023;C046568618;customer2;North America;46
+01.08.2023;C046568618;customer2;North America;39
+01.08.2023;C046568618;customer4;Europe;11
+01.09.2023;C046568618;customer2;North America;49
+01.10.2023;C046568618;customer2;North America;52
+01.11.2023;C046568618;customer2;North America;28
+01.11.2023;C046568618;customer1;Europe;14
+01.11.2023;C046568618;customer3;North America;2
+01.12.2023;C046568618;customer1;Europe;9
+01.12.2023;C046568618;customer2;North America;40
+01.01.2024;C046568618;customer2;North America;53
+01.02.2024;C046568618;customer2;North America;64
+01.03.2024;C046568618;customer1;Europe;15
+01.03.2024;C046568618;customer2;North America;39
+01.04.2024;C046568618;customer1;Europe;17
+01.04.2024;C046568618;customer2;North America;34
+01.05.2024;C046568618;customer2;North America;58
+01.06.2024;C046568618;customer2;North America;43
+01.06.2024;C046568618;customer4;Europe;11

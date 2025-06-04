@@ -167,6 +167,11 @@ class TsCreationConfig(BaseConfig):
         Dates after this date are excluded.
     grouping_level
         Names of group columns that should be used as the grouping level.
+    save_hierarchy
+        If true, interpretes the given grouping levels as levels of a hierarchy and saves all hierachy levels.
+        Otherwise, no hierarchy levels are implied and only the single level with the given grouping is saved.
+        e.g. if grouping_level is ['A', 'B', 'C'] time series of grouping 'A', 'AB' and 'ABC' is saved.
+        For later filtering use {'grouping.A': {'$exists': True}}
     filter
         Settings for including or excluding values during time series creation.
     new_variables
@@ -181,6 +186,7 @@ class TsCreationConfig(BaseConfig):
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     grouping_level: list[str] = []
+    save_hierarchy: bool = False
     filter: list[FilterSettings] = []
     new_variables: list[NewValue] = []
     value_columns_to_save: list[str]

@@ -123,15 +123,15 @@ def sample_fc_result_3() -> ForecastResult:
 def demand_planning_results() -> list[ForecastResult]:
     client = ExpertClient()
     all_reports = client.get_reports(limit=100)
-    demand_planning_report = [report for report in all_reports if report.description ==
-                              'Monthly Demand Forecast on Material Level'][0]
-    return client.get_fc_results(id=demand_planning_report.report_id, include_k_best_models=3)
+    demand_planning_report = all_reports[all_reports["description"] ==
+                                                     'Monthly Demand Forecast on Material Level'].iloc[0]
+    return client.get_fc_results(id=demand_planning_report["report_id"], include_k_best_models=3)
 
 
 @pytest.fixture(scope="module")
 def sales_forecasting_result() -> list[ForecastResult]:
     client = ExpertClient()
     all_reports = client.get_reports(limit=100)
-    sales_forecasting_report = [report for report in all_reports if report.description ==
-                                'Monthly Sales Forecast on Country Level'][0]
-    return client.get_fc_results(id=sales_forecasting_report.report_id, include_k_best_models=3)
+    sales_forecasting_report = all_reports[all_reports["description"] ==
+                                                       'Monthly Sales Forecast on Country Level'].iloc[0]
+    return client.get_fc_results(id=sales_forecasting_report["report_id"], include_k_best_models=3)
