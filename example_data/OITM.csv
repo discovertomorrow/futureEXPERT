@@ -1,0 +1,18 @@
+ArtikelNr,ArtikelBez,ArtikelGruppe,Produktlinie,Mengeneinheit,Standardpreis,Einkaufspreis,LagerbestandMindest,LagerbestandMaximal,Dispositionsmerkmal,LieferzeitTage,Erfassungsdatum,Status,Saisonkennzeichen
+C011414575,Hydraulikpumpe HYP-200,Fertigprodukte,Industriekomponenten,STK,1249.99,845.50,5.000,20.000,Plangesteuert,14,2022-05-10,Aktiv,
+C024897037,Stahlrohr 3m,Rohstoffe,Baustoffe,STK,39.95,25.20,10.000,100.000,Verbrauchsgesteuert,3,2023-03-15,Aktiv,
+C021120183,Schaltmodul SMX-90,Ersatzteile,Elektronikkomponenten,STK,89.90,60.00,2.000,15.000,Plangesteuert,10,2021-11-21,Aktiv,
+C026568362,Kunststoffplatte 2x1m,Rohstoffe,Verpackungsmaterial,STK,15.75,10.40,20.000,200.000,Verbrauchsgesteuert,5,2024-01-12,Aktiv,
+C048529686,Zahnrad ZR-45,Ersatzteile,Maschinenbau,STK,27.50,18.70,3.000,50.000,Plangesteuert,12,2020-07-01,Auslaufartikel,
+C048097345,LED-Leiste 1m,Fertigprodukte,Beleuchtungstechnik,STK,12.95,7.85,25.000,120.000,Verbrauchsgesteuert,7,2023-09-18,Aktiv,Sommerartikel
+C017968454,Motorblock MB-500,Fertigprodukte,Antriebstechnik,STK,2199.00,1750.00,1.000,10.000,Plangesteuert,21,2022-02-28,Gesperrt,
+C013391652,Filterkartusche FK-300,Ersatzteile,Filtertechnik,STK,34.95,22.30,8.000,60.000,Verbrauchsgesteuert,6,2021-06-11,Aktiv,
+C042056164,Bohrmaschine BM-1000,Fertigprodukte,Elektrowerkzeuge,STK,349.90,270.00,2.000,15.000,Plangesteuert,9,2023-04-05,Aktiv,
+C005824274,Dichtungsring DR-25,Ersatzteile,Dichttechnik,STK,5.95,3.10,50.000,500.000,Verbrauchsgesteuert,4,2020-12-19,Auslaufartikel,
+C023019522,Aluminiumprofil AP-60,Rohstoffe,Metalltechnik,STK,24.50,16.90,15.000,150.000,Plangesteuert,8,2022-07-07,Aktiv,
+C010825983,Kabelsatz KS-75,Ersatzteile,Elektrozubehör,STK,18.80,12.45,12.000,80.000,Verbrauchsgesteuert,6,2023-10-01,Aktiv,
+C018904994,Steuereinheit SE-100,Fertigprodukte,Steuerungstechnik,STK,159.00,110.00,4.000,30.000,Plangesteuert,11,2021-09-23,Aktiv,
+C031595988,Winterreifen WR-17,Fertigprodukte,Fahrzeugteile,STK,109.90,75.00,10.000,50.000,Verbrauchsgesteuert,5,2023-11-11,Aktiv,Winterartikel
+C010887784,Sicherung SIK-10,Ersatzteile,Sicherungstechnik,STK,3.20,1.80,100.000,1000.000,Verbrauchsgesteuert,2,2020-03-10,Gesperrt,
+C011414576,Hydraulikpumpe HYP-201,Fertigprodukte,Industriekomponenten,STK,1299.99,880.00,5.000,20.000,Plangesteuert,14,2022-05-11,Aktiv,
+C046568618,Montageplatte MPX-22,Rohstoffe,Montagezubehör,STK,9.95,6.50,30.000,250.000,Verbrauchsgesteuert,6,2024-02-28,Aktiv,

@@ -4,11 +4,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from futureexpert.forecast import ChangePoint
+from futureexpert.forecast import ChangedValue, ChangePoint, MissingValue, Outlier
 from futureexpert.plot import (_add_level_shifts,
                                _calculate_few_observation_borders,
                                _calculate_replaced_missing_borders,
-                               _fill_missing_values_for_plot)
+                               _fill_missing_values_for_plot,
+                               _prepare_characteristics)
 
 granularities = ['yearly', 'quarterly', 'monthly', 'weekly', 'daily', 'hourly', 'halfhourly']
 
@@ -164,3 +165,85 @@ def test_calculate_replaced_missing_borders___given_valid_input___returns_expect
     assert result[0][1] == datetime(2020, 5, 1)
     assert result[1][0] == datetime(2020, 11, 1)
     assert result[1][1] == datetime(2021, 1, 1)
+
+
+def test__prepare_characteristics___none_of_values_are_in_timeframe___all_values_are_removed_temporarily(sample_fc_result_1):
+    # Arrange
+    df = create_example_df('monthly')
+    fc_result = sample_fc_result_1
+    dates = [datetime(2000, 1, 1), datetime(2000, 2, 1)]
+    outliers = [Outlier(time_stamp_utc=x, original_value=1) for x in dates]
+    change_points = [ChangePoint(time_stamp_utc=x, change_point_type='LEVEL_SHIFT') for x in dates]
+    missing_values = [MissingValue(time_stamp_utc=x) for x in dates]
+    fc_result.ts_characteristics.outliers = outliers
+    fc_result.ts_characteristics.change_points = change_points
+    fc_result.ts_characteristics.missing_values = missing_values
+
+    # Act
+    characteristics = _prepare_characteristics(prepared_actuals=df, result=fc_result)
+
+    # Assert
+    assert characteristics.outliers == []
+    assert characteristics.change_points == []
+    assert characteristics.missing_values == []
+
+    assert fc_result.ts_characteristics.outliers == outliers
+    assert fc_result.ts_characteristics.change_points == change_points
+    assert fc_result.ts_characteristics.missing_values == missing_values
+
+
+def test__prepare_characteristics___all_value_are_within_timeframe___all_values_are_in_result(sample_fc_result_1):
+    # Arrange
+    df = create_example_df('monthly')
+    fc_result = sample_fc_result_1
+    dates = [datetime(2020, 1, 1), datetime(2020, 2, 1)]
+    outliers = [Outlier(time_stamp_utc=x, original_value=1) for x in dates]
+    change_points = [ChangePoint(time_stamp_utc=x, change_point_type='LEVEL_SHIFT') for x in dates]
+    missing_values = [MissingValue(time_stamp_utc=x) for x in dates]
+    fc_result.ts_characteristics.outliers = outliers
+    fc_result.ts_characteristics.change_points = change_points
+    fc_result.ts_characteristics.missing_values = missing_values
+
+    # Act
+    characteristics = _prepare_characteristics(prepared_actuals=df, result=fc_result)
+
+    # Assert
+    assert characteristics.outliers == outliers
+    assert characteristics.change_points == change_points
+    assert characteristics.missing_values == missing_values
+
+    assert fc_result.ts_characteristics.outliers == outliers
+    assert fc_result.ts_characteristics.change_points == change_points
+    assert fc_result.ts_characteristics.missing_values == missing_values
+
+
+def test__prepare_characteristics___some_value_are_within_timeframe___expected_values_are_in_result(sample_fc_result_1):
+    # Arrange
+    df = create_example_df('monthly')
+    fc_result = sample_fc_result_1
+    excluded_date = datetime(2000, 1, 1)
+    included_date = datetime(2020, 1, 1)
+    dates = [included_date, excluded_date]
+    outliers = [Outlier(time_stamp_utc=x, original_value=1) for x in dates]
+    change_points = [ChangePoint(time_stamp_utc=x, change_point_type='LEVEL_SHIFT') for x in dates]
+    missing_values = [MissingValue(time_stamp_utc=x) for x in dates]
+    fc_result.ts_characteristics.outliers = outliers
+    fc_result.ts_characteristics.change_points = change_points
+    fc_result.ts_characteristics.missing_values = missing_values
+
+    # Act
+    characteristics = _prepare_characteristics(prepared_actuals=df, result=fc_result)
+
+    # Assert
+    assert excluded_date not in [x.time_stamp_utc for x in characteristics.outliers]
+    assert included_date in [x.time_stamp_utc for x in characteristics.outliers]
+
+    assert excluded_date not in [x.time_stamp_utc for x in characteristics.change_points]
+    assert included_date in [x.time_stamp_utc for x in characteristics.change_points]
+
+    assert excluded_date not in [x.time_stamp_utc for x in characteristics.missing_values]
+    assert included_date in [x.time_stamp_utc for x in characteristics.missing_values]
+
+    assert fc_result.ts_characteristics.outliers == outliers
+    assert fc_result.ts_characteristics.change_points == change_points
+    assert fc_result.ts_characteristics.missing_values == missing_values

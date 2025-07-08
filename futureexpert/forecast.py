@@ -166,7 +166,8 @@ class MethodSelectionConfig(BaseConfig):
     sporadic_error_metric
         Error metric applied to the backtesting errors for sporadic time series.
     additional_accuracy_measures
-        Additional accuracy measures computed during model ranking.
+        Additional accuracy measures for solely reporting purposes.
+        Does not affect internal evaluation or model ranking.
     step_weights
         Mapping from forecast steps to weights associated with forecast errors for the given forecasting step.
         Only positive weights are allowed. Leave a forecast step out to assign a zero weight.

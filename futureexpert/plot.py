@@ -11,7 +11,13 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
-from futureexpert.forecast import ChangedStartDate, ChangedValue, ChangePoint, ForecastResult, Model, Outlier
+from futureexpert.forecast import (ChangedStartDate,
+                                   ChangedValue,
+                                   ChangePoint,
+                                   ForecastResult,
+                                   Model,
+                                   Outlier,
+                                   TimeSeriesCharacteristics)
 from futureexpert.shared_models import Covariate, CovariateRef, TimeSeries
 
 prog_color = pd.DataFrame({
@@ -344,10 +350,11 @@ def _add_outliers(df_ac: pd.DataFrame, outliers: Sequence[Outlier], changed_valu
                                      'replace_outlier': [x.changed_value for x in outlier]})
 
     df_outlier = detected_outlier.merge(changed_outliers, on='date', how='left', validate='1:1')
-    if df_outlier.shape[0] > 0:
-        df_ac = df_ac.merge(df_outlier, on='date', how='left')
-        replaced_outlier_index = df_ac[df_ac.replace_outlier.notnull()].index.tolist()
-        df_ac.loc[replaced_outlier_index, 'actuals'] = df_ac.loc[replaced_outlier_index, 'replace_outlier']
+    if df_outlier.shape[0] == 0:
+        return df_ac
+    df_ac = df_ac.merge(df_outlier, on='date', how='left')
+    replaced_outlier_index = df_ac[df_ac.replace_outlier.notnull()].index.tolist()
+    df_ac.loc[replaced_outlier_index, 'actuals'] = df_ac.loc[replaced_outlier_index, 'replace_outlier']
 
     df_ac['outlier_connection'] = df_ac['original_outlier']
     outlier_indices = df_ac[df_ac.original_outlier.notnull()].index
@@ -840,6 +847,50 @@ def _create_interactive_forecast_plot(title: str,
     fig.show()
 
 
+def _prepare_characteristics(result: ForecastResult,
+                             prepared_actuals: pd.DataFrame) -> TimeSeriesCharacteristics:
+    """Returns a copy of the characteristics and removes all outliers, missing values and
+    change points that are not within the time frame of the actuals. Usually happens when
+    plot_last_x_data_points_only is used.
+
+    Parameters
+    ----------
+    result
+        Forecasting results of a single time series and model.
+    prepared_actuals
+        Dataframe containing the actuals that are reduced to the last x data points.
+
+
+    Returns
+    -------
+    Timeseries characteristics with potentially removed values.
+    """
+    ts_characteristics = result.ts_characteristics.model_copy(deep=True)
+
+    # Get the earliest date from prepared_actuals
+    min_valid_date = min(d.date() for d in prepared_actuals.date)
+
+    if ts_characteristics.outliers:
+        ts_characteristics.outliers = [
+            x for x in ts_characteristics.outliers
+            if x.time_stamp_utc.date() >= min_valid_date
+        ]
+
+    if ts_characteristics.change_points:
+        ts_characteristics.change_points = [
+            x for x in ts_characteristics.change_points
+            if x.time_stamp_utc.date() >= min_valid_date
+        ]
+
+    if ts_characteristics.missing_values:
+        ts_characteristics.missing_values = [
+            x for x in ts_characteristics.missing_values
+            if x.time_stamp_utc.date() >= min_valid_date
+        ]
+
+    return ts_characteristics
+
+
 def plot_forecast(result: ForecastResult,
                   plot_last_x_data_points_only: Optional[int] = None,
                   model_names: Optional[list[str]] = None,
@@ -878,12 +929,13 @@ def plot_forecast(result: ForecastResult,
 
     df_ac = _prepare_actuals(actuals=result.input.actuals,
                              plot_last_x_data_points_only=plot_last_x_data_points_only)
+    characteristics = _prepare_characteristics(result, df_ac)
     name = result.input.actuals.name
     plot_models = filter_models(result.models, ranks, model_names)
 
     plot_few_observations = []
     if plot_change_points:
-        change_points = result.ts_characteristics.change_points or []
+        change_points = characteristics.change_points or []
         few_observations = [copy.deepcopy(x) for x in change_points if x.change_point_type.startswith('FEW_OBS')]
 
         plot_few_observations = _calculate_few_observation_borders(df_ac.date.tolist(), few_observations)
@@ -892,7 +944,7 @@ def plot_forecast(result: ForecastResult,
         df_ac = _add_level_shifts(df_ac, level_shifts)
 
     if plot_outliers:
-        outliers = result.ts_characteristics.outliers or []
+        outliers = characteristics.outliers or []
         df_ac = _add_outliers(df_ac, outliers, result.changed_values)
 
     df_ac = _add_changed_start_date(df_ac, result.changed_start_date)
@@ -1186,11 +1238,12 @@ def plot_backtesting(result: ForecastResult,
     """
     plot_models = filter_models(result.models, ranks, model_names)
     df_ac = _prepare_actuals(result.input.actuals, plot_last_x_data_points_only)
+    characteristics = _prepare_characteristics(result, df_ac)
 
     plot_few_observations = []
     if plot_change_points:
 
-        change_points = result.ts_characteristics.change_points or []
+        change_points = characteristics.change_points or []
         few_observations = [copy.deepcopy(x) for x in change_points if x.change_point_type.startswith('FEW_OBS')]
 
         plot_few_observations = _calculate_few_observation_borders(df_ac.date.tolist(), few_observations)
@@ -1199,7 +1252,7 @@ def plot_backtesting(result: ForecastResult,
         df_ac = _add_level_shifts(df_ac, level_shifts)
 
     if plot_outliers:
-        outliers = result.ts_characteristics.outliers or []
+        outliers = characteristics.outliers or []
         df_ac = _add_outliers(df_ac, outliers, result.changed_values)
 
     df_ac = _add_changed_start_date(df_ac, result.changed_start_date)

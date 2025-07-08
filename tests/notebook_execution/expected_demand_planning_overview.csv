@@ -4,13 +4,13 @@ Demand-C010825983;C010825983;SVM;;;[6];lumpy;24.0;False;True;;
 Demand-C010887784;C010887784;InterpolID;;;[12];intermittent;;False;False;;
 Demand-C011414575;C011414575;Ensemble;;;[1];smooth;78.0;False;True;;
 Demand-C013391652;C013391652;InterpolID;;;[3];intermittent;6.0;False;False;;
-Demand-C017968454;C017968454;FoundationModel;;;[1];lumpy;;False;True;;1.0
+Demand-C017968454;C017968454;ZeroForecast;;;[1];phase_out;;False;True;;1.0
 Demand-C018904994;C018904994;SVM;;;[3];lumpy;6.0;False;True;;
 Demand-C021120183;C021120183;Croston;;;[3];lumpy;6.0;False;True;;
 Demand-C023019522;C023019522;InterpolID;;;[12];intermittent;6.0;False;True;;
 Demand-C024897037;C024897037;AutoEsCov;;;[12];smooth;6.0;False;True;;
 Demand-C026568362;C026568362;Glmnet(l1_ratio=1.0);;;[12];smooth;6.0;False;False;;
-Demand-C031595988;C031595988;AutoEsCov;;;[1];smooth;12.0;False;;;
+Demand-C031595988;C031595988;AutoEsCov;;;[1];smooth;6.0;False;;;
 Demand-C042056164;C042056164;TBATS;;;[6];smooth;12.0;False;True;;
 Demand-C046568618;C046568618;TBATS;;;[12];smooth;;True;True;;
 Demand-C048097345;C048097345;TBATS;;;[12];smooth;6.0;False;True;;

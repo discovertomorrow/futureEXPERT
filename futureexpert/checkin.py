@@ -89,6 +89,7 @@ class GroupColumn(Column):
 
 class DataDefinition(BaseConfig):
     """Model for the input parameter needed for the first CHECK-IN step.
+    Each column of your table needs to be specified as either date, value, group-column or be removed.
 
     Parameters
     ----------
