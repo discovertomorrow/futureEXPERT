@@ -1,9 +1,10 @@
 """Contains the models with the configuration for CHECK-IN."""
 from datetime import datetime
-from typing import Literal, Optional, Self
+from typing import Literal, Optional
 
 import pydantic
 from pydantic import BaseModel, ConfigDict
+from typing_extensions import Self
 
 from futureexpert.shared_models import TimeSeries
 

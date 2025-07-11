@@ -1,0 +1,73 @@
+name: Build and Publish Python Package
+
+# build the documentation whenever there are new commits on main
+on:
+  push:
+    branches:
+      - main
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# security: restrict permissions for CI jobs.
+permissions:
+  contents: read
+
+jobs:
+  # --- Build python package---
+  # This job is responsible only for building the package.
+  build:
+    name: Build package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build dependencies
+        run: python -m pip install build
+
+      - name: Create absolute links in README
+        run: sed -i -E 's/(\[.*?\])\(\.\/(.*?)\)/\1(https:\/\/github.com\/discovertomorrow\/futureexpert\/blob\/main\/\2)/g' README.md
+
+      - name: Build package
+        run: python -m build
+
+      - name: Store the distribution files
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+  # --- Publish python package ---
+  # This job publishes the package to PyPI.
+  # It only runs after the 'build' job has successfully completed.
+  publish:
+    name: Publish package to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+
+    # --- Permissions ---
+    # Grants the GITHUB_TOKEN the permission to get an OIDC token from GitHub.
+    # This is required for trusted publishing.
+    permissions:
+      id-token: write # This is essential for passwordless publishing
+
+    steps:
+      # --- Download Artifact ---
+      # Downloads the package files that were built and uploaded in the 'build' job.
+      - name: Download distribution files
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+      # --- Publish to PyPI ---
+      # Uses the trusted publisher mechanism to securely upload the package.
+      # It authenticates with PyPI using the OIDC token.
+      - name: Publish package to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

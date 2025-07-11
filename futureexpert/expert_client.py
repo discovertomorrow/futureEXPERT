@@ -5,7 +5,7 @@ import json
 import logging
 import os
 import pprint
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any, Literal, Optional, Union, cast
 
 import dotenv
@@ -576,7 +576,7 @@ class ExpertClient:
         logger.info('Finished report creation. Forecasts are running...')
         return ReportIdentifier.model_validate(result)
 
-    def get_report_type(self, report_identifier: int | ReportIdentifier) -> str:
+    def get_report_type(self, report_identifier: Union[int, ReportIdentifier]) -> str:
         """Gets the available reports, ordered from newest to oldest.
 
         Parameters

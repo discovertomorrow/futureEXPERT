@@ -55,7 +55,7 @@ static-typing:
     - mypy futureexpert
   needs: [docker_build]
 
-unit-tests:
+unit-tests-3.12:
   stage: test
   extends: .defaults
   image: ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
@@ -66,6 +66,25 @@ unit-tests:
   script:
     - pytest tests/unit_tests/.
   needs: [docker_build]
+
+unit-tests:
+  stage: manual
+  extends: .defaults
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:${PYTHON_VERSION}
+  variables:
+    FUTURE_PW: $CI_TEST_PW
+    FUTURE_USER: $CI_TEST_USER
+    FUTURE_ENVIRONMENT: development
+  script:
+    - pip install .[dev]
+    - pytest tests/unit_tests/.
+  needs: [python_build]
+  rules:
+  - when: manual
+    allow_failure: true
+  parallel:
+    matrix:
+      - PYTHON_VERSION: ["3.9", "3.10", "3.11"]
 
 sonarqube:
   extends: .defaults

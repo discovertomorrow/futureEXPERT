@@ -1,7 +1,7 @@
 import logging
 from typing import Optional, Sequence
 
-from futureexpert.forecast import AdditionalCovMethod, ForecastingMethods
+from futureexpert.forecast import ForecastingMethods
 from futureexpert.shared_models import MAX_TS_LEN_CONFIG
 
 

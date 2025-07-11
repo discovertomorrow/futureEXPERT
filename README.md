@@ -10,7 +10,7 @@ The workflow is handled by four distinct modules:
 3. *MATCHER*: Ranks covariates to find the most impactful ones for your data. It takes your own covariates or variables from the *POOL*, determines their optimal time lag, and measures their predictive value against a baseline model.
 4. *FORECAST*: Generates the final forecast. This module automatically selects the best model (from statistical, ML, and AI methods) for each time series and can incorporate the top-performing covariates identified by *MATCHER*.
 
-The simplest workflow only contains *CHECK-IN* and *FORECAST* is described in the jupyter notebook [getting started](notebooks/getting_started.ipynb).
+The simplest workflow only contains *CHECK-IN* and *FORECAST* is described in the jupyter notebook [getting started](./notebooks/getting_started.ipynb).
 
 In case you don't want to use this Python client or access futureEXPERT via API, check out our frontend solution [futureNOW](https://www.future-forecasting.de/).
 
@@ -25,31 +25,31 @@ In order to use futureEXPERT, you need a Python environment with Python 3.9 or h
 The futureEXPERT package can be directly installed with `pip` from our GitHub repository.
 
 ```
-pip install git+https://github.com/discovertomorrow/futureexpert
+pip install -U futureexpert
 ```
 
 ## Getting started
 
-To get started with futureEXPERT we recommend checking out the jupyter notebook [getting started](notebooks/getting_started.ipynb) to help you with your first steps. Also check our [quick start video tutorial](https://www.future-forecasting.de/video/getting-started/).
+To get started with futureEXPERT we recommend checking out the jupyter notebook [getting started](./notebooks/getting_started.ipynb) to help you with your first steps. Also check our [quick start video tutorial](https://www.future-forecasting.de/video/getting-started/).
 
 
 ## Ready-made use case templates
 
 Utilize our use case templates to get started with your own business application right away.
 
-- [Demand Planning](use_cases/demand_planning/demand_planning.ipynb) 
-- [Sales Forecasting](use_cases/sales_forecasting/sales_forecasting.ipynb)
+- [Demand Planning](./use_cases/demand_planning/demand_planning.ipynb) 
+- [Sales Forecasting](./use_cases/sales_forecasting/sales_forecasting.ipynb)
 
 ## Advanced usage
 
-- [checkin configuration options](notebooks/checkin_configuration_options.ipynb) - Different options to prepare your data to time series.
+- [checkin configuration options](./notebooks/checkin_configuration_options.ipynb) - Different options to prepare your data to time series.
 
-- [Advanced workflow FORECAST](notebooks/advanced_workflow.ipynb) - For more control about the single steps for generating a forecast.
-- [Using covariates for FORECAST](notebooks/forecast_with_covariates.ipynb) - Create forecasts with covariates by using your own data of influencing factors.
-- [Using covariates - MATCHER and FORECAST](notebooks/cov_matcher_and_forecast.ipynb?ref_type=heads) - Using covariates: Leverage MATCHER to identify predictive covariates, get ranking of all covariates with the best time lag & incorporate the result into your FORECAST.
-- [Using covariates from POOL](notebooks/using_covariates_from_POOL.ipynb) - How to use potential influencing factors from POOL.
+- [Advanced workflow FORECAST](./notebooks/advanced_workflow.ipynb) - For more control about the single steps for generating a forecast.
+- [Using covariates for FORECAST](./notebooks/forecast_with_covariates.ipynb) - Create forecasts with covariates by using your own data of influencing factors.
+- [Using covariates - MATCHER and FORECAST](./notebooks/cov_matcher_and_forecast.ipynb?ref_type=heads) - Using covariates: Leverage MATCHER to identify predictive covariates, get ranking of all covariates with the best time lag & incorporate the result into your FORECAST.
+- [Using covariates from POOL](./notebooks/using_covariates_from_POOL.ipynb) - How to use potential influencing factors from POOL.
 
-- [Working with results](notebooks/working_with_results.ipynb) - Overview of forecast result functions (e.g. export, plotting) and how to use them; further detailed information about the results (e.g. summary of forecasting methods).
+- [Working with results](./notebooks/working_with_results.ipynb) - Overview of forecast result functions (e.g. export, plotting) and how to use them; further detailed information about the results (e.g. summary of forecasting methods).
 
 - [API documentation](https://discovertomorrow.github.io/futureEXPERT) - Further information about all features and configurations.
 

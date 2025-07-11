@@ -139,7 +139,7 @@ class FutureApiClient:
     def _api_get_request(self,
                          path: str,
                          params: Optional[dict[str, Any]] = None,
-                         timeout: int | None = None) -> httpx.Response:
+                         timeout: Optional[int] = None) -> httpx.Response:
         """Submits a GET request to the _future_ API.
 
         Parameters
@@ -163,7 +163,7 @@ class FutureApiClient:
                              'Authorization': f'Bearer {self.token["access_token"]}'},
                          timeout=timeout)
 
-    def _api_post_request(self, path: str, json: Any, timeout: int | None = None) -> httpx.Response:
+    def _api_post_request(self, path: str, json: Any, timeout: Optional[int] = None) -> httpx.Response:
         """Submits a POST request to the _future_ API.
 
         Parameters

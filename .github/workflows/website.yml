@@ -1,13 +1,12 @@
-name: website
+name: Build documentation and publish GitHub Pages
 
 # build the documentation whenever there are new commits on main
 on:
   push:
     branches:
       - main
-    # Alternative: only build for tags.
-    # tags:
-    #   - '*'
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 # security: restrict permissions for CI jobs.
 permissions:

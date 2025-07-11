@@ -3,7 +3,7 @@ import copy
 import datetime
 import math
 from collections import defaultdict
-from typing import Any, Final, Hashable, Optional, Sequence
+from typing import Any, Final, Hashable, Optional, Sequence, Union
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -415,7 +415,7 @@ def _add_changed_start_date(df_ac: pd.DataFrame, changed_start_date: Optional[Ch
 
 
 def _add_covariates(df_plot: pd.DataFrame,
-                    model_covariates: Sequence[CovariateRef | Covariate],
+                    model_covariates: Sequence[Union[CovariateRef, Covariate]],
                     input_covariates: Sequence[Covariate],
                     max_date: datetime.date) -> pd.DataFrame:
     """Add covariates to the plot data.
