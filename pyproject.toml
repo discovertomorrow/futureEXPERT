@@ -46,7 +46,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/discovertomorrow/futureexpert"
+homepage = "https://www.future-forecasting.de"
+source = "https://github.com/discovertomorrow/futureexpert"
+tracker = "https://github.com/discovertomorrow/futureexpert/issues"
+"release notes" = "https://github.com/discovertomorrow/futureEXPERT/releases"
 
 # Optional dependencies (for 'pip install .[dev]')
 [project.optional-dependencies]

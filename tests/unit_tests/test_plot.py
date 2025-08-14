@@ -29,7 +29,7 @@ def create_example_df(granularity: str) -> pd.DataFrame:
 
     return pd.DataFrame({
         'date': date_range,
-        'value': rng.random(20)
+        'actuals': rng.random(20)
     })
 
 
@@ -56,7 +56,7 @@ def test_fill_missing_values___with_missing_data___fills_missing_data_with_nan(g
 
     # Assert
     assert result_df.shape[0] == 20, f"Expected 20 rows for {granularity}, but got {result_df.shape[0]}."
-    assert result_df.loc[missing_indices, 'value'].isna().all()
+    assert result_df.loc[missing_indices, 'actuals'].isna().all()
 
 
 def test_calculate_few_observation_borders__with_start__returns_expected_borders():
@@ -147,7 +147,7 @@ def test_calculate_add_level_shifts__with_multiple_shifts__returns_expected_leve
     assert result.loc[15:25, 'level_shift'].sum() == 200
 
 
-def test_calculate_replaced_missing_borders___given_valid_input___returns_expected_borders():
+def test_calculate_replaced_missing_borders___given_valid_input_with_edge_cases___returns_expected_borders():
     # Arrange
     df = create_example_df('monthly')
 
@@ -156,15 +156,36 @@ def test_calculate_replaced_missing_borders___given_valid_input___returns_expect
 
     df.loc[10:12, 'replaced_missing'] = 4
 
+    df.loc[17:18, 'replaced_missing'] = 4
+
     # Act
     result = _calculate_replaced_missing_borders(df)
 
     # Assert
-    assert len(result) == 2
+    assert len(result) == 3
     assert result[0][0] == datetime(2020, 1, 1)
-    assert result[0][1] == datetime(2020, 5, 1)
-    assert result[1][0] == datetime(2020, 11, 1)
-    assert result[1][1] == datetime(2021, 1, 1)
+    assert result[0][1] == datetime(2020, 6, 1)
+    assert result[1][0] == datetime(2020, 10, 1)
+    assert result[1][1] == datetime(2021, 2, 1)
+    assert result[2][0] == datetime(2021, 5, 1)
+    assert result[2][1] == datetime(2021, 8, 1)
+
+def test_calculate_replaced_missing_borders___given_valid_input___returns_expected_borders():
+    # Arrange
+    df = create_example_df('monthly')
+
+    df['replaced_missing'] = np.nan
+    df.loc[10:12, 'replaced_missing'] = 4
+
+
+    # Act
+    result = _calculate_replaced_missing_borders(df)
+
+    # Assert
+    assert len(result) == 1
+    assert result[0][0] == datetime(2020, 10, 1)
+    assert result[0][1] == datetime(2021, 2, 1)
+
 
 
 def test__prepare_characteristics___none_of_values_are_in_timeframe___all_values_are_removed_temporarily(sample_fc_result_1):

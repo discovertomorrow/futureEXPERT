@@ -117,9 +117,10 @@ def _create_interactive_time_series_plot(df_ac: pd.DataFrame, name: str) -> None
         gridcolor='lightgrey'
     )
 
-    fig.add_trace(go.Scatter(x=df_ac.date, y=df_ac.actuals, mode='lines',
+    fig.add_trace(go.Scatter(x=df_ac.date, y=df_ac.actuals, mode='lines+markers',
                              name=plot_labels['time_series'],
-                             line=dict(color=prog_color.loc[0, 'darkblue']),
+                             line={'color': prog_color.loc[0, 'darkblue']},
+                             marker={'color': prog_color.loc[0, 'darkblue'], 'size': 2},
                              connectgaps=False,
                              yaxis='y1'
                              ))
@@ -130,8 +131,9 @@ def _create_interactive_time_series_plot(df_ac: pd.DataFrame, name: str) -> None
             fig.add_trace(go.Scatter(x=df_ac.date, y=df_ac[cov],
                                      connectgaps=False,
                                      yaxis=f'y{idx+2}',
-                                     mode='lines', name=str(cov).replace('covariate_lag_', ''),
-                                     line=dict(color=cov_column_color[idx % len(cov_column_color)])))
+                                     mode='lines+markers', name=str(cov).replace('covariate_lag_', ''),
+                                     marker={'color': cov_column_color[idx % len(cov_column_color)], 'size': 2},
+                                     line={'color': cov_column_color[idx % len(cov_column_color)]}))
 
         count_y_axis = len(covariate_column) + 1
         fig.update_layout(
@@ -166,8 +168,10 @@ def _create_static_time_series_plot(df_ac: pd.DataFrame,  name: str) -> None:
 
     covariate_column = [col for col in df_ac if col.startswith('covariate_lag')]
 
-    ax.plot(df_ac.date, df_ac.actuals, color=prog_color.loc[0,
-            "darkblue"], label=plot_labels['time_series'] if len(covariate_column) > 0 else None)
+    ax.plot(df_ac.date, df_ac.actuals,
+            marker='.', markersize=1,
+            color=prog_color.loc[0, "darkblue"],
+            label=plot_labels['time_series'] if len(covariate_column) > 0 else None)
 
     if len(covariate_column) > 0:
         _add_covariates_to_static_plot(ax, covariate_column, df_ac)
@@ -599,16 +603,19 @@ def _calculate_replaced_missing_borders(df_ac: pd.DataFrame) -> list[tuple[datet
     """
     missing_borders: list[tuple[datetime.datetime, datetime.datetime]] = []
     current_missing_block_start = None
-    for index, row in df_ac.iterrows():
-        if index+1 == len(df_ac.index):
-            break
+    min_relevant_actuals = df_ac[df_ac['actuals'].notna()].min()
+    for index, row in df_ac[df_ac['date'] >= min_relevant_actuals['date']].iterrows():
+
         if not math.isnan(row['replaced_missing']):
             if current_missing_block_start is None:
-                current_missing_block_start = row['date']
+                start_index = 0 if index == 0 else index - 1
+                current_missing_block_start = df_ac.iloc[start_index]['date']
 
-            if math.isnan(df_ac.iloc[index+1]['replaced_missing']):
+            end_index = index if index+1 == len(df_ac.index) else index+1
+            if math.isnan(df_ac.iloc[end_index]['replaced_missing']) or \
+                    current_missing_block_start is not None and index+1 == len(df_ac.index):
                 assert current_missing_block_start is not None, 'Start date for replaced missing block is missing.'
-                missing_borders.append((current_missing_block_start, df_ac.iloc[index]['date']))
+                missing_borders.append((current_missing_block_start, df_ac.iloc[end_index]['date']))
                 current_missing_block_start = None
     return missing_borders
 
@@ -656,7 +663,9 @@ def _create_static_forecast_plot(title: str,
     fig.suptitle(title, fontsize=16)
     ax.set_title(subtitle)
 
-    ax.plot(df_concat.date, df_concat.actuals, color=prog_color.loc[0, 'darkblue'], label=plot_labels['time_series'])
+    ax.plot(df_concat.date, df_concat.actuals,
+            marker='.', markersize=1,
+            color=prog_color.loc[0, 'darkblue'], label=plot_labels['time_series'])
     ax.plot(df_concat.date, df_concat.fc, color=prog_color.loc[0, 'cyan'], label='Forecast')
 
     if 'removed_actuals' in df_concat.columns:
@@ -733,7 +742,7 @@ def _create_interactive_forecast_plot(title: str,
         plot_bgcolor='white',
         title=f'{title}<br><sup>{subtitle}</sup>',
         title_x=0.5,
-        title_font=dict(size=16),
+        title_font={'size': 16},
         xaxis_title='Date',
         yaxis_title='Value'
     )
@@ -753,12 +762,14 @@ def _create_interactive_forecast_plot(title: str,
     fig.add_trace(go.Scatter(x=df_concat.date,
                              y=df_concat.actuals,
                              connectgaps=False,
-                             mode='lines', name=plot_labels['time_series'], line=dict(color=prog_color.loc[0, 'darkblue'])))
+                             mode='lines+markers', name=plot_labels['time_series'],
+                             marker={'color': prog_color.loc[0, 'darkblue'], 'size': 2},
+                             line={'color': prog_color.loc[0, 'darkblue']}))
 
     if 'removed_actuals' in df_concat.columns:
         fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.removed_actuals,
                                  connectgaps=False,
-                                 mode='lines', name=plot_labels['removed_values'], line=dict(color=prog_color.loc[3, 'greyblue'])))
+                                 mode='lines', name=plot_labels['removed_values'], line={'color': prog_color.loc[3, 'greyblue']}))
 
     if plot_prediction_intervals and not any(v is None for v in df_concat.lower):
         fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.upper,
@@ -773,7 +784,7 @@ def _create_interactive_forecast_plot(title: str,
                                  fillcolor=f"rgba({pi_color[0]}, {pi_color[1]}, {pi_color[2]}, {pi_color[3]})"))
 
     fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.fc,
-                             mode='lines', name='Forecast', line=dict(color=prog_color.loc[0, 'cyan'])))
+                             mode='lines', name='Forecast', line={'color': prog_color.loc[0, 'cyan']}))
 
     if 'replaced_missing' in df_concat.columns:
         missing_color = mpl.colors.to_rgba(prog_color.loc[2, 'red'], alpha=0.3)
@@ -797,17 +808,17 @@ def _create_interactive_forecast_plot(title: str,
     if 'original_outlier' in df_concat.columns:
         fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.outlier_connection,
                                  mode='lines', name='Outlier Connection', showlegend=False,
-                                 line=dict(color=prog_color.loc[4, 'red'])))
+                                 line={'color': prog_color.loc[4, 'red']}))
         fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.original_outlier,
                                  mode='markers+lines', name=plot_labels['original_outlier'],
-                                 line=dict(color=prog_color.loc[0, 'red']), marker=dict(symbol='circle')))
+                                 line={'color': prog_color.loc[0, 'red']}, marker={'symbol': 'circle'}))
         fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.replace_outlier,
                                  mode='markers+lines', name=plot_labels['replace_value'],
-                                 line=dict(color=prog_color.loc[0, 'green']), marker=dict(symbol='circle')))
+                                 line={'color': prog_color.loc[0, 'green']}, marker={'symbol': 'circle'}))
 
     if 'level_shift' in df_concat.columns:
         fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.level_shift,
-                                 mode='lines', name='Levels', line=dict(color=prog_color.loc[0, 'gold'])))
+                                 mode='lines', name='Levels', line={'color': prog_color.loc[0, 'gold']}))
 
     for idx, time_frame in enumerate(plot_few_observations):
         few_obs_color = mpl.colors.to_rgba(prog_color.loc[1, 'greyblue'], alpha=0.3)
@@ -833,15 +844,16 @@ def _create_interactive_forecast_plot(title: str,
             fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat[cov],
                                      connectgaps=False,
                                      yaxis=f'y{idx+2}',
-                                     mode='lines', name=str(cov).replace('covariate_lag_', ''),
-                                     line=dict(color=cov_column_color[idx % len(cov_column_color)])))
+                                     mode='lines+markers', name=str(cov).replace('covariate_lag_', ''),
+                                     marker={'color': cov_column_color[idx % len(cov_column_color)], 'size': 2},
+                                     line={'color': cov_column_color[idx % len(cov_column_color)]}))
 
         count_y_axis = len(covariate_column) + 1
         fig.update_layout(create_multiple_yaxis(count_y_axis))
 
     fig.update_layout(
         showlegend=True,
-        legend=dict(x=1.05, y=1, traceorder='normal', orientation='v')
+        legend={'x': 1.05, 'y': 1, 'traceorder': 'normal', 'orientation': 'v'}
     )
 
     fig.show()
@@ -1011,7 +1023,7 @@ def _create_interactive_backtesting_plot(title: str,
         plot_bgcolor='white',
         title=f'{title}<br><sup>{subtitle}</sup>',
         title_x=0.5,
-        title_font=dict(size=16),
+        title_font={'size': 16},
         xaxis_title='Date',
         yaxis_title='Value'
     )
@@ -1031,12 +1043,14 @@ def _create_interactive_backtesting_plot(title: str,
 
     fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.actuals,
                              connectgaps=False,
-                             mode='lines', name=plot_labels['time_series'], line=dict(color=prog_color.loc[0, 'darkblue'])))
+                             mode='lines+markers', name=plot_labels['time_series'],
+                             marker={'color': prog_color.loc[0, 'darkblue'], 'size': 2},
+                             line={'color': prog_color.loc[0, 'darkblue']}))
 
     if 'removed_actuals' in df_concat.columns:
         fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.removed_actuals,
                                  connectgaps=False,
-                                 mode='lines', name=plot_labels['removed_values'], line=dict(color=prog_color.loc[0, 'greyblue'])))
+                                 mode='lines', name=plot_labels['removed_values'], line={'color': prog_color.loc[0, 'greyblue']}))
 
     if plot_prediction_intervals and not any(v is None for v in df_bt.lower):
         fig.add_trace(go.Scatter(x=df_bt.date, y=df_bt.upper,
@@ -1051,7 +1065,7 @@ def _create_interactive_backtesting_plot(title: str,
                                  fillcolor=f"rgba({pi_color[0]}, {pi_color[1]}, {pi_color[2]}, {pi_color[3]})"))
 
     fig.add_trace(go.Scatter(x=df_bt.date, y=df_bt.fc,
-                             mode='lines', name='Forecast', line=dict(color=prog_color.loc[0, 'cyan'])))
+                             mode='lines', name='Forecast', line={'color': prog_color.loc[0, 'cyan']}))
 
     if 'replaced_missing' in df_concat.columns:
         missing_color = mpl.colors.to_rgba(prog_color.loc[2, 'red'], alpha=0.3)
@@ -1074,17 +1088,17 @@ def _create_interactive_backtesting_plot(title: str,
     if 'original_outlier' in df_concat.columns:
         fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.outlier_connection,
                                  mode='lines', name='Outlier Connection', showlegend=False,
-                                 line=dict(color=prog_color.loc[4, 'red'])))
+                                 line={'color': prog_color.loc[4, 'red']}))
         fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.original_outlier,
                                  mode='markers+lines', name=plot_labels['original_outlier'],
-                                 line=dict(color=prog_color.loc[0, 'red']), marker=dict(symbol='circle')))
+                                 line={'color': prog_color.loc[0, 'red']}, marker={'symbol': 'circle'}))
         fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.replace_outlier,
                                  mode='markers+lines', name=plot_labels['replace_value'],
-                                 line=dict(color=prog_color.loc[0, 'green']), marker=dict(symbol='circle')))
+                                 line={'color': prog_color.loc[0, 'green']}, marker={'symbol': 'circle'}))
 
     if 'level_shift' in df_concat.columns:
         fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.level_shift,
-                                 mode='lines', name='Levels', line=dict(color=prog_color.loc[0, 'gold'])))
+                                 mode='lines', name='Levels', line={'color': prog_color.loc[0, 'gold']}))
 
     for idx, time_frame in enumerate(plot_few_observations):
         few_obs_color = mpl.colors.to_rgba(prog_color.loc[1, 'greyblue'], alpha=0.3)
@@ -1110,15 +1124,16 @@ def _create_interactive_backtesting_plot(title: str,
             fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat[cov],
                                      connectgaps=False,
                                      yaxis=f'y{idx+2}',
-                                     mode='lines', name=str(cov).replace('covariate_lag_', ''),
-                                     line=dict(color=cov_column_color[idx % len(cov_column_color)])))
+                                     mode='lines+markers', name=str(cov).replace('covariate_lag_', ''),
+                                     marker={'color': cov_column_color[idx % len(cov_column_color)], 'size': 2},
+                                     line={'color': cov_column_color[idx % len(cov_column_color)]}))
 
         count_y_axis = len(covariate_column) + 1
         fig.update_layout(create_multiple_yaxis(count_y_axis))
 
     fig.update_layout(
         showlegend=True,
-        legend=dict(x=1.05, y=1, traceorder='normal', orientation='v')
+        legend={'x': 1.05, 'y': 1, 'traceorder': 'normal', 'orientation': 'v'}
     )
 
     fig.show()
@@ -1152,7 +1167,9 @@ def _create_static_backtesting_plot(title: str,
     fig.suptitle(title, fontsize=16)
     ax.set_title(subtitle)
 
-    ax.plot(df_concat.date, df_concat.actuals, color=prog_color.loc[0, "darkblue"],  label=plot_labels['time_series'])
+    ax.plot(df_concat.date, df_concat.actuals,
+            marker='.', markersize=1,
+            color=prog_color.loc[0, "darkblue"],  label=plot_labels['time_series'])
     ax.plot(df_bt.date, df_bt.fc, color=prog_color.loc[0, "cyan"], label='Forecast')
 
     if 'removed_actuals' in df_concat.columns:

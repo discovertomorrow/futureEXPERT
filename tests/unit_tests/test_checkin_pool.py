@@ -92,4 +92,4 @@ def test_create_pool_cov_definitions___called____returns_expected_list() -> None
 
     # Assert
     assert len(definitions) == len(queried_overview.detailed_pool_cov_information.index)
-    assert all([definition.pool_cov_id in expected_ids for definition in definitions])
+    assert all(definition.pool_cov_id in expected_ids for definition in definitions)
