@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated, Optional, Sequence, Union
+from typing import Annotated, Literal, Optional, Sequence, Union
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, PlainSerializer, WithJsonSchema
 
@@ -107,3 +107,6 @@ class Covariate(BaseModel):
     """
     ts: TimeSeries
     lag: int
+
+
+RerunStatus = Literal['Error', 'NoEvaluation']

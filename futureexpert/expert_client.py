@@ -520,6 +520,15 @@ class ExpertClient:
         config_dict['forecasting']['n_ahead'] = config_dict['forecasting']['fc_horizon']
         config_dict['backtesting'] = config_dict['method_selection']
 
+        if config.rerun_report_id:
+            config_dict['base_report_id'] = config.rerun_report_id
+            config_dict['report_update_strategy'] = 'KEEP_OWN_RUNS'
+
+            base_report_requested_run_status = ['Successful']
+            if 'NoEvaluation' not in config.rerun_status:
+                base_report_requested_run_status.append('NoEvaluation')
+            config_dict['base_report_requested_run_status'] = base_report_requested_run_status
+
         if config.pool_covs is not None:
             pool_covs_checkin_result = self.check_in_pool_covs(requested_pool_covs=config.pool_covs)
             cast(list[str], config_dict['covs_versions']).append(pool_covs_checkin_result.version_id)
@@ -529,6 +538,8 @@ class ExpertClient:
         config_dict['forecasting'].pop('fc_horizon')
         config_dict.pop('matcher_report_id')
         config_dict.pop('method_selection')
+        config_dict.pop('rerun_report_id')
+        config_dict.pop('rerun_status')
 
         payload = {'payload': config_dict}
 
@@ -754,6 +765,9 @@ class ExpertClient:
         -------
         The identifier of the forecasting report.
         """
+
+        assert config_fc.rerun_report_id is None, 'start_forecast_from_raw_data can not be used with rerun_report_id.'
+
         upload_feedback = self.upload_data(source=raw_data_source, file_specification=file_specification)
 
         user_input_id = upload_feedback['uuid']
@@ -807,6 +821,10 @@ class ExpertClient:
             pool_covs_checkin_result = self.check_in_pool_covs(requested_pool_covs=config.pool_covs)
             all_covs_versions.append(pool_covs_checkin_result.version_id)
 
+        base_report_requested_run_status = ['Successful']
+        if 'NoEvaluation' not in config.rerun_status:
+            base_report_requested_run_status.append('NoEvaluation')
+
         config_dict: dict[str, Any] = {
             'report_description': config.title,
             'db_name': config.db_name,
@@ -820,9 +838,9 @@ class ExpertClient:
                 "evaluation_start_date": config.evaluation_start_date,
                 "evaluation_end_date": config.evaluation_end_date,
                 'max_ts_len': config.max_ts_len,
-                "base_report_id": None,
-                "base_report_requested_run_status": None,
-                "report_update_strategy": "KEEP_OWN_RUNS",
+                "base_report_id": config.rerun_report_id,
+                "base_report_requested_run_status": base_report_requested_run_status,
+                "report_update_strategy": 'KEEP_OWN_RUNS',
                 "cov_names": {
                     'cov_name_prefix': '',
                     'cov_name_field': 'name',

@@ -170,13 +170,13 @@ def test_calculate_replaced_missing_borders___given_valid_input_with_edge_cases_
     assert result[2][0] == datetime(2021, 5, 1)
     assert result[2][1] == datetime(2021, 8, 1)
 
+
 def test_calculate_replaced_missing_borders___given_valid_input___returns_expected_borders():
     # Arrange
     df = create_example_df('monthly')
 
     df['replaced_missing'] = np.nan
     df.loc[10:12, 'replaced_missing'] = 4
-
 
     # Act
     result = _calculate_replaced_missing_borders(df)
@@ -185,7 +185,6 @@ def test_calculate_replaced_missing_borders___given_valid_input___returns_expect
     assert len(result) == 1
     assert result[0][0] == datetime(2020, 10, 1)
     assert result[0][1] == datetime(2021, 2, 1)
-
 
 
 def test__prepare_characteristics___none_of_values_are_in_timeframe___all_values_are_removed_temporarily(sample_fc_result_1):

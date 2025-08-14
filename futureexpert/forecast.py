@@ -20,6 +20,7 @@ from futureexpert.shared_models import (BaseConfig,
                                         Covariate,
                                         CovariateRef,
                                         PositiveInt,
+                                        RerunStatus,
                                         TimeSeries,
                                         ValidatedPositiveInt)
 
@@ -245,6 +246,11 @@ class ReportConfig(BaseConfig):
         Only accessible for internal use. Name of the database to use for storing the results.
     priority
         Only accessible for internal use. Higher value indicate higher priority.
+    rerun_report_id
+        ReportId from which failed runs should be recomputed.
+        Ensure to use the same ts_version. Otherwise all time series get computed again.
+    rerun_status
+        Status of the runs that should be computed again. `Error` and/or `NoEvaluation`.
     """
 
     matcher_report_id: Optional[int] = None
@@ -261,6 +267,8 @@ class ReportConfig(BaseConfig):
     method_selection: Optional[MethodSelectionConfig] = None
     db_name:  Optional[str] = None
     priority: Annotated[Optional[int], pydantic.Field(ge=0, le=10)] = None
+    rerun_report_id: Optional[int] = None
+    rerun_status: list[RerunStatus] = ['Error']
 
     @pydantic.model_validator(mode="after")
     def _correctness_of_cov_configurations(self) -> Self:

@@ -9,7 +9,12 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing_extensions import Self
 
 from futureexpert.pool import PoolCovDefinition
-from futureexpert.shared_models import BaseConfig, Covariate, CovariateRef, TimeSeries, ValidatedPositiveInt
+from futureexpert.shared_models import (BaseConfig,
+                                        Covariate,
+                                        CovariateRef,
+                                        RerunStatus,
+                                        TimeSeries,
+                                        ValidatedPositiveInt)
 
 
 class LagSelectionConfig(BaseModel):
@@ -113,6 +118,11 @@ class MatcherConfig(BaseConfig):
         List of covariate definitions.
     db_name
         Only accessible for internal use. Name of the database to use for storing the results.
+    rerun_report_id
+        ReportId from which failed runs should be recomputed.
+        Ensure to use the same ts_version. Otherwise all time series get computed again.
+    rerun_status
+        Status of the runs that should be computed again. `Error` and/or `NoEvaluation`.
     """
     title: str
     actuals_version: str
@@ -130,6 +140,8 @@ class MatcherConfig(BaseConfig):
     fixed_season_length: Optional[int] = None
     pool_covs: Optional[list[PoolCovDefinition]] = None
     db_name: Optional[str] = None
+    rerun_report_id: Optional[int] = None
+    rerun_status: list[RerunStatus] = ['Error']
 
     @model_validator(mode='after')
     def _validate_post_selection_queries(self) -> Self:
@@ -151,6 +163,15 @@ class MatcherConfig(BaseConfig):
         if len(invalid_queries):
             raise ValueError("The following post-selection queries are invalidly formatted: "
                              f"{', '.join(invalid_queries)}. ")
+
+        return self
+
+    @model_validator(mode='after')
+    def _validate_rerun_report_id(self) -> Self:
+
+        if self.rerun_report_id is not None and self.pool_covs is not None:
+            raise ValueError('rerun_report_id can not be used with pool_covs. '
+                             'Use the exact covs_version used in the rerun_report_id.')
 
         return self
 
