@@ -119,13 +119,35 @@ def sample_fc_result_3() -> ForecastResult:
     )
 
 
-@pytest.fixture(scope="module")
-def demand_planning_results() -> list[ForecastResult]:
+DEMAND_PLANNING_REPORT_NAMES = [
+    "Monthly Demand Forecast on Material Level NOW+EXPERT",
+    "Monthly Demand Forecast on Material Level"
+]
+
+
+@pytest.fixture(scope="session")
+def _all_demand_planning_results_cache():
+    """Fetch results for all demand planning reports once and cache them."""
+
     client = ExpertClient()
+    report_names = DEMAND_PLANNING_REPORT_NAMES
     all_reports = client.get_reports(limit=100)
-    demand_planning_report = all_reports[all_reports["description"] ==
-                                         'Monthly Demand Forecast on Material Level'].iloc[0]
-    return client.get_fc_results(id=demand_planning_report["report_id"], include_k_best_models=3)
+    results_dict = {}
+    for report_name in report_names:
+        demand_planning_report = all_reports[all_reports["description"] == report_name].iloc[0]
+        results = client.get_fc_results(
+            id=demand_planning_report["report_id"],
+            include_k_best_models=3
+        )
+        results_dict[report_name] = results
+    return results_dict
+
+
+@pytest.fixture(params=DEMAND_PLANNING_REPORT_NAMES)
+def demand_planning_results(request, _all_demand_planning_results_cache):
+    """Provide results for a single demand planning report, parametrized over all reports."""
+    report_name = request.param
+    return _all_demand_planning_results_cache[report_name]
 
 
 @pytest.fixture(scope="module")
@@ -135,3 +157,8 @@ def sales_forecasting_result() -> list[ForecastResult]:
     sales_forecasting_report = all_reports[all_reports["description"] ==
                                            'Monthly Sales Forecast on Country Level'].iloc[0]
     return client.get_fc_results(id=sales_forecasting_report["report_id"], include_k_best_models=3)
+
+
+@pytest.fixture(scope="module")
+def expert_client() -> ExpertClient:
+    return ExpertClient()

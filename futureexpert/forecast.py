@@ -1,6 +1,7 @@
 """Contains the models with the configuration for the forecast and the result format."""
 from __future__ import annotations
 
+import enum
 import logging
 import re
 from copy import deepcopy
@@ -111,25 +112,33 @@ class ForecastingConfig(BaseConfig):
     ----------
     fc_horizon
         Forecast horizon.
+    round_forecast_to_integer
+        If true, then forecasts are rounded to the nearest integer (also applied during backtesting).
+    use_ensemble
+        If true, then calculate ensemble forecasts. Automatically makes a smart decision on which
+        methods to use based on their backtesting performance.
     lower_bound
         Lower bound applied to the time series and forecasts.
     upper_bound
         Upper bound applied to the time series and forecasts.
     confidence_level
         Confidence level for prediction intervals.
-    round_forecast_to_integer
-        If true, then forecasts are rounded to the nearest integer (also applied during backtesting).
-    use_ensemble
-        If true, then calculate ensemble forecasts. Automatically makes a smart decision on which
-        methods to use based on their backtesting performance.
+    skip_empirical_prediction_intervals
+        If true, empirical prediction intervals for confidence levels are not calculated.
+        This does not affect models that generate their own prediction intervals.\n\n
+        Disabling this can affect model selection,
+        as plausibility checks on the intervals are also omitted.
+        Setting this to `True` also removes the minimum forecast horizon needed for the intervals,
+        allowing for a shorter `fc_horizon` during backtesting when defined via `step_weights`.
     """
 
     fc_horizon: Annotated[ValidatedPositiveInt, pydantic.Field(ge=1, le=60)]
+    round_forecast_to_integer: bool = False
+    use_ensemble: bool = False
     lower_bound: Union[float, None] = None
     upper_bound: Union[float, None] = None
     confidence_level: float = 0.75
-    round_forecast_to_integer: bool = False
-    use_ensemble: bool = False
+    skip_empirical_prediction_intervals: bool = False
 
     @property
     def numeric_bounds(self) -> tuple[float, float]:
@@ -160,6 +169,17 @@ class MethodSelectionConfig(BaseConfig):
         Number of backtesting iterations. At least 8 iterations are needed for empirical prediction intervals.
     shift_len
         Number of time points by which the test window is shifted between backtesting iterations.
+    backtesting_strategy
+        Selects the methodology for backtesting.
+        - 'standard': A standard rolling forecast. The evaluation window with fixed length is shifted at each step.
+        This strategy is controlled by `number_iterations` and `shift_len`.
+        - 'equal_coverage': A balanced strategy that guarantees every data point within the `equal_coverage_size`
+        is forecasted the same number of times. This strategy has specific requirements: It uses a `shift_len`
+        of 1 and the number of iterations is calculated automatically based on the `equal_coverage_size`
+        and forecast horizon, ignoring the `number_iterations` parameter.
+    equal_coverage_size
+        Number of recent data points to test when `backtesting_strategy` `equal_coverage` is active.
+        If None or chosen length is too long, it tries most common season length of a time series granularity instead.
     refit
         If true, then models are refitted for each backtesting iteration.
     default_error_metric
@@ -170,9 +190,12 @@ class MethodSelectionConfig(BaseConfig):
         Additional accuracy measures for solely reporting purposes.
         Does not affect internal evaluation or model ranking.
     step_weights
-        Mapping from forecast steps to weights associated with forecast errors for the given forecasting step.
-        Only positive weights are allowed. Leave a forecast step out to assign a zero weight.
-        Used only for non-sporadic time series. If empty, all forecast steps are weighted equally.
+        Mapping from forecast steps to weights associated to forecast errors for that forecasting step.
+        - Purpose: Applied only on error-metrics for non-sporadic time series.
+        - Weights: Only positive weights are allowed.
+        If a forecast step is not included in the dictionary, it will be assigned a weight of zero.
+        - Forecast Horizon: The highest key in this dictionary defines the forecast horizon
+        for backtesting, if `skip_empirical_prediction_intervals` is set to `True`.
     additional_cov_method
         Define up to one additional method that uses the defined covariates for creating forecasts. Will not be
         calculated if deemed unfit by the preselection. If the parameter forecasting_methods
@@ -204,6 +227,21 @@ class MethodSelectionConfig(BaseConfig):
     cov_combination: Literal['single', 'joint'] = 'single'
     forecasting_methods: Sequence[ForecastingMethods] = pydantic.Field(default_factory=list)
     phase_out_fc_methods: Sequence[ForecastingMethods] = pydantic.Field(default_factory=lambda: ['ZeroForecast'])
+
+    backtesting_strategy: Literal['standard', 'equal_coverage'] = 'standard'
+    equal_coverage_size: Optional[ValidatedPositiveInt] = None
+
+    @pydantic.model_validator(mode="after")
+    def shift_length_valid_when_equal_coverage_active(self) -> Self:
+        if (self.shift_len != 1 and self.backtesting_strategy == 'equal_coverage'):
+            raise ValueError('Equal-Coverage-Backtesting-Strategy only allows a shift length of 1.')
+        return self
+
+    @pydantic.model_validator(mode="after")
+    def step_weights_not_empty(self) -> Self:
+        if self.step_weights is not None and len(self.step_weights) == 0:
+            raise ValueError('Empty dictionary for step_weights is not allowed.')
+        return self
 
 
 class PipelineKwargs(TypedDict):
@@ -242,33 +280,31 @@ class ReportConfig(BaseConfig):
         Method selection configuration. If not supplied, then a granularity dependent default is used.
     pool_covs
         List of covariate definitions.
-    db_name
-        Only accessible for internal use. Name of the database to use for storing the results.
-    priority
-        Only accessible for internal use. Higher value indicate higher priority.
     rerun_report_id
         ReportId from which failed runs should be recomputed.
         Ensure to use the same ts_version. Otherwise all time series get computed again.
     rerun_status
         Status of the runs that should be computed again. `Error` and/or `NoEvaluation`.
+    db_name
+        Only accessible for internal use. Name of the database to use for storing the results.
+    priority
+        Only accessible for internal use. Higher value indicate higher priority.
     """
 
+    title: str
+    forecasting: ForecastingConfig
     matcher_report_id: Optional[int] = None
     covs_versions: list[str] = Field(default_factory=list)
     covs_configuration: Optional[list[ActualsCovsConfiguration]] = None
-    title: str
     actuals_filter: dict[str, Any] = Field(default_factory=dict)
-
     max_ts_len: Optional[int] = None
-
     preprocessing: PreprocessingConfig = PreprocessingConfig()
-    forecasting: ForecastingConfig
     pool_covs: Optional[list[PoolCovDefinition]] = None
     method_selection: Optional[MethodSelectionConfig] = None
-    db_name:  Optional[str] = None
-    priority: Annotated[Optional[int], pydantic.Field(ge=0, le=10)] = None
     rerun_report_id: Optional[int] = None
     rerun_status: list[RerunStatus] = ['Error']
+    db_name:  Optional[str] = None
+    priority: Annotated[Optional[int], pydantic.Field(ge=0, le=10)] = None
 
     @pydantic.model_validator(mode="after")
     def _correctness_of_cov_configurations(self) -> Self:
@@ -475,19 +511,26 @@ class Model(BaseModel):
         protected_namespaces=()  # ignore warnings about field names starting with 'model_'
     )
 
+class TrendDirection(enum.Enum):
+    """Direction of the detected trend."""
+    UPWARD = enum.auto()
+    DOWNWARD = enum.auto()
 
 class Trend(BaseModel):
     """Trend details.
 
     Parameters
     ----------
-    trend_probability
-        The probability of the detected trend.
     is_trending
         Indicates whether a trend has been detected for the time series
+    trend_direction
+        Enum indicating whether the detected trend is upwards or downwards.
+    considered_len
+        Number of last data points, which were considered in trend detection.
     """
-    trend_probability: Annotated[float, Field(ge=0., le=1., allow_inf_nan=False)]
     is_trending: bool
+    trend_direction: Optional[TrendDirection] = None
+    considered_len: Optional[int] = None
 
 
 class ChangePoint(BaseModel):
@@ -640,12 +683,24 @@ class ForecastResult(BaseModel):
         Details about changed value of the time series.
     models
         Details about all models that where ranked.
+    discarded_models
+        Details about all models that were excluded from ranking.
     """
     input: ForecastInput
     ts_characteristics: TimeSeriesCharacteristics
     changed_start_date: Optional[ChangedStartDate] = None
     changed_values: Sequence[ChangedValue]
     models: list[Model]
+    discarded_models: list[Model] = []
+
+    def discarded_models_overview(self) -> pd.DataFrame:
+        """Returns an overview of all models excluded from the final ranking and the reason why."""
+
+        overview = [{'model_name': mo.model_name,
+                     'reason': mo.status.name + ('-Implausible' if mo.forecast_plausibility == Plausibility.Implausible else '')}
+                    for mo in self.discarded_models]
+
+        return pd.DataFrame(overview)
 
     def incorporate_matcher_ranking(self, matcher_results: list[MatcherResult]) -> ForecastResult:
         """Combines the ranking with the ranking from the matcher run.

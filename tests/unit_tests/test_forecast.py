@@ -75,6 +75,30 @@ def test_ReportConfig___given_empty_phase_out_fc_methods_and_active_phase_out_de
                      preprocessing=preprocessing, method_selection=method_selection)
 
 
+def test_MethodSelectionConfig___with_equal_coverage_bt_strategy_and_shift_len_greater_one___stops_in_error() -> None:
+    # Arrange
+    shift_length = 2
+    expected_error_message = 'Equal-Coverage-Backtesting-Strategy only allows a shift length of 1.'
+
+    # assert
+    with pytest.raises(ValueError, match=expected_error_message):
+        MethodSelectionConfig(
+            backtesting_strategy='equal_coverage',
+            shift_len=shift_length
+        )
+
+
+def test_MethodSelectionConfig___with_empty_dict_in_step_weights___results_in_error() -> None:
+    # Arrange
+    expected_error_message = 'Empty dictionary for step_weights is not allowed.'
+
+    # assert
+    with pytest.raises(ValueError, match=expected_error_message):
+        MethodSelectionConfig(
+            step_weights={}
+        )
+
+
 def test_create_forecast_payload___given_lower_upper_bound_None___returns_payload_with_lower_upper_bound_none() -> None:
 
     # Arrange

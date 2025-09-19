@@ -111,6 +111,7 @@ notebooks (required):
     - sed -i "s/'TBD'/'66ea6e1d38cb720ea1a2e44a'/g" notebooks/getting_started.ipynb
     - sed -i "s/'TBD'/'66ea6e1d38cb720ea1a2e44a'/g" notebooks/checkin_configuration_options.ipynb
     - for notebook in $(./generate-notebook-list.sh); do jupyter nbconvert --to notebook --execute --inplace "$notebook"; done
+    - pytest tests/notebook_execution/test_notebook_results.py
   needs: [docker_build]
   rules:
     - if: $CI_COMMIT_BRANCH  == "dev"
@@ -119,7 +120,7 @@ notebooks (required):
       when: never
     - when: manual
       allow_failure: false
-  
+
 use-cases:
   stage: manual
   extends: .defaults
@@ -140,7 +141,7 @@ use-cases:
       fi
     - sed -i "s/'TBD'/'$TS_VERSION'/g" use_cases/demand_planning/demand_planning_NOW+EXPERT.ipynb
     - for notebook in $(find use_cases -name "*.ipynb" | sort); do jupyter nbconvert --to notebook --execute --inplace "$notebook"; done
-    - pytest tests/notebook_execution/.
+    - pytest tests/notebook_execution/test_use_case_results.py
   needs: [docker_build]
   rules:
     - if: $CI_COMMIT_BRANCH == "staging"

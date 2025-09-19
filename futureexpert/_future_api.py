@@ -274,14 +274,37 @@ class FutureApiClient:
         version_id
             The version of time series.
         """
+        params = {'query': '{"version": {"$oid":"' + version_id + '"}}'}
+        return self._get_in_batches(f'groups/{group_id}/ts/values', params=params)
+
+    def _get_in_batches(self,
+                        path: str,
+                        params: Optional[dict[str, Any]] = None,
+                        timeout: Optional[int] = None) -> list[Any]:
+        """Submits a GET request to the _future_ API.
+
+        Parameters
+        ----------
+        path
+            Path of the endpoint.
+        params
+            Parameter to be send.
+        timeout
+            Optional timeout of the request.
+
+        Returns
+        -------
+        The response from the request.
+        """
         final_result = []
         batch_count = 0
         limit = 100
-
+        if params is None:
+            params = {}
         while True:
             skip = batch_count * limit
-            params = {'query': '{"version": {"$oid":"' + version_id + '"}}', 'skip': skip, 'limit': limit}
-            response = self._api_get_request(f'groups/{group_id}/ts/values', params=params)
+            param_with_skip_and_limit = {**params, 'skip': skip, 'limit': limit}
+            response = self._api_get_request(path, params=param_with_skip_and_limit)
 
             if batch_count > 0 and response.status_code == 404:
                 # Already got all results in the previous batch.
@@ -350,7 +373,12 @@ class FutureApiClient:
         params = {'include_error_reason': include_error_reason}
         return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/status', params=params))
 
-    def get_fc_results(self, group_id: str, report_id: int, include_k_best_models: int, include_backtesting: bool) -> Any:
+    def get_fc_results(self,
+                       group_id: str,
+                       report_id: int,
+                       include_k_best_models: int,
+                       include_backtesting: bool,
+                       include_discarded_models: bool) -> Any:
         """Retrieves forecasts and actuals from the database.
 
         Parameters
@@ -363,12 +391,16 @@ class FutureApiClient:
             Number of k best models for which results are to be returned.
         include_backtesting
             Should backtesting results are to be returned.
+        include_discarded_models
+            Determines if models excluded from ranking should be included in the result.
         Returns
         -------
         Actuals and forecasts for each time series in the given report.
         """
-        params = {'include_k_best_models': include_k_best_models, 'include_backtesting': include_backtesting}
-        return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/results/fc', params=params))
+        params = {'include_k_best_models': include_k_best_models,
+                  'include_backtesting': include_backtesting,
+                  'include_discarded_models': include_discarded_models}
+        return self._get_in_batches(f'groups/{group_id}/reports/{report_id}/results/fc', params=params)
 
     def get_pool_cov_overview(self,
                               granularity: Optional[str] = None,
@@ -411,8 +443,7 @@ class FutureApiClient:
         -------
         Actuals and covariate ranking.
         """
-
-        return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/results/cov-selection'))
+        return self._get_in_batches(f'groups/{group_id}/reports/{report_id}/results/cov-selection')
 
     @staticmethod
     def _request_or_raise(request: Callable[[], httpx.Response]) -> Callable[[], httpx.Response]:

@@ -437,7 +437,7 @@ class ExpertClient:
                     },
                     'columnDefinition': {
                         'dateColumns': [{snake_to_camel(key): value for key, value in
-                                        data_definition.date_columns.model_dump(exclude_none=True).items()}],
+                                        data_definition.date_column.model_dump(exclude_none=True).items()}],
                         'valueColumns': [{snake_to_camel(key): value for key, value in d.model_dump(exclude_none=True).items()}
                                          for d in data_definition.value_columns],
                         'groupColumns': [{snake_to_camel(key): value for key, value in d.model_dump(exclude_none=True).items()}
@@ -584,8 +584,10 @@ class ExpertClient:
                                             core_id=self.forecast_core_id,
                                             payload=payload,
                                             interval_status_check_in_seconds=2)
-        logger.info('Finished report creation. Forecasts are running...')
-        return ReportIdentifier.model_validate(result)
+
+        report = ReportIdentifier.model_validate(result)
+        logger.info(f'Report created with ID {report.report_id}. Forecasts are running...')
+        return report
 
     def get_report_type(self, report_identifier: Union[int, ReportIdentifier]) -> str:
         """Gets the available reports, ordered from newest to oldest.
@@ -658,7 +660,8 @@ class ExpertClient:
     def get_fc_results(self,
                        id: Union[ReportIdentifier, int],
                        include_k_best_models: int = 1,
-                       include_backtesting: bool = False) -> list[ForecastResult]:
+                       include_backtesting: bool = False,
+                       include_discarded_models: bool = False) -> list[ForecastResult]:
         """Gets the results from the given report.
 
         Parameters
@@ -669,6 +672,8 @@ class ExpertClient:
             Number of k best models for which results are to be returned.
         include_backtesting
             Determines whether backtesting results are to be returned.
+        include_discarded_models
+            Determines if models excluded from ranking should be included in the result.
         """
 
         if include_k_best_models < 1:
@@ -683,7 +688,8 @@ class ExpertClient:
         results = self.client.get_fc_results(group_id=self.group,
                                              report_id=report_id,
                                              include_k_best_models=include_k_best_models,
-                                             include_backtesting=include_backtesting)
+                                             include_backtesting=include_backtesting,
+                                             include_discarded_models=include_discarded_models)
 
         return [ForecastResult(**result) for result in results]
 
@@ -811,8 +817,9 @@ class ExpertClient:
                                             core_id=self.matcher_core_id,
                                             payload=payload,
                                             interval_status_check_in_seconds=2)
-        logger.info('Finished report creation.')
-        return ReportIdentifier.model_validate(result)
+        report = ReportIdentifier.model_validate(result)
+        logger.info(f'Report created with ID {report.report_id}. Matching indicators...')
+        return report
 
     def _create_matcher_payload(self, config: MatcherConfig) -> Any:
         """Converts the MatcherConfig into the payload needed for the cov-selection core."""
@@ -852,7 +859,6 @@ class ExpertClient:
                 },
                 "postselection": {
                     "num_obs_short_term_correlation": 60,
-                    "clustering_run_id": None,
                     "post_selection_queries": config.post_selection_queries,
                     "post_selection_concatenation_operator": "&",
                     "protected_selections_queries": [],

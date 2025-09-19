@@ -1,7 +1,10 @@
 # futureEXPERT
 
-futureEXPERT offers high-quality forecasts for data experts with ease, providing a complete workflow from data preparation to final forecast generation.
-It is configured with best-practice defaults for immediate use.
+_futureEXPERT_ is a flexible Python toolkit designed to significantly simplify the process of building professional forecasting solutions.
+It is built upon a **Smart Build** principle: a clear division of tasks that makes powerful forecasting accessible with ease, even without a deep data science background.
+* **You focus on the "what"**: Designing the solution tailored to your specific domain and requirements, connecting your data and integrating the results into your workflow.
+* **_futureEXPERT_ handles the "how"**: The complex methodological and technical details, from data preparation to forecast generation, are abstracted away for you.
+
 
 The workflow is handled by four distinct modules:
 

@@ -12,7 +12,7 @@ def test_expert_client___given_save_hierarchy___returns_all_hierarchy() -> None:
     # Arrange
     client = ExpertClient()
     raw_data_source = Path("tests") / 'unit_tests/test_data/demo_demand_planning_data.csv'
-    data_definition = DataDefinition(date_columns=checkin.DateColumn(name='DATE', format='%d.%m.%Y', name_new='Date'),
+    data_definition = DataDefinition(date_column=checkin.DateColumn(name='DATE', format='%d.%m.%Y', name_new='Date'),
                                      value_columns=[checkin.ValueColumn(
                                          name='DEMAND', name_new='Demand')],
                                      group_columns=[checkin.GroupColumn(name="CUSTOMER", name_new='Customer'),

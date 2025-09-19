@@ -90,27 +90,30 @@ class GroupColumn(Column):
 
 class DataDefinition(BaseConfig):
     """Model for the input parameter needed for the first CHECK-IN step.
-    Each column of your table needs to be specified as either date, value, group-column or be removed.
+    Every single column in your data must be accounted for. Each column must either be assigned a type (`date_column`,
+    `value_columns`, `group_columns`) or be explicitly marked for removal in `remove_columns`.
 
     Parameters
     ----------
+    date_column
+        Definition of the date column. Must be a single column that contains the complete date information.
+    value_columns
+        Definitions of the value columns. Not all columns defined here must be used for time series creation;
+        selecting a subset or combining is possible in a later step.
+    group_columns
+        Definitions of the group columns. Not all columns defined here must be used for time series creation; selecting
+        a subset is possible in a later step. Grouping information can also be used to create hierarchical levels.
     remove_rows
         Indexes of the rows to be removed before validation. Note: If the raw data was committed as pandas data frame
         the header is the first row (row index 0).
     remove_columns
-        Indexes of the columns to be removed before validation.
-    date_columns
-        Definition of the date column.
-    value_columns
-        Definitions of the value columns.
-    group_columns
-        Definitions of the group columns.
+        Indexes of the columns to be removed before validation. Any column that is not assigned a type must be listed here.
     """
-    remove_rows: Optional[list[int]] = []
-    remove_columns: Optional[list[int]] = []
-    date_columns: DateColumn
+    date_column: DateColumn
     value_columns: list[ValueColumn]
     group_columns: list[GroupColumn] = []
+    remove_rows: Optional[list[int]] = []
+    remove_columns: Optional[list[int]] = []
 
 
 class FilterSettings(BaseConfig):
@@ -159,10 +162,12 @@ class TsCreationConfig(BaseConfig):
 
     Parameters
     ----------
-    description
-        A short description of the time series.
+    value_columns_to_save
+        Value columns that should be saved.
     time_granularity
         Target granularity of the time series.
+    description
+        A short description of the time series.
     start_date
         Dates before this date are excluded.
     end_date
@@ -178,20 +183,18 @@ class TsCreationConfig(BaseConfig):
         Settings for including or excluding values during time series creation.
     new_variables
         New value column that is a combination of two other value columns.
-    value_columns_to_save
-        Value columns that should be saved.
     missing_value_handler
         Strategy how to handle missing values during time series creation.
     """
-    description: Optional[str] = None
+    value_columns_to_save: list[str]
     time_granularity: Literal['yearly', 'quarterly', 'monthly', 'weekly', 'daily', 'hourly', 'halfhourly']
+    description: Optional[str] = None
+    grouping_level: list[str] = []
     start_date: Optional[str] = None
     end_date: Optional[str] = None
-    grouping_level: list[str] = []
     save_hierarchy: bool = False
     filter: list[FilterSettings] = []
     new_variables: list[NewValue] = []
-    value_columns_to_save: list[str]
     missing_value_handler: Literal['keepNaN', 'setToZero'] = 'keepNaN'
 
 
