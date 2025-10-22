@@ -40,7 +40,7 @@ To get started with futureEXPERT we recommend checking out the jupyter notebook 
 
 Utilize our use case templates to get started with your own business application right away.
 
-- [Demand Planning](./use_cases/demand_planning/demand_planning.ipynb) 
+- [Demand Planning](./use_cases/demand_planning/demand_planning.ipynb)
 - [Sales Forecasting](./use_cases/sales_forecasting/sales_forecasting.ipynb)
 
 ## Advanced usage
@@ -51,7 +51,7 @@ Utilize our use case templates to get started with your own business application
 - [Using covariates for FORECAST](./notebooks/forecast_with_covariates.ipynb) - Create forecasts with covariates by using your own data of influencing factors.
 - [Using covariates - MATCHER and FORECAST](./notebooks/cov_matcher_and_forecast.ipynb?ref_type=heads) - Using covariates: Leverage MATCHER to identify predictive covariates, get ranking of all covariates with the best time lag & incorporate the result into your FORECAST.
 - [Using covariates from POOL](./notebooks/using_covariates_from_POOL.ipynb) - How to use potential influencing factors from POOL.
-
+- [Cluster time series with ASSOCIATOR](./notebooks/associator.ipynb) - Identifying clusters of similar time series patterns and trend behaviour.
 - [Working with results](./notebooks/working_with_results.ipynb) - Overview of forecast result functions (e.g. export, plotting) and how to use them; further detailed information about the results (e.g. summary of forecasting methods).
 
 - [API documentation](https://discovertomorrow.github.io/futureEXPERT) - Further information about all features and configurations.

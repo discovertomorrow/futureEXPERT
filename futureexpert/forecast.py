@@ -130,6 +130,9 @@ class ForecastingConfig(BaseConfig):
         as plausibility checks on the intervals are also omitted.
         Setting this to `True` also removes the minimum forecast horizon needed for the intervals,
         allowing for a shorter `fc_horizon` during backtesting when defined via `step_weights`.
+    working_day_adaptions
+        If present, enables optional working day adaptions of the time series and forecasts.
+        This is currently not compatible with use_ensemble=True.
     """
 
     fc_horizon: Annotated[ValidatedPositiveInt, pydantic.Field(ge=1, le=60)]
@@ -139,6 +142,7 @@ class ForecastingConfig(BaseConfig):
     upper_bound: Union[float, None] = None
     confidence_level: float = 0.75
     skip_empirical_prediction_intervals: bool = False
+    working_day_adaptions: Optional[WorkingDayAdaptionsConfig] = None
 
     @property
     def numeric_bounds(self) -> tuple[float, float]:
@@ -147,16 +151,61 @@ class ForecastingConfig(BaseConfig):
             self.upper_bound if self.upper_bound is not None else np.inf,
         )
 
+    @pydantic.model_validator(mode='after')
+    def ensemble_incompatible_with_working_days(self) -> Self:
+        """Validator for combination of ensemble model and working day adaptions."""
+        if self.use_ensemble and self.working_day_adaptions is not None:
+            raise ValueError('use_ensemble and working_days cannot be used together.')
+        return self
 
-ForecastingMethods = Literal['AdaBoost', 'Aft4Sporadic', 'ARIMA', 'AutoEsCov', 'CART',
+
+class WorkingDayAdaptionsConfig(BaseConfig):
+    """Configure adaptions of working days.
+
+    Parameters
+    ----------
+    calendar_iso_code
+        ISO Code of the calendar to define public holidays.
+    is_saturday_working_day
+        If true, saturdays are treated as working days if they are not a holiday.
+    consider_bridging_days
+        If True, a working day between two non-working days will be counted as a non-working day.
+    """
+    calendar_iso_code: Literal['AT', 'BY', 'BE', 'BG', 'KY', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'GE', 'GR', 'GG',
+                               'HU', 'IS', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'MC', 'NL', 'NO', 'PL', 'PT', 'RO', 'RU',
+                               'RS', 'SK', 'SI', 'SE', 'CH', 'UA', 'GB', 'GB-NIR', 'TR', 'DE', 'DE-BW', 'DE-BY',
+                               'DE-BE', 'DE-BB', 'DE-HB', 'DE-HH', 'DE-HE', 'DE-MV', 'DE-NI', 'DE-NW', 'DE-RP',
+                               'DE-SL', 'DE-SN', 'DE-ST', 'DE-SH', 'DE-TH', 'ES', 'ES-AN', 'ES-AR', 'ES-CT', 'ES-CL',
+                               'ES-CM', 'ES-CN', 'ES-EX', 'ES-GA', 'ES-IB', 'ES-RI', 'ES-MD', 'ES-MC', 'ES-NA', 'ES-AS',
+                               'ES-PV', 'ES-CB', 'ES-VC', 'CH-AG', 'CH-AI', 'CH-AR', 'CH-BE', 'CH-BL', 'CH-BS', 'CH-FR',
+                               'CH-GE', 'CH-GL', 'CH-GR', 'CH-JU', 'CH-LU', 'CH-NE', 'CH-NW', 'CH-OW', 'CH-SG', 'CH-SH',
+                               'CH-SO', 'CH-SZ', 'CH-TG', 'CH-TI', 'CH-UR', 'CH-VD', 'CH-VS', 'CH-ZG', 'CH-ZH', 'US',
+                               'US-AL', 'US-AK', 'US-AZ', 'US-AR', 'US-CA', 'US-CO', 'US-CT', 'US-DE', 'US-DC', 'US-FL',
+                               'US-GA', 'US-HI', 'US-ID', 'US-IL', 'US-IN', 'US-IA', 'US-KS', 'US-KY', 'US-LA', 'US-ME',
+                               'US-MD', 'US-MA', 'US-MI', 'US-MN', 'US-MS', 'US-MO', 'US-MT', 'US-NE', 'US-NV', 'US-NH',
+                               'US-NJ', 'US-NM', 'US-NY', 'US-NC', 'US-ND', 'US-OH', 'US-OK', 'US-OR', 'US-PA', 'US-RI',
+                               'US-SC', 'US-SD', 'US-TN', 'US-TX', 'US-UT', 'US-VT', 'US-VA', 'US-WA', 'US-WV', 'US-WI',
+                               'US-WY', 'US-AS', 'US-GU', 'BR', 'BR-AC', 'BR-AL', 'BR-AP', 'BR-AM', 'BR-BA', 'BR-CE',
+                               'BR-DF', 'BR-ES', 'BR-GO', 'BR-MA', 'BR-MG', 'BR-MT', 'BR-MS', 'BR-PA', 'BR-PB', 'BR-PE',
+                               'BR-PI', 'BR-PR', 'BR-RJ', 'BR-RN', 'BR-RS', 'BR-RO', 'BR-RR', 'BR-SC', 'BR-SP', 'BR-SE',
+                               'BR-TO', 'CA', 'CA-ON', 'CA-QC', 'CA-BC', 'CA-AB', 'CA-SK', 'CA-MB', 'CA-NB', 'CA-NS',
+                               'CA-PE', 'CA-NL', 'CA-YT', 'CA-NT', 'CA-NU', 'BB', 'CL', 'CO', 'MX', 'PA', 'PY', 'AR',
+                               'DZ', 'BJ', 'CI', 'KE', 'MG', 'ST', 'ZA', 'AO', 'MZ', 'NG', 'CN', 'HK', 'JP', 'MY', 'QA',
+                               'SG', 'KR', 'TW', 'IL', 'PH', 'KZ', 'AU', 'AU-ACT', 'AU-NSW', 'AU-NT', 'AU-QLD', 'AU-SA',
+                               'AU-TAS', 'AU-VIC', 'AU-WA', 'MH', 'NZ']
+    is_saturday_working_day: bool = True
+    consider_bridging_days: bool = False
+
+
+ForecastingMethods = Literal['AdaBoost', 'Aft4Sporadic', 'AutoArima', 'AutoEsCov', 'CART',
                              'CatBoost', 'Croston', 'ES', 'ExtraTrees', 'FoundationModel', 'Glmnet(l1_ratio=1.0)',
                              'MA(granularity)', 'InterpolID', 'LightGBM', 'LinearRegression',
                              'MedianAS', 'MedianPattern', 'MLP', 'MostCommonValue', 'MA(3)',
                              'Naive', 'RandomForest', 'MA(season lag)', 'SVM', 'TBATS', 'Theta',
                              'TSB', 'XGBoost', 'ZeroForecast']
 
-AdditionalCovMethod = Literal['AdaBoost', 'ARIMA', 'CART', 'CatBoost', 'ExtraTrees', 'FoundationModel',
-                              'Glmnet(l1_ratio=1.0)', 'LightGBM', 'LinearRegression',
+AdditionalCovMethod = Literal['AdaBoost', 'AutoArima', 'CART', 'CatBoost', 'ExtraTrees',
+                              'FoundationModel', 'Glmnet(l1_ratio=1.0)', 'LightGBM', 'LinearRegression',
                               'MLP', 'RandomForest', 'SVM', 'XGBoost']
 
 
@@ -511,10 +560,12 @@ class Model(BaseModel):
         protected_namespaces=()  # ignore warnings about field names starting with 'model_'
     )
 
+
 class TrendDirection(enum.Enum):
     """Direction of the detected trend."""
     UPWARD = enum.auto()
     DOWNWARD = enum.auto()
+
 
 class Trend(BaseModel):
     """Trend details.

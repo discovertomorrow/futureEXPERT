@@ -12,6 +12,7 @@ from futureexpert.expert_client import ExpertClient
     "./notebooks/cov_matcher_and_forecast_monthly.ipynb",
     "./notebooks/cov_matcher_and_forecast.ipynb",
     "./notebooks/forecast_with_covariates.ipynb",
+    "./notebooks/make_forecasts_consistent.ipynb",
     "./notebooks/getting_started.ipynb"
 ])
 def test_notebook_results___confirm_all_run_ids_are_successful(path: str, expert_client: ExpertClient) -> None:
@@ -30,7 +31,7 @@ def test_notebook_results___confirm_all_run_ids_are_successful(path: str, expert
     assert len(report_ids) > 0
 
     for report_id in report_ids:
-        status = expert_client.get_report_status(id=report_id)
+        status = expert_client.get_report_status(id=report_id, include_error_reason=False)
 
         assert status.progress.pending == 0
         assert status.results.error == 0

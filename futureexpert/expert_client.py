@@ -13,9 +13,11 @@ import pandas as pd
 import pydantic
 
 from futureexpert._future_api import FutureApiClient
-from futureexpert._helpers import calculate_max_ts_len, remove_arima_if_not_allowed, snake_to_camel
+from futureexpert._helpers import calculate_max_ts_len, snake_to_camel
+from futureexpert.associator import AssociatorConfig, AssociatorResult
 from futureexpert.checkin import CheckInResult, DataDefinition, FileSpecification, TimeSeriesVersion, TsCreationConfig
 from futureexpert.forecast import ForecastResult, ReportConfig
+from futureexpert.make_forecast_consistent import ConsistentForecastResult, MakeForecastConsistentConfiguration
 from futureexpert.matcher import MatcherConfig, MatcherResult
 from futureexpert.pool import CheckInPoolResult, PoolCovDefinition, PoolCovOverview
 from futureexpert.shared_models import TimeSeries
@@ -93,9 +95,13 @@ class ExpertClient:
     def __init__(self,
                  user: Optional[str] = None,
                  password: Optional[str] = None,
+                 totp: Optional[str] = None,
+                 refresh_token: Optional[str] = None,
                  group: Optional[str] = None,
                  environment: Optional[Literal['production', 'staging', 'development']] = None) -> None:
         """Initializer.
+
+        Login using either your user credentials or a valid refresh token.
 
         Parameters
         ----------
@@ -105,6 +111,19 @@ class ExpertClient:
         password
             The password for the _future_ platform.
             If not provided, the password is read from environment variable FUTURE_PW.
+        totp
+            Optional second factor for authentication using user credentials.
+        refresh_token
+            Alternative login using a refresh token only instead of user credentials.
+            You can retrieve a long-lived refresh token (offline token) from our identity provider
+            using Open ID Connect scope `offline_access` at the token endpoint. Example:
+            curl -s -X POST 'https://future-auth.prognostica.de/realms/future/protocol/openid-connect/token' \
+                    -H 'Content-Type: application/x-www-form-urlencoded' \
+                    --data-urlencode 'client_id=expert' \
+                    --data-urlencode 'grant_type=password' \
+                    --data-urlencode 'scope=openid offline_access' \
+                    --data-urlencode "username=$FUTURE_USER" \
+                    --data-urlencode "password=$FUTURE_PW" | jq .refresh_token
         group
             Optionally the name of the futureEXPERT group. Only relevant if the user has access to multiple groups.
             If not provided, the group is read from the environment variable FUTURE_GROUP.
@@ -112,29 +131,35 @@ class ExpertClient:
             Optionally the _future_ environment to be used, defaults to production environment.
             If not provided, the environment is read from the environment variable FUTURE_ENVIRONMENT.
         """
-        try:
-            future_user = user or os.environ['FUTURE_USER']
-        except KeyError:
-            raise MissingCredentialsError('username') from None
-        try:
-            future_password = password or os.environ['FUTURE_PW']
-        except KeyError:
-            raise MissingCredentialsError('password') from None
-        future_group = group or os.getenv('FUTURE_GROUP')
         future_env = cast(Literal['production', 'staging', 'development'],
                           environment or os.getenv('FUTURE_ENVIRONMENT') or 'production')
+        if refresh_token:
+            self.api_client = FutureApiClient(refresh_token=refresh_token, environment=future_env)
+        else:
+            try:
+                future_user = user or os.environ['FUTURE_USER']
+            except KeyError:
+                raise MissingCredentialsError('username') from None
+            try:
+                future_password = password or os.environ['FUTURE_PW']
+            except KeyError:
+                raise MissingCredentialsError('password') from None
 
-        self.client = FutureApiClient(user=future_user, password=future_password, environment=future_env)
+            self.api_client = FutureApiClient(user=future_user, password=future_password,
+                                              environment=future_env, totp=totp)
 
-        authorized_groups = self.client.userinfo['groups']
+        authorized_groups = self.api_client.userinfo['groups']
+        future_group = group or os.getenv('FUTURE_GROUP')
         if future_group is None and len(authorized_groups) != 1:
             raise ValueError(
                 f'You have access to multiple groups. Please select one of the following: {authorized_groups}')
         self.switch_group(new_group=future_group or authorized_groups[0],
                           verbose=future_group is not None)
-        self.is_analyst = 'analyst' in self.client.user_roles
+        self.is_analyst = 'analyst' in self.api_client.user_roles
         self.forecast_core_id = 'forecast-batch-internal' if self.is_analyst else 'forecast-batch'
         self.matcher_core_id = 'cov-selection-internal' if self.is_analyst else 'cov-selection'
+        self.associator_core_id = 'associator'
+        self.hcfc_core_id = 'hcfc'
 
     @staticmethod
     def from_dotenv() -> ExpertClient:
@@ -152,7 +177,7 @@ class ExpertClient:
         verbose
             If enabled, shows the group name in the log message.
         """
-        if new_group not in self.client.userinfo['groups']:
+        if new_group not in self.api_client.userinfo['groups']:
             raise RuntimeError(f'You are not authorized to access group {new_group}')
         self.group = new_group
         verbose_text = f' for group {self.group}' if verbose else ''
@@ -186,8 +211,7 @@ class ExpertClient:
             path = source
 
         # TODO: currently only one file is supported here.
-        upload_feedback = self.client.upload_user_inputs_for_group(
-            self.group, path, df_file)
+        upload_feedback = self.api_client.upload_user_inputs_for_group(self.group, path, df_file)
 
         return upload_feedback
 
@@ -215,10 +239,10 @@ class ExpertClient:
             user_input_id, file_uuid, data_definition, file_specification)
 
         logger.info('Started data definition using CHECK-IN...')
-        result = self.client.execute_action(group_id=self.group,
-                                            core_id='checkin-preprocessing',
-                                            payload=payload,
-                                            interval_status_check_in_seconds=2)
+        result = self.api_client.execute_action(group_id=self.group,
+                                                core_id='checkin-preprocessing',
+                                                payload=payload,
+                                                interval_status_check_in_seconds=2)
 
         error_message = result['error']
         if error_message != '':
@@ -276,10 +300,10 @@ class ExpertClient:
                 user_input_id=user_input_id, file_uuid=file_uuid, path=config_checkin)
 
         logger.info('Creating time series using CHECK-IN...')
-        result = self.client.execute_action(group_id=self.group,
-                                            core_id='checkin-preprocessing',
-                                            payload=payload,
-                                            interval_status_check_in_seconds=2)
+        result = self.api_client.execute_action(group_id=self.group,
+                                                core_id='checkin-preprocessing',
+                                                payload=payload,
+                                                interval_status_check_in_seconds=2)
         error_message = result['error']
         if error_message != '':
             raise RuntimeError(f'Error during the execution of CHECK-IN: {error_message}')
@@ -322,10 +346,10 @@ class ExpertClient:
         payload['payload']['version_description'] = description
 
         logger.info('Creating time series using checkin-pool...')
-        result = self.client.execute_action(group_id=self.group,
-                                            core_id='checkin-pool',
-                                            payload=payload,
-                                            interval_status_check_in_seconds=2)
+        result = self.api_client.execute_action(group_id=self.group,
+                                                core_id='checkin-pool',
+                                                payload=payload,
+                                                interval_status_check_in_seconds=2)
 
         logger.info('Finished time series creation.')
 
@@ -348,7 +372,7 @@ class ExpertClient:
         PoolCovOverview object with tables containing the covariates with
         different levels of detail .
         """
-        response_json = self.client.get_pool_cov_overview(granularity=granularity, search=search)
+        response_json = self.api_client.get_pool_cov_overview(granularity=granularity, search=search)
         return PoolCovOverview(response_json)
 
     def get_time_series(self,
@@ -363,7 +387,7 @@ class ExpertClient:
         -------
         Id of the time series version. Used to identifiy the time series and the values of the time series.
         """
-        result = self.client.get_ts_data(self.group, version_id)
+        result = self.api_client.get_ts_data(self.group, version_id)
         return CheckInResult(time_series=[TimeSeries(**ts) for ts in result],
                              version_id=version_id)
 
@@ -502,6 +526,17 @@ class ExpertClient:
 
         return payload
 
+    def _create_reconciliation_payload(self, config: MakeForecastConsistentConfiguration) -> Any:
+        """Creates the payload for forecast reconciliation.
+
+        Parameters
+        ----------
+        config
+            Configuration of the make forecast consistent run.
+        """
+        config_dict = config.model_dump()
+        return {'payload': config_dict}
+
     def _create_forecast_payload(self, version: str, config: ReportConfig) -> Any:
         """Creates the payload for the forecast.
 
@@ -545,6 +580,31 @@ class ExpertClient:
 
         return payload
 
+    def start_associator(self, config: AssociatorConfig) -> ReportIdentifier:
+        """Sarts an associator report.
+
+        Parameters
+        ----------
+        config
+            Configuration of the associator run.
+
+        Returns
+        -------
+        The identifier of the associator report.
+        """
+
+        config_dict = config.model_dump()
+        payload = {'payload': config_dict}
+
+        result = self.api_client.execute_action(group_id=self.group,
+                                                core_id=self.associator_core_id,
+                                                payload=payload,
+                                                interval_status_check_in_seconds=2)
+
+        report = ReportIdentifier.model_validate(result)
+        logger.info(f'Report created with ID {report.report_id}. Associator finished')
+        return report
+
     def start_forecast(self, version: str, config: ReportConfig) -> ReportIdentifier:
         """Starts a forecasting report.
 
@@ -560,33 +620,53 @@ class ExpertClient:
         The identifier of the forecasting report.
         """
 
-        version_data = self.client.get_ts_version(self.group, version)
+        version_data = self.api_client.get_ts_version(self.group, version)
         config.max_ts_len = calculate_max_ts_len(max_ts_len=config.max_ts_len,
                                                  granularity=version_data['customer_specific']['granularity'])
 
-        if config.method_selection:
-            config.method_selection.forecasting_methods = remove_arima_if_not_allowed(
-                granularity=version_data['customer_specific']['granularity'],
-                methods=config.method_selection.forecasting_methods)
-
-            if version_data['customer_specific']['granularity'] in ['weekly', 'daily', 'hourly', 'halfhourly'] \
-                    and 'ARIMA' == config.method_selection.additional_cov_method:
-                raise ValueError('ARIMA is not supported for granularities below monthly.')
-
         logger.info('Preparing data for forecast...')
-
         if not self.is_analyst and (config.db_name is not None or config.priority is not None):
             raise ValueError('Only users with the role analyst are allowed to use the parameters db_name and priority.')
         payload = self._create_forecast_payload(version, config)
         logger.info('Finished data preparation for forecast.')
+
         logger.info('Started creating forecasting report with FORECAST...')
-        result = self.client.execute_action(group_id=self.group,
-                                            core_id=self.forecast_core_id,
-                                            payload=payload,
-                                            interval_status_check_in_seconds=2)
+        result = self.api_client.execute_action(group_id=self.group,
+                                                core_id=self.forecast_core_id,
+                                                payload=payload,
+                                                interval_status_check_in_seconds=2)
 
         report = ReportIdentifier.model_validate(result)
         logger.info(f'Report created with ID {report.report_id}. Forecasts are running...')
+        return report
+
+    def start_making_forecast_consistent(self, config: MakeForecastConsistentConfiguration) -> ReportIdentifier:
+        """Starts process of making forecasts hierarchically consistent.
+
+        Parameters
+        ----------
+        config
+            Configuration of the make forecast consistent run.
+
+        Returns
+        -------
+        The identifier of the forecasting report.
+        """
+
+        logger.info('Preparing data for forecast consistency...')
+        if not self.is_analyst and (config.db_name is not None):
+            raise ValueError('Only users with the role analyst are allowed to use the parameters db_name.')
+        payload = self._create_reconciliation_payload(config)
+        logger.info('Finished data preparation for forecast consistency.')
+
+        logger.info('Started creating hierarchical reconciliation for consistent forecasts...')
+        result = self.api_client.execute_action(group_id=self.group,
+                                                core_id=self.hcfc_core_id,
+                                                payload=payload,
+                                                interval_status_check_in_seconds=2)
+
+        report = ReportIdentifier.model_validate(result)
+        logger.info(f'Report created with ID {report.report_id}. Reconciliation is running...')
         return report
 
     def get_report_type(self, report_identifier: Union[int, ReportIdentifier]) -> str:
@@ -605,7 +685,7 @@ class ExpertClient:
         """
         report_id = report_identifier.report_id if isinstance(
             report_identifier, ReportIdentifier) else report_identifier
-        return self.client.get_report_type(group_id=self.group, report_id=report_id)
+        return self.api_client.get_report_type(group_id=self.group, report_id=report_id)
 
     def get_reports(self, skip: int = 0, limit: int = 100) -> pd.DataFrame:
         """Gets the available reports, ordered from newest to oldest.
@@ -621,7 +701,7 @@ class ExpertClient:
         -------
         The available reports from newest to oldest.
         """
-        group_reports = self.client.get_group_reports(group_id=self.group, skip=skip, limit=limit)
+        group_reports = self.api_client.get_group_reports(group_id=self.group, skip=skip, limit=limit)
         vallidated_report_summarys = [ReportSummary.model_validate(report) for report in group_reports]
         return pd.DataFrame([report_summary.model_dump() for report_summary in vallidated_report_summarys])
 
@@ -637,8 +717,9 @@ class ExpertClient:
 
         """
         fc_identifier = id if isinstance(id, ReportIdentifier) else ReportIdentifier(report_id=id, settings_id=None)
-        raw_result = self.client.get_report_status(
-            group_id=self.group, report_id=fc_identifier.report_id, include_error_reason=include_error_reason)
+        raw_result = self.api_client.get_report_status(group_id=self.group,
+                                                       report_id=fc_identifier.report_id,
+                                                       include_error_reason=include_error_reason)
 
         report_status = raw_result['status_summary']
         created = report_status.get('Created', 0)
@@ -651,11 +732,13 @@ class ExpertClient:
         results = ReportStatusResults(successful=successful,
                                       no_evaluation=noeval,
                                       error=error)
-
+        customer_specific = raw_result.get('customer_specific', None)
+        assert (customer_specific is None
+                or isinstance(customer_specific, dict)), 'unexpected type of customer_specific property'
         return ReportStatus(id=fc_identifier,
                             progress=summary,
                             results=results,
-                            error_reasons=raw_result.get('customer_specific', {}).get('log_messages', None))
+                            error_reasons=None if customer_specific is None else customer_specific.get('log_messages', None))
 
     def get_fc_results(self,
                        id: Union[ReportIdentifier, int],
@@ -685,13 +768,32 @@ class ExpertClient:
 
         report_id = id.report_id if isinstance(id, ReportIdentifier) else id
 
-        results = self.client.get_fc_results(group_id=self.group,
-                                             report_id=report_id,
-                                             include_k_best_models=include_k_best_models,
-                                             include_backtesting=include_backtesting,
-                                             include_discarded_models=include_discarded_models)
+        results = self.api_client.get_fc_results(group_id=self.group,
+                                                 report_id=report_id,
+                                                 include_k_best_models=include_k_best_models,
+                                                 include_backtesting=include_backtesting,
+                                                 include_discarded_models=include_discarded_models)
 
         return [ForecastResult(**result) for result in results]
+
+    def get_consistent_forecast_results(self,
+                                        id: Union[ReportIdentifier, int]
+                                        ) -> ConsistentForecastResult:
+        """Gets the results from the given report.
+
+        Parameters
+        ----------
+        id
+            Report identifier or plain report ID.
+        """
+
+        if self.get_report_type(report_identifier=id) != 'hierarchical-forecast':
+            raise ValueError('The given report ID does not belong to a reconciled forecast result. ' +
+                             'Please input a different ID.')
+        report_id = id.report_id if isinstance(id, ReportIdentifier) else id
+        results = self.api_client.get_hierarchical_fc_results(group_id=self.group,
+                                                              report_id=report_id)
+        return ConsistentForecastResult(**results)
 
     def get_matcher_results(self, id: Union[ReportIdentifier, int]) -> list[MatcherResult]:
         """Gets the results from the given report.
@@ -708,10 +810,33 @@ class ExpertClient:
 
         report_id = id.report_id if isinstance(id, ReportIdentifier) else id
 
-        results = self.client.get_matcher_results(group_id=self.group,
-                                                  report_id=report_id)
+        results = self.api_client.get_matcher_results(group_id=self.group,
+                                                      report_id=report_id)
 
         return [MatcherResult(**result) for result in results]
+
+    def get_associator_results(self, id: Union[ReportIdentifier, int]) -> AssociatorResult:
+        """Gets the results from the given report.
+
+        Parameters
+        ----------
+        id
+            Report identifier or plain report ID.
+        """
+
+        if self.get_report_type(report_identifier=id) != 'associator':
+            raise ValueError('The given report ID does not belong to an ASSOCIATOR result. ' +
+                             'Please input a different ID.')
+
+        report_id = id.report_id if isinstance(id, ReportIdentifier) else id
+
+        result = self.api_client.get_associator_results(group_id=self.group,
+                                                        report_id=report_id)
+
+        associator_result = result[0]
+        associator_result['input'] = self.api_client.get_ts_data(self.group, associator_result.get('actuals'))
+        associator_result.pop('actuals')
+        return AssociatorResult(**associator_result)
 
     def get_ts_versions(self, skip: int = 0, limit: int = 100) -> pd.DataFrame:
         """Gets the available time series version, ordered from newest to oldest.
@@ -728,7 +853,7 @@ class ExpertClient:
         -------
         Overview of the available time series versions.
         """
-        results = self.client.get_group_ts_versions(self.group, skip, limit)
+        results = self.api_client.get_group_ts_versions(self.group, skip, limit)
         transformed_results = []
         for version in results:
             transformed_results.append(TimeSeriesVersion(
@@ -804,7 +929,7 @@ class ExpertClient:
         The identifier of the covariate matcher report.
         """
 
-        version_data = self.client.get_ts_version(self.group, config.actuals_version)
+        version_data = self.api_client.get_ts_version(self.group, config.actuals_version)
         config.max_ts_len = calculate_max_ts_len(max_ts_len=config.max_ts_len,
                                                  granularity=version_data['customer_specific']['granularity'])
 
@@ -813,10 +938,10 @@ class ExpertClient:
 
         payload = self._create_matcher_payload(config)
 
-        result = self.client.execute_action(group_id=self.group,
-                                            core_id=self.matcher_core_id,
-                                            payload=payload,
-                                            interval_status_check_in_seconds=2)
+        result = self.api_client.execute_action(group_id=self.group,
+                                                core_id=self.matcher_core_id,
+                                                payload=payload,
+                                                interval_status_check_in_seconds=2)
         report = ReportIdentifier.model_validate(result)
         logger.info(f'Report created with ID {report.report_id}. Matching indicators...')
         return report
@@ -859,6 +984,8 @@ class ExpertClient:
                 },
                 "postselection": {
                     "num_obs_short_term_correlation": 60,
+                    "associator_report_id": config.associator_report_id,
+                    "use_clustering_results": config.use_clustering_results,
                     "post_selection_queries": config.post_selection_queries,
                     "post_selection_concatenation_operator": "&",
                     "protected_selections_queries": [],

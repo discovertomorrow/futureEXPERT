@@ -68,6 +68,7 @@ dev = [
     "nbconvert==7.2.6",
     "nbqa==1.5.3",
     "python-dotenv",
+    "lxml"  # needed for using pd.read_html
 ]
 
 [tool.setuptools]

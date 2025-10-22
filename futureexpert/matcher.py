@@ -97,6 +97,13 @@ class MatcherConfig(BaseConfig):
         missing for the covariate. E.g., if the actuals (for monthly granularity) end
         in April 2023 but the covariate ends in February 2023, the covariate has a
         publication lag of 2.
+    associator_report_id
+        Optional report id of clustering results. If None, the database is searched for a fitting clustering.
+        The clustering results are used in the post-selection. If there are too many selected behind this is
+        that they all would give similar results in forecasting. Only used if `use_clustering_results`
+        is true.
+    use_clustering_results
+        If true clustering results are used.
     post_selection_queries
         List of queries that are executed on the ranking summary DataFrame. Only ranking entries that
         match the queries are kept. The query strings need to satisfy the pandas query syntax
@@ -135,6 +142,8 @@ class MatcherConfig(BaseConfig):
     evaluation_start_date: Optional[str] = None
     evaluation_end_date: Optional[str] = None
     max_publication_lag: int = 2
+    associator_report_id: Optional[pydantic.PositiveInt] = None
+    use_clustering_results: bool = False
     post_selection_queries: list[str] = []
     enable_leading_covariate_selection: bool = True
     fixed_season_length: Optional[int] = None

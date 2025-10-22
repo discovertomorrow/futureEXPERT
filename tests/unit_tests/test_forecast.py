@@ -9,7 +9,7 @@ from futureexpert import (MAX_TS_LEN_CONFIG,
                           MethodSelectionConfig,
                           PreprocessingConfig,
                           ReportConfig)
-from futureexpert._helpers import calculate_max_ts_len, remove_arima_if_not_allowed
+from futureexpert._helpers import calculate_max_ts_len
 from futureexpert.forecast import (export_forecasts_to_pandas,
                                    export_forecasts_with_overview_to_pandas,
                                    export_result_overview_to_pandas)
@@ -51,7 +51,7 @@ def test_ReportConfig___given_changed_phase_out_fc_methods_and_missing_phase_out
     expected_error_message = ('Phase-out detection must be enabled in PreprocessingConfig'
                               ' so changes in phase_out_fc_methods in MethodSelectionConfig take effect.')
     preprocessing = PreprocessingConfig(detect_outliers=False)
-    method_selection = MethodSelectionConfig(phase_out_fc_methods=['ARIMA'])
+    method_selection = MethodSelectionConfig(phase_out_fc_methods=['AutoArima'])
 
     # Act
     with caplog.at_level(logging.WARNING):
@@ -151,58 +151,6 @@ def test_calculate_max_ts_len___given_ts_len_out_of_range___returns_error() -> N
     # Act
     with pytest.raises(ValueError, match=expected_error_message):
         calculate_max_ts_len(max_ts_len, granularity)
-
-
-def test_remove_arima_if_not_allowed__given_daily_granularity___returns_no_arima() -> None:
-
-    # Arrange
-    forecasting_methods = ['ARIMA', 'Naive']
-    granularity = 'daily'
-
-    # Act
-    result = remove_arima_if_not_allowed(granularity, forecasting_methods)
-
-    # Assert
-    assert len(result) == 1
-    assert result[0] == 'Naive'
-
-
-def test_remove_arima_if_not_allowed__given_monthly_granularity___returns_complete_list() -> None:
-
-    # Arrange
-    forecasting_methods = ['ARIMA', 'Naive']
-    granularity = 'monthly'
-
-    # Act
-    result = remove_arima_if_not_allowed(granularity, forecasting_methods)
-
-    # Assert
-    assert len(result) == 2
-    assert result == forecasting_methods
-
-
-def test_remove_arima_if_not_allowed__given_empty_forecasting_methods___returns_complete_list() -> None:
-
-    # Arrange
-    forecasting_methods = []
-    granularity = 'monthly'
-
-    # Act
-    result = remove_arima_if_not_allowed(granularity, forecasting_methods)
-
-    # Assert
-    assert len(result) == 0
-
-
-def test_remove_arima_if_not_allowed__given_only_arima_as_forecasting_methods___raises_error() -> None:
-
-    # Arrange
-    forecasting_methods = ['ARIMA']
-    granularity = 'weekly'
-
-    # Act
-    with pytest.raises(ValueError, match='ARIMA is not supported for granularities below monthly.'):
-        remove_arima_if_not_allowed(granularity, forecasting_methods)
 
 
 def test_export_result_overview_to_pandas___given_simple_results___runs_without_error(

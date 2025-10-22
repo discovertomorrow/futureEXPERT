@@ -128,7 +128,6 @@ use-cases:
   variables:
     FUTURE_PW: $CI_TEST_PW
     FUTURE_USER: $CI_TEST_USER
-    FUTURE_ENVIRONMENT: development
   script:
     - |
       if [ "$FUTURE_ENVIRONMENT" = "development" ]; then
@@ -149,7 +148,7 @@ use-cases:
         FUTURE_ENVIRONMENT: staging
       when: on_success
       allow_failure: false
-    - if: $CI_COMMIT_BRANCH =~ /^(release$|release.+|github)/
+    - if: $CI_COMMIT_BRANCH =~ /^(release$|release.+|github|prod)/
       when: never
     - when: manual
       allow_failure: true

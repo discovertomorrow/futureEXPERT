@@ -17,7 +17,7 @@ class FutureConfig:
     auth_realm: str
     api_url: str
     auth_server_url: str = 'https://future-auth.prognostica.de'
-    auth_client_id: str = 'frontend'
+    auth_client_id: str = 'expert'
 
 
 DEVELOPMENT_CONFIG = FutureConfig(api_url='https://api.dev.future-forecasting.de/api/v1/', auth_realm='development')
@@ -77,8 +77,9 @@ class FutureApiClient:
             time.sleep(int(future_api.token['expires_in']*.7))
 
     def __init__(self,
-                 user: str,
-                 password: str,
+                 refresh_token: Optional[str] = None,
+                 user: Optional[str] = None,
+                 password: Optional[str] = None,
                  totp: Any = None,
                  environment: Literal['production', 'staging', 'development'] = 'production',
                  auto_refresh: bool = True):
@@ -86,6 +87,8 @@ class FutureApiClient:
 
         Parameters
         ----------
+        refresh_token
+            The refresh token to be used for authentication instead of authenticating with username or password.
         user
             The username to be used to connect to the _future_ API.
         password
@@ -108,7 +111,12 @@ class FutureApiClient:
             server_url=self.future_config.auth_server_url,
             client_id=self.future_config.auth_client_id,
             realm_name=self.future_config.auth_realm, verify=True)
-        self.token = self.keycloak_openid.token(user, password, totp=totp)
+        if refresh_token:
+            self.token = self.keycloak_openid.refresh_token(refresh_token=refresh_token)
+        else:
+            assert user, 'missing user'
+            assert password, 'missing password'
+            self.token = self.keycloak_openid.token(user, password, totp=totp)
         self.auto_refresh = auto_refresh
         if auto_refresh:
             self._thread = threading.Thread(
@@ -134,7 +142,7 @@ class FutureApiClient:
         options = {"verify_signature": False, "verify_aud": False, "verify_exp": False}
         decoded_token = self.keycloak_openid.decode_token(
             self.token['access_token'], key=KEYCLOAK_PUBLIC_KEY, options=options)
-        return decoded_token['resource_access']['frontend']['roles']
+        return decoded_token['resource_access'][self.future_config.auth_client_id]['roles']
 
     def _api_get_request(self,
                          path: str,
@@ -402,6 +410,44 @@ class FutureApiClient:
                   'include_discarded_models': include_discarded_models}
         return self._get_in_batches(f'groups/{group_id}/reports/{report_id}/results/fc', params=params)
 
+    def get_associator_results(self,
+                               group_id: str,
+                               report_id: int) -> Any:
+        """Retrieves associator results and actuals from the database.
+
+        Parameters
+        ----------
+        group_id
+            The ID of the relevant group.
+        report_id
+            ID of the Report
+
+        Returns
+        -------
+        Associator resutls and actuals.
+        """
+
+        return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/results/associator'))
+
+    def get_hierarchical_fc_results(self,
+                                    group_id: str,
+                                    report_id: int) -> Any:
+        """Retrieves hierarchical forecast results from the database.
+
+        Parameters
+        ----------
+        group_id
+            The ID of the relevant group.
+        report_id
+            ID of the Report
+
+        Returns
+        -------
+        Associator resutls and actuals.
+        """
+
+        return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/results/hierarchical-fc'))
+
     def get_pool_cov_overview(self,
                               granularity: Optional[str] = None,
                               search: Optional[str] = None) -> Any:
@@ -536,6 +582,5 @@ class FutureApiClient:
         return response.json()['payload']
 
     def refresh_token(self) -> None:
-        """Gets the refresh token."""
-        self.token = self.keycloak_openid.refresh_token(
-            self.token['refresh_token'])
+        """Refreshes the token."""
+        self.token = self.keycloak_openid.refresh_token(self.token['refresh_token'])
