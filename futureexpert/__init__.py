@@ -8,10 +8,10 @@ from futureexpert.associator import (AssociatorConfig,
 from futureexpert.checkin import DataDefinition, FileSpecification, FilterSettings, TsCreationConfig
 from futureexpert.expert_client import ExpertClient
 from futureexpert.forecast import ForecastingConfig, MethodSelectionConfig, PreprocessingConfig, ReportConfig
-from futureexpert.make_forecast_consistent import (MakeForecastConsistentConfiguration,
-                                                   MakeForecastConsistentDataSelection,
-                                                   ReconciliationConfig,
-                                                   ReconciliationMethod)
+from futureexpert.forecast_consistency import (MakeForecastConsistentConfiguration,
+                                               MakeForecastConsistentDataSelection,
+                                               ReconciliationConfig,
+                                               ReconciliationMethod)
 from futureexpert.matcher import ActualsCovsConfiguration, LagSelectionConfig, MatcherConfig
 from futureexpert.shared_models import MAX_TS_LEN_CONFIG, CovariateRef
 

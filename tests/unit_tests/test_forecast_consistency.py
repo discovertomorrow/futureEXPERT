@@ -1,6 +1,6 @@
 import pandas as pd
 
-from futureexpert.make_forecast_consistent import export_consistent_forecasts_to_pandas
+from futureexpert.forecast_consistency import export_consistent_forecasts_to_pandas
 
 
 def test_export_consistent_forecasts_to_pandas(sample_hierarchical_forecasting_result):

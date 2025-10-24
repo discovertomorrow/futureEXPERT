@@ -17,7 +17,7 @@ from futureexpert._helpers import calculate_max_ts_len, snake_to_camel
 from futureexpert.associator import AssociatorConfig, AssociatorResult
 from futureexpert.checkin import CheckInResult, DataDefinition, FileSpecification, TimeSeriesVersion, TsCreationConfig
 from futureexpert.forecast import ForecastResult, ReportConfig
-from futureexpert.make_forecast_consistent import ConsistentForecastResult, MakeForecastConsistentConfiguration
+from futureexpert.forecast_consistency import ConsistentForecastResult, MakeForecastConsistentConfiguration
 from futureexpert.matcher import MatcherConfig, MatcherResult
 from futureexpert.pool import CheckInPoolResult, PoolCovDefinition, PoolCovOverview
 from futureexpert.shared_models import TimeSeries
