@@ -33,6 +33,8 @@ pip install -U futureexpert
 
 ## Getting started
 
+If you want to explore the workflow of futureEXPERT without diving directly into code, check out our [dashboard](https://expert.future-forecasting.de). It visually guides you through the capabilities of the futureEXPERT client. While it does not contain the full capabilities of the library, it offers a hands-on way to experience what futureEXPERT can do.
+
 To get started with futureEXPERT we recommend checking out the jupyter notebook [getting started](./notebooks/getting_started.ipynb) to help you with your first steps. Also check our [quick start video tutorial](https://www.future-forecasting.de/video/getting-started/).
 
 

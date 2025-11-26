@@ -10,9 +10,7 @@ from futureexpert import (MAX_TS_LEN_CONFIG,
                           PreprocessingConfig,
                           ReportConfig)
 from futureexpert._helpers import calculate_max_ts_len
-from futureexpert.forecast import (export_forecasts_to_pandas,
-                                   export_forecasts_with_overview_to_pandas,
-                                   export_result_overview_to_pandas)
+from futureexpert.forecast import ForecastResults
 
 
 def test_PreprocessingConfig___given_fixed_seasonalities_and_season_detection___stops_with_error() -> None:
@@ -157,11 +155,11 @@ def test_export_result_overview_to_pandas___given_simple_results___runs_without_
         sample_fc_result_1,
         sample_fc_result_2,
         sample_fc_result_3):
-    sample_results = [sample_fc_result_1,
-                      sample_fc_result_2,
-                      sample_fc_result_3]
+    sample_results = ForecastResults([sample_fc_result_1,
+                                      sample_fc_result_2,
+                                      sample_fc_result_3])
 
-    df = export_result_overview_to_pandas(sample_results)
+    df = sample_results.export_result_overview_to_pandas()
     assert isinstance(df, pd.DataFrame)
 
 
@@ -169,11 +167,11 @@ def test_export_result_overview_to_pandas___given_simple_results___is_of_expecte
         sample_fc_result_1,
         sample_fc_result_2,
         sample_fc_result_3):
-    sample_results = [sample_fc_result_1,
-                      sample_fc_result_2,
-                      sample_fc_result_3]
+    sample_results = ForecastResults([sample_fc_result_1,
+                                     sample_fc_result_2,
+                                     sample_fc_result_3])
 
-    df = export_result_overview_to_pandas(sample_results)
+    df = sample_results.export_result_overview_to_pandas()
     assert df.shape == (3, 12)
     assert set(df.columns.to_list()) == {'name', 'level', 'model', 'cov', 'cov_lag', 'season_length', 'ts_class',
                                          'quantization', 'trend', 'recent_trend', 'missing_values_count', 'outliers_count'}
@@ -183,11 +181,11 @@ def test_export_forecasts_to_pandas___given_simple_results___is_of_expected_stru
         sample_fc_result_1,
         sample_fc_result_2,
         sample_fc_result_3):
-    sample_results = [sample_fc_result_1,
-                      sample_fc_result_2,
-                      sample_fc_result_3]
+    sample_results = ForecastResults([sample_fc_result_1,
+                                      sample_fc_result_2,
+                                      sample_fc_result_3])
 
-    df = export_forecasts_to_pandas(sample_results)
+    df = sample_results.export_forecasts_to_pandas()
     assert df.shape == (9, 5)
     assert set(df.columns.to_list()) == {'name', 'time_stamp_utc',
                                          'point_forecast_value', 'lower_limit_value', 'upper_limit_value'}
@@ -197,11 +195,11 @@ def test_export_forecasts_with_metadata___given_simple_results___is_of_expected_
         sample_fc_result_1,
         sample_fc_result_2,
         sample_fc_result_3):
-    sample_results = [sample_fc_result_1,
-                      sample_fc_result_2,
-                      sample_fc_result_3]
+    sample_results = ForecastResults([sample_fc_result_1,
+                                      sample_fc_result_2,
+                                      sample_fc_result_3])
 
-    df = export_forecasts_with_overview_to_pandas(sample_results)
+    df = sample_results.export_forecasts_with_overview_to_pandas()
     assert df.shape == (9, 16)
     assert set(df.columns.to_list()) == {'name', 'level', 'model', 'cov', 'cov_lag', 'season_length', 'ts_class',
                                          'quantization', 'trend', 'recent_trend', 'missing_values_count', 'outliers_count',

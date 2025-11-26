@@ -63,6 +63,7 @@ unit-tests-3.12:
     FUTURE_PW: $CI_TEST_PW
     FUTURE_USER: $CI_TEST_USER
     FUTURE_ENVIRONMENT: development
+    FUTURE_REFRESH_TOKEN: $CI_TEST_TOKEN
   script:
     - pytest tests/unit_tests/.
   needs: [docker_build]
@@ -75,6 +76,7 @@ unit-tests:
     FUTURE_PW: $CI_TEST_PW
     FUTURE_USER: $CI_TEST_USER
     FUTURE_ENVIRONMENT: development
+    FUTURE_REFRESH_TOKEN: $CI_TEST_TOKEN
   script:
     - pip install .[dev]
     - pytest tests/unit_tests/.
@@ -104,11 +106,12 @@ notebooks (required):
   extends: .defaults
   image: ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
   variables:
-    FUTURE_PW: $CI_TEST_PW
-    FUTURE_USER: $CI_TEST_USER
     FUTURE_ENVIRONMENT: development
+    FUTURE_REFRESH_TOKEN: $CI_TEST_TOKEN
   script:
     - sed -i "s/'TBD'/'66ea6e1d38cb720ea1a2e44a'/g" notebooks/getting_started.ipynb
+    - sed -i "s/'My first report'/'My ${CI_PIPELINE_ID} report'/g" notebooks/getting_started.ipynb
+    - sed -i "s/'My first report'/'My ${CI_PIPELINE_ID} report'/g" notebooks/working_with_results.ipynb
     - sed -i "s/'TBD'/'66ea6e1d38cb720ea1a2e44a'/g" notebooks/checkin_configuration_options.ipynb
     - for notebook in $(./generate-notebook-list.sh); do jupyter nbconvert --to notebook --execute --inplace "$notebook"; done
     - pytest tests/notebook_execution/test_notebook_results.py
@@ -126,8 +129,7 @@ use-cases:
   extends: .defaults
   image: ${CI_REGISTRY_IMAGE}:${CI_PIPELINE_ID}
   variables:
-    FUTURE_PW: $CI_TEST_PW
-    FUTURE_USER: $CI_TEST_USER
+    FUTURE_REFRESH_TOKEN: $CI_TEST_TOKEN
   script:
     - |
       if [ "$FUTURE_ENVIRONMENT" = "development" ]; then
@@ -146,6 +148,11 @@ use-cases:
     - if: $CI_COMMIT_BRANCH == "staging"
       variables:
         FUTURE_ENVIRONMENT: staging
+      when: on_success
+      allow_failure: false
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      variables:
+        FUTURE_ENVIRONMENT: development
       when: on_success
       allow_failure: false
     - if: $CI_COMMIT_BRANCH =~ /^(release$|release.+|github|prod)/

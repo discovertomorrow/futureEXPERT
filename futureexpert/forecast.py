@@ -4,6 +4,7 @@ from __future__ import annotations
 import enum
 import logging
 import re
+from collections.abc import Iterator
 from copy import deepcopy
 from datetime import datetime
 from enum import Enum
@@ -15,6 +16,7 @@ import pydantic
 from pydantic import BaseModel, ConfigDict, Field, NonNegativeFloat
 from typing_extensions import NotRequired, Self, TypedDict
 
+from futureexpert._forecast_consistency_metadata import ConsistentForecastMetadata
 from futureexpert.matcher import ActualsCovsConfiguration, MatcherResult
 from futureexpert.pool import PoolCovDefinition
 from futureexpert.shared_models import (BaseConfig,
@@ -798,6 +800,64 @@ class ForecastResult(BaseModel):
         fc_result.models = new_models
         return fc_result
 
+    def export_overview(self) -> dict[str, Any]:
+        """Extracts various time series insights, metadata, and other information and compiles them into an overview.
+        Contains model information about the best model.
+
+        Returns
+        -------
+        A dictionary containing key insights of the result.
+        """
+        [best_model] = [model for model in self.models
+                        if model.model_selection.ranking is not None
+                        and model.model_selection.ranking.rank_position == 1]
+        overview_for_ts: dict[str, Any] = {"name": self.input.actuals.name}
+        if self.input.actuals.grouping:
+            overview_for_ts.update(self.input.actuals.grouping)
+        overview_for_ts.update({
+            'model': best_model.model_name,
+            'cov': best_model.covariates[0].name if best_model.covariates else np.nan,
+            'cov_lag': best_model.covariates[0].lag if best_model.covariates else np.nan,
+            'season_length': self.ts_characteristics.season_length,
+            'ts_class': self.ts_characteristics.ts_class,
+            'quantization': (self.ts_characteristics.quantization
+                             if self.ts_characteristics.quantization else np.nan),
+            'trend': self.ts_characteristics.trend.is_trending if self.ts_characteristics.trend else np.nan,
+            'recent_trend': (self.ts_characteristics.recent_trend.is_trending
+                             if self.ts_characteristics.recent_trend else np.nan),
+            'missing_values_count': (len(self.ts_characteristics.missing_values)
+                                     if self.ts_characteristics.missing_values else np.nan),
+            'outliers_count': (len(self.ts_characteristics.outliers)
+                               if self.ts_characteristics.outliers else np.nan)
+        })
+        return overview_for_ts
+
+    @property
+    def best_model(self) -> Model | None:
+        """Gets the best model."""
+        return next((model for model in self.models
+                    if model.model_selection.ranking is not None
+                    and model.model_selection.ranking.rank_position == 1),
+                    None)
+
+    def insert_model(self, model: Model,) -> None:
+        """Inserts a model in the current model ranking at its given rank position.
+
+        Parameters
+        ----------
+        model
+            The model to be inserted.
+        """
+        assert model.model_selection.ranking is not None, f'Missing ranking details of model {model.model_name}.'
+        rank_position = model.model_selection.ranking.rank_position
+        for current_model in self.models:
+            assert current_model.model_selection.ranking is not None, \
+                f'Missing ranking details of model {current_model.model_name}.'
+            current_model_position = current_model.model_selection.ranking.rank_position
+            if current_model_position >= rank_position:
+                current_model.model_selection.ranking.rank_position = PositiveInt(current_model_position + 1)
+        self.models.insert(rank_position - 1, model)
+
 
 def combine_forecast_ranking_with_matcher_ranking(forecast_results: list[ForecastResult],
                                                   matcher_results: list[MatcherResult]) -> list[ForecastResult]:
@@ -823,88 +883,85 @@ def combine_forecast_ranking_with_matcher_ranking(forecast_results: list[Forecas
     return new_results
 
 
-def export_result_overview_to_pandas(results: list[ForecastResult]) -> pd.DataFrame:
-    """Extracts various time series insights, metadata, and other information from the forecast results
-    and compiles them into an overview table. Contains model information about the best model.
+class ForecastResults:
+    """Wrapper for the results of a forecasting."""
 
-    Parameters:
-    -----------
-    results
-        The forecast results as provided by get_fc_results.
+    def __init__(self,
+                 forecast_results: list[ForecastResult],
+                 consistency: ConsistentForecastMetadata | None = None):
+        self.forecast_results = forecast_results
+        self.consistency = consistency
 
-    Returns:
-    --------
-    A DataFrame where each row represents the insights for one time series.
-    """
+    def get_forecast_result(self, actuals_name: str) -> ForecastResult | None:
+        """Gets a forecast result for the given time series name.
 
-    overview_list = []
-    for ts_result in results:
-        [best_model] = [model for model in ts_result.models
-                        if model.model_selection.ranking is not None
-                        and model.model_selection.ranking.rank_position == 1]
-        overview_for_ts: dict[str, Any] = {"name": ts_result.input.actuals.name}
-        if ts_result.input.actuals.grouping:
-            overview_for_ts.update(ts_result.input.actuals.grouping)
-        overview_for_ts.update({
-            'model': best_model.model_name,
-            'cov': best_model.covariates[0].name if best_model.covariates else np.nan,
-            'cov_lag': best_model.covariates[0].lag if best_model.covariates else np.nan,
-            'season_length': ts_result.ts_characteristics.season_length,
-            'ts_class': ts_result.ts_characteristics.ts_class,
-            'quantization': (ts_result.ts_characteristics.quantization
-                             if ts_result.ts_characteristics.quantization else np.nan),
-            'trend': ts_result.ts_characteristics.trend.is_trending if ts_result.ts_characteristics.trend else np.nan,
-            'recent_trend': (ts_result.ts_characteristics.recent_trend.is_trending
-                             if ts_result.ts_characteristics.recent_trend else np.nan),
-            'missing_values_count': (len(ts_result.ts_characteristics.missing_values)
-                                     if ts_result.ts_characteristics.missing_values else np.nan),
-            'outliers_count': (len(ts_result.ts_characteristics.outliers)
-                               if ts_result.ts_characteristics.outliers else np.nan)
-        })
-        overview_list.append(overview_for_ts)
-    return pd.DataFrame(overview_list)
+        Parameters
+        ----------
+        actuals_name
+            The name of the actuals time series of interest.
 
+        Returns
+        -------
+        The requested forecast result if present.
+        """
+        return next((result for result in self.forecast_results if result.input.actuals.name == actuals_name),
+                    None)
 
-def export_forecasts_to_pandas(results: list[ForecastResult]) -> pd.DataFrame:
-    """Export forecasts of the best model including lower and upper limits of prediction interval.
+    def __iter__(self) -> Iterator[ForecastResult]:
+        """Make the class iterable over forecast_results."""
+        return iter(self.forecast_results)
 
-    Parameters:
-    -----------
-    results
-        The forecast results as provided by get_fc_results.
+    def __getitem__(self, index: Union[int, slice]) -> Union[ForecastResult, list[ForecastResult]]:
+        """Support indexing and slicing."""
+        return self.forecast_results[index]
 
-    Returns:
-    --------
-    A DataFrame where each row represents the forecast information of a single timeseries of a certain date.
-    """
-    forecast_list = []
-    for ts_result in results:
-        [best_model] = [model for model in ts_result.models
-                        if model.model_selection.ranking is not None
-                        and model.model_selection.ranking.rank_position == 1]
-        for fc in best_model.forecasts:
-            ts_forecast = {'name': ts_result.input.actuals.name}
-            ts_forecast.update(fc)
-            forecast_list.append(ts_forecast)
-    return pd.DataFrame(forecast_list)
+    def __len__(self) -> int:
+        """Return the number of forecast results."""
+        return len(self.forecast_results)
 
+    def __contains__(self, item: ForecastResult) -> bool:
+        """Support the 'in' operator."""
+        return item in self.forecast_results
 
-def export_forecasts_with_overview_to_pandas(results: list[ForecastResult]) -> pd.DataFrame:
-    """Export forecasts with metadata from a list of ForecastResult objects to a pandas DataFrame.
+    def export_result_overview_to_pandas(self) -> pd.DataFrame:
+        """Extracts various time series insights, metadata, and other information from the forecast results
+        and compiles them into an overview table. Contains model information about the best model.
 
-    Parameters:
-    -----------
-    results
-        The forecast results as provided by get_fc_results.
+        Returns
+        -------
+        A DataFrame where each row represents the insights for one time series.
+        """
+        overview_list = [ts_result.export_overview() for ts_result in self.forecast_results]
+        return pd.DataFrame(overview_list)
 
-    Returns:
-    --------
-    A DataFrame where each row represents the forecast information of a single time series
-    for a certain date, combined with the metadata.
-    """
+    def export_forecasts_to_pandas(self) -> pd.DataFrame:
+        """Export forecasts of the best model including lower and upper limits of prediction interval.
 
-    metadata_df = export_result_overview_to_pandas(results)
-    forecasts_df = export_forecasts_to_pandas(results)
-    merged_df = pd.merge(forecasts_df, metadata_df, on='name', how='outer', validate="many_to_one")
+        Returns
+        -------
+        A DataFrame where each row represents the forecast information of a single timeseries of a certain date.
+        """
+        forecasts = []
+        for ts_result in self.forecast_results:
+            best_model = ts_result.best_model
+            assert best_model is not None, 'No best model available.'
+            for fc in best_model.forecasts:
+                ts_forecast = {'name': ts_result.input.actuals.name}
+                ts_forecast.update(fc)
+                forecasts.append(ts_forecast)
+        return pd.DataFrame(forecasts)
 
-    return merged_df
+    def export_forecasts_with_overview_to_pandas(self) -> pd.DataFrame:
+        """Export forecasts with metadata to a pandas DataFrame.
+
+        Returns
+        -------
+        A DataFrame where each row represents the forecast information of a single time series
+        for a certain date, combined with the metadata.
+        """
+
+        metadata_df = self.export_result_overview_to_pandas()
+        forecasts_df = self.export_forecasts_to_pandas()
+        merged_df = pd.merge(forecasts_df, metadata_df, on='name', how='outer', validate="many_to_one")
+
+        return merged_df

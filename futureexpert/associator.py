@@ -61,7 +61,7 @@ class ClusteringConfiguration(BaseConfig):
         Observations up to end_time (inclusive) will be considered during clustering.
     """
     create_clusters: bool = True
-    n_clusters: int = Field(default=None, gt=0)
+    n_clusters: Optional[int] = Field(default=None, gt=0)
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
 

@@ -16,8 +16,11 @@ from futureexpert._future_api import FutureApiClient
 from futureexpert._helpers import calculate_max_ts_len, snake_to_camel
 from futureexpert.associator import AssociatorConfig, AssociatorResult
 from futureexpert.checkin import CheckInResult, DataDefinition, FileSpecification, TimeSeriesVersion, TsCreationConfig
-from futureexpert.forecast import ForecastResult, ReportConfig
-from futureexpert.forecast_consistency import ConsistentForecastResult, MakeForecastConsistentConfiguration
+from futureexpert.forecast import ForecastResult, ForecastResults, ReportConfig
+from futureexpert.forecast_consistency import (ConsistentForecastMetadata,
+                                               MakeForecastConsistentConfiguration,
+                                               MakeForecastConsistentDataSelection,
+                                               ReconciliationConfig)
 from futureexpert.matcher import MatcherConfig, MatcherResult
 from futureexpert.pool import CheckInPoolResult, PoolCovDefinition, PoolCovOverview
 from futureexpert.shared_models import TimeSeries
@@ -49,30 +52,62 @@ class ReportStatusResults(pydantic.BaseModel):
 
 
 class ReportStatus(pydantic.BaseModel):
-    """Status of a forecast or matcher report."""
+    """Status of a forecast or matcher report.
+
+    Parameters
+    ----------
+    id
+        The identifier of the report.
+    description
+        The description of the report.
+    result_type
+        The result type of the report.
+    progress
+        Progress summary of the report.
+    results
+        Success/error summary of the report.
+    error_reasons
+        Details about the errors of the report.
+    prerequisites
+        If the status was requested for a report that depends on other reports (ChainedReportIdentifier)
+        all other report statuses are contained in the prerequisites in order to get an easy overview.
+    """
     id: ReportIdentifier
+    description: str
+    result_type: str
     progress: ReportStatusProgress
     results: ReportStatusResults
     error_reasons: Optional[Any] = None
+    prerequisites: list[ReportStatus] = pydantic.Field(default_factory=list)
 
     @property
     def is_finished(self) -> bool:
         """Indicates whether a forecasting report is finished."""
         return self.progress.pending == 0
 
-    def print(self) -> None:
-        """Prints a summary of the status."""
-        title = f'Status forecasting report for id: {self.id}'
+    def print(self, print_prerequisites: bool = True) -> None:
+        """Prints a summary of the status.
+
+        Parameters
+        ----------
+        print_prerequisites
+            Enable or disable printing of prerequisite reports.
+        """
+        title = f'Status of report "{self.description}" of type "{self.result_type}":'
+        run_description = 'time series' if self.result_type in ['forecast', 'matcher'] else 'runs'
+        if print_prerequisites:
+            for prerequisite in self.prerequisites:
+                prerequisite.print()
 
         if self.progress.requested == 0:
-            print(f'{title}\n  No run was created')
+            print(f'{title}\n  No {run_description} created')
             return
 
         pct_txt = f'{round(self.progress.finished/self.progress.requested*100)} % are finished'
-        overall = f'{self.progress.requested} time series requested for calculation'
-        finished_txt = f'{self.progress.finished} time series finished'
-        noeval_txt = f'{self.results.no_evaluation} time series without evaluation'
-        error_txt = f'{self.results.error} time series ran into an error'
+        overall = f'{self.progress.requested} {run_description} requested for calculation'
+        finished_txt = f'{self.progress.finished} {run_description} finished'
+        noeval_txt = f'{self.results.no_evaluation} {run_description} without evaluation'
+        error_txt = f'{self.results.error} {run_description} ran into an error'
         print(f'{title}\n {pct_txt} \n {overall} \n {finished_txt} \n {noeval_txt} \n {error_txt}')
 
 
@@ -80,6 +115,17 @@ class ReportIdentifier(pydantic.BaseModel):
     """Report ID and Settings ID of a report. Required to identify the report, e.g. when retrieving the results."""
     report_id: int
     settings_id: Optional[int]
+
+
+class ChainedReportIdentifier(ReportIdentifier):
+    """Extended report identifier with prerequisites."""
+    prerequisites: list[ReportIdentifier]
+
+    @classmethod
+    def of(cls, final_report_identifier: ReportIdentifier, prerequisites: list[ReportIdentifier]) -> ChainedReportIdentifier:
+        return cls(report_id=final_report_identifier.report_id,
+                   settings_id=final_report_identifier.settings_id,
+                   prerequisites=prerequisites)
 
 
 class ReportSummary(pydantic.BaseModel):
@@ -115,6 +161,7 @@ class ExpertClient:
             Optional second factor for authentication using user credentials.
         refresh_token
             Alternative login using a refresh token only instead of user credentials.
+            If not provided, the token is read from the environment variable FUTURE_REFRESH_TOKEN.
             You can retrieve a long-lived refresh token (offline token) from our identity provider
             using Open ID Connect scope `offline_access` at the token endpoint. Example:
             curl -s -X POST 'https://future-auth.prognostica.de/realms/future/protocol/openid-connect/token' \
@@ -133,8 +180,9 @@ class ExpertClient:
         """
         future_env = cast(Literal['production', 'staging', 'development'],
                           environment or os.getenv('FUTURE_ENVIRONMENT') or 'production')
-        if refresh_token:
-            self.api_client = FutureApiClient(refresh_token=refresh_token, environment=future_env)
+        future_refresh_token = refresh_token or os.getenv('FUTURE_REFRESH_TOKEN')
+        if future_refresh_token:
+            self.api_client = FutureApiClient(refresh_token=future_refresh_token, environment=future_env)
         else:
             try:
                 future_user = user or os.environ['FUTURE_USER']
@@ -161,11 +209,32 @@ class ExpertClient:
         self.associator_core_id = 'associator'
         self.hcfc_core_id = 'hcfc'
 
+    def __enter__(self) -> ExpertClient:
+        return self
+
+    def __exit__(self,
+                 exc_type: Optional[type[BaseException]],
+                 exc_value: Optional[BaseException],
+                 exc_tb: Any) -> None:
+        """Cancel token refresh and logout if not a offline token is used."""
+        self.api_client.auto_refresh = False
+        if 'offline_access' not in self.api_client.token['scope']:
+            self.logout()
+
     @staticmethod
     def from_dotenv() -> ExpertClient:
         """Create an instance from a .env file or environment variables."""
         dotenv.load_dotenv()
         return ExpertClient()
+
+    def logout(self) -> None:
+        """Logout from futureEXPERT.
+
+        If logged in with a refresh token. The refresh token is revoked.
+        """
+        self.api_client.keycloak_openid.logout(self.api_client.token['refresh_token'])
+        self.api_client.auto_refresh = False
+        logger.info('Successfully logged out.')
 
     def switch_group(self, new_group: str, verbose: bool = True) -> None:
         """Switches the current group.
@@ -242,7 +311,7 @@ class ExpertClient:
         result = self.api_client.execute_action(group_id=self.group,
                                                 core_id='checkin-preprocessing',
                                                 payload=payload,
-                                                interval_status_check_in_seconds=2)
+                                                interval_status_check_in_seconds=5)
 
         error_message = result['error']
         if error_message != '':
@@ -303,7 +372,7 @@ class ExpertClient:
         result = self.api_client.execute_action(group_id=self.group,
                                                 core_id='checkin-preprocessing',
                                                 payload=payload,
-                                                interval_status_check_in_seconds=2)
+                                                interval_status_check_in_seconds=5)
         error_message = result['error']
         if error_message != '':
             raise RuntimeError(f'Error during the execution of CHECK-IN: {error_message}')
@@ -349,7 +418,7 @@ class ExpertClient:
         result = self.api_client.execute_action(group_id=self.group,
                                                 core_id='checkin-pool',
                                                 payload=payload,
-                                                interval_status_check_in_seconds=2)
+                                                interval_status_check_in_seconds=5)
 
         logger.info('Finished time series creation.')
 
@@ -599,13 +668,17 @@ class ExpertClient:
         result = self.api_client.execute_action(group_id=self.group,
                                                 core_id=self.associator_core_id,
                                                 payload=payload,
-                                                interval_status_check_in_seconds=2)
+                                                interval_status_check_in_seconds=5,
+                                                check_intermediate_result=True)
 
         report = ReportIdentifier.model_validate(result)
-        logger.info(f'Report created with ID {report.report_id}. Associator finished')
+        logger.info(f'Report created with ID {report.report_id}. Associator is running...')
         return report
 
-    def start_forecast(self, version: str, config: ReportConfig) -> ReportIdentifier:
+    def start_forecast(self,
+                       version: str,
+                       config: ReportConfig,
+                       reconciliation_config: Optional[ReconciliationConfig] = None) -> ReportIdentifier:
         """Starts a forecasting report.
 
         Parameters
@@ -614,12 +687,13 @@ class ExpertClient:
             ID of a time series version.
         config
             Configuration of the forecasting report.
+        reconciliation_config
+            Configuration to make forecasts consistent over hierarchical levels.
 
         Returns
         -------
         The identifier of the forecasting report.
         """
-
         version_data = self.api_client.get_ts_version(self.group, version)
         config.max_ts_len = calculate_max_ts_len(max_ts_len=config.max_ts_len,
                                                  granularity=version_data['customer_specific']['granularity'])
@@ -634,11 +708,24 @@ class ExpertClient:
         result = self.api_client.execute_action(group_id=self.group,
                                                 core_id=self.forecast_core_id,
                                                 payload=payload,
-                                                interval_status_check_in_seconds=2)
+                                                interval_status_check_in_seconds=5)
 
-        report = ReportIdentifier.model_validate(result)
-        logger.info(f'Report created with ID {report.report_id}. Forecasts are running...')
-        return report
+        forecast_identifier = ReportIdentifier.model_validate(result)
+        logger.info(f'Report created with ID {forecast_identifier.report_id}. Forecasts are running...')
+
+        if reconciliation_config is None:
+            return forecast_identifier
+
+        # Continue with forecast reconciliation
+        data_selection = MakeForecastConsistentDataSelection(
+            version=version, fc_report_id=forecast_identifier.report_id)
+        forecast_consistency_config = MakeForecastConsistentConfiguration(db_name=config.db_name,
+                                                                          reconciliation=reconciliation_config,
+                                                                          data_selection=data_selection,
+                                                                          report_note=config.title)
+        forecast_consistency_identifier = self.start_making_forecast_consistent(config=forecast_consistency_config)
+        return ChainedReportIdentifier.of(final_report_identifier=forecast_consistency_identifier,
+                                          prerequisites=[forecast_identifier])
 
     def start_making_forecast_consistent(self, config: MakeForecastConsistentConfiguration) -> ReportIdentifier:
         """Starts process of making forecasts hierarchically consistent.
@@ -663,7 +750,8 @@ class ExpertClient:
         result = self.api_client.execute_action(group_id=self.group,
                                                 core_id=self.hcfc_core_id,
                                                 payload=payload,
-                                                interval_status_check_in_seconds=2)
+                                                interval_status_check_in_seconds=5,
+                                                check_intermediate_result=True)
 
         report = ReportIdentifier.model_validate(result)
         logger.info(f'Report created with ID {report.report_id}. Reconciliation is running...')
@@ -705,20 +793,22 @@ class ExpertClient:
         vallidated_report_summarys = [ReportSummary.model_validate(report) for report in group_reports]
         return pd.DataFrame([report_summary.model_dump() for report_summary in vallidated_report_summarys])
 
-    def get_report_status(self, id: Union[ReportIdentifier, int], include_error_reason: bool = True) -> ReportStatus:
-        """Gets the current status of a forecast or matcher report.
+    def _get_single_report_status(self, report_identifier: ReportIdentifier, include_error_reason: bool = True) -> ReportStatus:
+        """Gets the current status of a single report.
 
         Parameters
         ----------
         id
-            Report identifier or plain report ID.
+            Report identifier.
         include_error_reason
             Determines whether log messages are to be included in the result.
 
+        Returns
+        -------
+        The status of the report.
         """
-        fc_identifier = id if isinstance(id, ReportIdentifier) else ReportIdentifier(report_id=id, settings_id=None)
         raw_result = self.api_client.get_report_status(group_id=self.group,
-                                                       report_id=fc_identifier.report_id,
+                                                       report_id=report_identifier.report_id,
                                                        include_error_reason=include_error_reason)
 
         report_status = raw_result['status_summary']
@@ -735,16 +825,44 @@ class ExpertClient:
         customer_specific = raw_result.get('customer_specific', None)
         assert (customer_specific is None
                 or isinstance(customer_specific, dict)), 'unexpected type of customer_specific property'
-        return ReportStatus(id=fc_identifier,
+        return ReportStatus(id=report_identifier,
+                            description=raw_result['description'],
+                            result_type=raw_result['result_type'],
                             progress=summary,
                             results=results,
                             error_reasons=None if customer_specific is None else customer_specific.get('log_messages', None))
+
+    def get_report_status(self, id: Union[ReportIdentifier, int], include_error_reason: bool = True) -> ReportStatus:
+        """Gets the current status of a report.
+
+        If the provided report identifier includes prerequisites, the status of the prerequisites is included, too.
+
+        Parameters
+        ----------
+        id
+            Report identifier or plain report ID.
+        include_error_reason
+            Determines whether log messages are to be included in the result.
+
+        Returns
+        -------
+        The status of the report.
+        """
+        identifier = id if isinstance(id, ReportIdentifier) else ReportIdentifier(report_id=id, settings_id=None)
+        final_status = self._get_single_report_status(
+            report_identifier=identifier, include_error_reason=include_error_reason)
+        if isinstance(identifier, ChainedReportIdentifier):
+            for prerequisite_identifier in identifier.prerequisites:
+                prerequisite_status = self.get_report_status(id=prerequisite_identifier,
+                                                             include_error_reason=include_error_reason)
+                final_status.prerequisites.append(prerequisite_status)
+        return final_status
 
     def get_fc_results(self,
                        id: Union[ReportIdentifier, int],
                        include_k_best_models: int = 1,
                        include_backtesting: bool = False,
-                       include_discarded_models: bool = False) -> list[ForecastResult]:
+                       include_discarded_models: bool = False) -> ForecastResults:
         """Gets the results from the given report.
 
         Parameters
@@ -758,42 +876,28 @@ class ExpertClient:
         include_discarded_models
             Determines if models excluded from ranking should be included in the result.
         """
-
+        report_id = id.report_id if isinstance(id, ReportIdentifier) else id
+        if self.get_report_type(report_identifier=report_id) not in ['forecast',
+                                                                     'MongoForecastingResultSink',
+                                                                     'hierarchical-forecast']:
+            raise ValueError('The given report ID does not belong to a FORECAST result. ' +
+                             'Please input a different ID or use another result getter function.')
         if include_k_best_models < 1:
             raise ValueError('At least one model is needed.')
 
-        if self.get_report_type(report_identifier=id) not in ['forecast', 'MongoForecastingResultSink']:
-            raise ValueError('The given report ID does not belong to a FORECAST result. ' +
-                             'Please input a different ID or use get_matcher_results().')
+        raw_forecast_results = self.api_client.get_fc_results(group_id=self.group,
+                                                              report_id=report_id,
+                                                              include_k_best_models=include_k_best_models,
+                                                              include_backtesting=include_backtesting,
+                                                              include_discarded_models=include_discarded_models)
+        result = ForecastResults(forecast_results=[ForecastResult.model_validate(result)
+                                 for result in raw_forecast_results['forecast_results']])
 
-        report_id = id.report_id if isinstance(id, ReportIdentifier) else id
+        raw_forecast_consistency = raw_forecast_results['consistency']
+        if raw_forecast_consistency is not None:
+            result.consistency = ConsistentForecastMetadata.model_validate(raw_forecast_consistency)
 
-        results = self.api_client.get_fc_results(group_id=self.group,
-                                                 report_id=report_id,
-                                                 include_k_best_models=include_k_best_models,
-                                                 include_backtesting=include_backtesting,
-                                                 include_discarded_models=include_discarded_models)
-
-        return [ForecastResult(**result) for result in results]
-
-    def get_consistent_forecast_results(self,
-                                        id: Union[ReportIdentifier, int]
-                                        ) -> ConsistentForecastResult:
-        """Gets the results from the given report.
-
-        Parameters
-        ----------
-        id
-            Report identifier or plain report ID.
-        """
-
-        if self.get_report_type(report_identifier=id) != 'hierarchical-forecast':
-            raise ValueError('The given report ID does not belong to a reconciled forecast result. ' +
-                             'Please input a different ID.')
-        report_id = id.report_id if isinstance(id, ReportIdentifier) else id
-        results = self.api_client.get_hierarchical_fc_results(group_id=self.group,
-                                                              report_id=report_id)
-        return ConsistentForecastResult(**results)
+        return result
 
     def get_matcher_results(self, id: Union[ReportIdentifier, int]) -> list[MatcherResult]:
         """Gets the results from the given report.
@@ -806,7 +910,7 @@ class ExpertClient:
 
         if self.get_report_type(report_identifier=id) not in ['matcher', 'CovariateSelection']:
             raise ValueError('The given report ID does not belong to a MATCHER result. ' +
-                             'Please input a different ID or use get_fc_results().')
+                             'Please input a different ID or use another result getter function.')
 
         report_id = id.report_id if isinstance(id, ReportIdentifier) else id
 
@@ -830,13 +934,12 @@ class ExpertClient:
 
         report_id = id.report_id if isinstance(id, ReportIdentifier) else id
 
-        result = self.api_client.get_associator_results(group_id=self.group,
+        result: dict[str, Any] = self.api_client.get_associator_results(group_id=self.group,
                                                         report_id=report_id)
 
-        associator_result = result[0]
-        associator_result['input'] = self.api_client.get_ts_data(self.group, associator_result.get('actuals'))
-        associator_result.pop('actuals')
-        return AssociatorResult(**associator_result)
+        actuals_version = result.pop('actuals')
+        result['input'] = self.api_client.get_ts_data(self.group, actuals_version)
+        return AssociatorResult(**result)
 
     def get_ts_versions(self, skip: int = 0, limit: int = 100) -> pd.DataFrame:
         """Gets the available time series version, ordered from newest to oldest.
@@ -941,7 +1044,7 @@ class ExpertClient:
         result = self.api_client.execute_action(group_id=self.group,
                                                 core_id=self.matcher_core_id,
                                                 payload=payload,
-                                                interval_status_check_in_seconds=2)
+                                                interval_status_check_in_seconds=5)
         report = ReportIdentifier.model_validate(result)
         logger.info(f'Report created with ID {report.report_id}. Matching indicators...')
         return report

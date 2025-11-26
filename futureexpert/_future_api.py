@@ -5,7 +5,7 @@ import math
 import threading
 import time
 from dataclasses import dataclass
-from typing import Any, Callable, Literal, Optional, Tuple, Union, cast
+from typing import Any, Callable, Literal, Optional, Union, cast, overload
 
 import httpx
 import tenacity
@@ -120,6 +120,7 @@ class FutureApiClient:
         self.auto_refresh = auto_refresh
         if auto_refresh:
             self._thread = threading.Thread(
+                name='future-api-token-refresh',
                 target=FutureApiClient.__thread_refresh, args=(self,))
             self._thread.daemon = True
             self._thread.start()
@@ -229,7 +230,7 @@ class FutureApiClient:
     def upload_user_inputs_for_group(self,
                                      group_id: str,
                                      filename: Optional[str] = None,
-                                     df_file: Optional[Tuple[str, Any]] = None) -> Any:
+                                     df_file: Optional[tuple[str, Any]] = None) -> Any:
         """Uploads the user inputs of the given group.
 
         Parameters
@@ -242,7 +243,7 @@ class FutureApiClient:
             ID of the user inputs.
         """
         path = f'/groups/{group_id}/userinputs'
-        payload: dict[str, Union[Any,  Tuple[str, Any]]]
+        payload: dict[str, Union[Any,  tuple[str, Any]]]
         if filename is not None:
             payload = {'file': open(filename, 'rb')}
 
@@ -253,7 +254,10 @@ class FutureApiClient:
         retryer = tenacity.Retrying(**self.retry_config)
         initial_response = retryer(self._request_or_raise(request=lambda: httpx.post(
             headers={'Authorization': f'Bearer {self.token["access_token"]}'},
-            url=request_url, files=payload)))
+            url=request_url,
+            files=payload,
+            timeout=30
+        )))
 
         return initial_response.json()
 
@@ -285,10 +289,25 @@ class FutureApiClient:
         params = {'query': '{"version": {"$oid":"' + version_id + '"}}'}
         return self._get_in_batches(f'groups/{group_id}/ts/values', params=params)
 
+    @overload
     def _get_in_batches(self,
                         path: str,
+                        list_property_name: str,
                         params: Optional[dict[str, Any]] = None,
-                        timeout: Optional[int] = None) -> list[Any]:
+                        timeout: Optional[int] = None) -> dict[str, Any]: ...
+
+    @overload
+    def _get_in_batches(self,
+                        path: str,
+                        list_property_name: None = None,
+                        params: Optional[dict[str, Any]] = None,
+                        timeout: Optional[int] = None) -> list[Any]: ...
+
+    def _get_in_batches(self,
+                        path: str,
+                        list_property_name: Optional[str] = None,
+                        params: Optional[dict[str, Any]] = None,
+                        timeout: Optional[int] = None) -> Union[dict[str, Any], list[Any]]:
         """Submits a GET request to the _future_ API.
 
         Parameters
@@ -304,7 +323,9 @@ class FutureApiClient:
         -------
         The response from the request.
         """
-        final_result = []
+        final_list_result: list[dict[str, Any]] = []
+        object_result: dict[str, Any] = {}
+
         batch_count = 0
         limit = 100
         if params is None:
@@ -312,19 +333,40 @@ class FutureApiClient:
         while True:
             skip = batch_count * limit
             param_with_skip_and_limit = {**params, 'skip': skip, 'limit': limit}
-            response = self._api_get_request(path, params=param_with_skip_and_limit)
+            response = self._api_get_request(path,
+                                             params=param_with_skip_and_limit,
+                                             timeout=timeout)
 
             if batch_count > 0 and response.status_code == 404:
                 # Already got all results in the previous batch.
                 break
-            results = get_json(response)
-            final_result.extend(results)
-            if len(results) < limit:
+            result = get_json(response)
+
+            if list_property_name is None:
+                assert isinstance(result, list), 'expecting a list of results'
+                list_result = result
+            else:
+                assert isinstance(result, dict), 'expecting a dict with results'
+                assert isinstance(result[list_property_name],
+                                  list), f'expecting a list with results in property "{list_property_name}".'
+                list_result = result[list_property_name]
+
+                if batch_count == 0:
+                    # change list reference to the final list that might be extended in batches
+                    result[list_property_name] = final_list_result
+
+                    object_result.update(result)
+            final_list_result.extend(list_result)
+
+            if len(list_result) < limit:
                 # Got all results with the current batch.
                 break
             batch_count += 1
 
-        return final_result
+        if list_property_name is None:
+            return final_list_result
+        else:
+            return object_result
 
     def get_group_ts_versions(self, group_id: str, skip: int = 0, limit: int = 100) -> Any:
         """Get time series versions of the group.
@@ -376,7 +418,7 @@ class FutureApiClient:
 
         Returns
         -------
-            Amount of each run status.
+        Amount of each run status.
         """
         params = {'include_error_reason': include_error_reason}
         return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/status', params=params))
@@ -386,7 +428,7 @@ class FutureApiClient:
                        report_id: int,
                        include_k_best_models: int,
                        include_backtesting: bool,
-                       include_discarded_models: bool) -> Any:
+                       include_discarded_models: bool) -> dict[str, Any]:
         """Retrieves forecasts and actuals from the database.
 
         Parameters
@@ -408,7 +450,9 @@ class FutureApiClient:
         params = {'include_k_best_models': include_k_best_models,
                   'include_backtesting': include_backtesting,
                   'include_discarded_models': include_discarded_models}
-        return self._get_in_batches(f'groups/{group_id}/reports/{report_id}/results/fc', params=params)
+        return self._get_in_batches(f'groups/{group_id}/reports/{report_id}/results/fc',
+                                    params=params,
+                                    list_property_name='forecast_results')
 
     def get_associator_results(self,
                                group_id: str,
@@ -428,25 +472,6 @@ class FutureApiClient:
         """
 
         return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/results/associator'))
-
-    def get_hierarchical_fc_results(self,
-                                    group_id: str,
-                                    report_id: int) -> Any:
-        """Retrieves hierarchical forecast results from the database.
-
-        Parameters
-        ----------
-        group_id
-            The ID of the relevant group.
-        report_id
-            ID of the Report
-
-        Returns
-        -------
-        Associator resutls and actuals.
-        """
-
-        return get_json(self._api_get_request(f'groups/{group_id}/reports/{report_id}/results/hierarchical-fc'))
 
     def get_pool_cov_overview(self,
                               granularity: Optional[str] = None,
@@ -476,7 +501,7 @@ class FutureApiClient:
             raise ValueError('No data found with the specified parameters')
         return response_json
 
-    def get_matcher_results(self, group_id: str, report_id: int) -> Any:
+    def get_matcher_results(self, group_id: str, report_id: int) -> list[Any]:
         """Collects covariate matcher results from the database.
 
         Parameters
@@ -515,7 +540,8 @@ class FutureApiClient:
                        core_id: str,
                        payload: dict[str, Any],
                        interval_status_check_in_seconds: int,
-                       timeout_in_seconds: int = 3600) -> Any:
+                       timeout_in_seconds: int = 3600,
+                       check_intermediate_result: bool = False) -> Any:
         """Executes and monitors a futureCORE action.
 
         Parameters
@@ -531,6 +557,9 @@ class FutureApiClient:
         timeout_in_seconds
             Overall timeout waiting for the futureCORE action to have finished.
             The actual running time might be longer due to retrying httpx.
+        check_intermediate_result
+            If true, try to fetch the result from a job that still reports running state.
+            Use with care as this doubles the number of requests while waiting for the result.
 
         Returns
         -------
@@ -549,10 +578,11 @@ class FutureApiClient:
             action_status_path = urljoin(action_path, 'status')
 
             for _ in range(math.ceil(timeout_in_seconds/interval_status_check_in_seconds)):
-                # There are three ways out of this loop:
+                # There are four ways out of this loop:
                 # 1. result json property 'status' is not 'created', 'pending', 'running' or 'unknown'
                 # 2. raised RequestError (after retries)
                 # 3. Overall timeout exceeded
+                # 4. if check_intermediate_result is enabled and action result is already avaiable while in status 'running'
                 status_response = retryer(self._request_or_raise(
                     lambda: self._api_get_request(action_status_path, timeout=30)))
                 logger.debug(
@@ -561,6 +591,14 @@ class FutureApiClient:
                 if status_response_payload['status'] == 'finished':
                     # stop status requests
                     break
+                if check_intermediate_result and status_response_payload['status'] == 'running':
+                    # NOTE: No retries. In case of a transient error, the request succeeds in the next loop.
+
+                    # IDEA: The result is requested twice in this case.
+                    # This could be avoided if a HEAD request would be supported for the result endpoint.
+                    response = self._api_get_request(action_path, timeout=30)
+                    if response.status_code == 200:
+                        break
                 if status_response_payload['status'] not in ['created', 'pending', 'running']:
 
                     response = retryer(self._request_or_raise(
