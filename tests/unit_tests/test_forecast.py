@@ -1,6 +1,7 @@
 import logging
 
 import pandas as pd
+import pydantic
 import pytest
 
 from futureexpert import (MAX_TS_LEN_CONFIG,
@@ -67,8 +68,9 @@ def test_ReportConfig___given_empty_phase_out_fc_methods_and_active_phase_out_de
     preprocessing = PreprocessingConfig(phase_out_method='TRAILING_ZEROS')
     method_selection = MethodSelectionConfig(phase_out_fc_methods=[])
 
-    # Act
+    # Assert
     with pytest.raises(ValueError, match=expected_error_message):
+        # Act
         ReportConfig(title='Test', forecasting=ForecastingConfig(fc_horizon=5),
                      preprocessing=preprocessing, method_selection=method_selection)
 
@@ -78,8 +80,9 @@ def test_MethodSelectionConfig___with_equal_coverage_bt_strategy_and_shift_len_g
     shift_length = 2
     expected_error_message = 'Equal-Coverage-Backtesting-Strategy only allows a shift length of 1.'
 
-    # assert
+    # Assert
     with pytest.raises(ValueError, match=expected_error_message):
+        # Act
         MethodSelectionConfig(
             backtesting_strategy='equal_coverage',
             shift_len=shift_length
@@ -90,10 +93,26 @@ def test_MethodSelectionConfig___with_empty_dict_in_step_weights___results_in_er
     # Arrange
     expected_error_message = 'Empty dictionary for step_weights is not allowed.'
 
-    # assert
+    # Assert
     with pytest.raises(ValueError, match=expected_error_message):
+        # Act
         MethodSelectionConfig(
             step_weights={}
+        )
+
+
+def test_method_selection_config___with_empty_methods_list_for_hierarchy_level___raises_error() -> None:
+    # Arrange
+    forecasting_methods_per_hierarchy_level = {
+        0: ['Naive', 'AutoEsCov'],
+        1: []  # Empty list not allowed
+    }
+
+    # Assert
+    with pytest.raises(pydantic.ValidationError, match='List should have at least 1 item'):
+        # Act
+        MethodSelectionConfig(
+            forecasting_methods_per_hierarchy_level=forecasting_methods_per_hierarchy_level
         )
 
 

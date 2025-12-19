@@ -51,6 +51,31 @@ class ReportStatusResults(pydantic.BaseModel):
     error: int
 
 
+class ErrorReason(pydantic.BaseModel):
+    """Details about a specific error in a report.
+
+    Parameters
+    ----------
+    status
+        The status of the run ('Error' or 'NoEvaluation').
+    error_message
+        The error message describing what went wrong.
+    timeseries
+        List of time series names that encountered this error.
+    """
+    status: str
+    error_message: Optional[str]
+    timeseries: list[str]
+
+    @staticmethod
+    def parse_error_reasons(customer_specific: dict[str, Any]) -> list[ErrorReason]:
+        """Creates error reasons from raw customer_specific object."""
+        log_messages = customer_specific.get('log_messages', None)
+        assert log_messages is not None, 'missing log_messages property in customer_specific'
+        assert isinstance(log_messages, list), 'unexpected type of log_messages'
+        return [ErrorReason.model_validate(msg) for msg in log_messages]
+
+
 class ReportStatus(pydantic.BaseModel):
     """Status of a forecast or matcher report.
 
@@ -67,7 +92,8 @@ class ReportStatus(pydantic.BaseModel):
     results
         Success/error summary of the report.
     error_reasons
-        Details about the errors of the report.
+        Details about the errors of the report. Each error reason contains the status,
+        error message, and list of affected time series.
     prerequisites
         If the status was requested for a report that depends on other reports (ChainedReportIdentifier)
         all other report statuses are contained in the prerequisites in order to get an easy overview.
@@ -77,7 +103,7 @@ class ReportStatus(pydantic.BaseModel):
     result_type: str
     progress: ReportStatusProgress
     results: ReportStatusResults
-    error_reasons: Optional[Any] = None
+    error_reasons: Optional[list[ErrorReason]] = None
     prerequisites: list[ReportStatus] = pydantic.Field(default_factory=list)
 
     @property
@@ -85,19 +111,21 @@ class ReportStatus(pydantic.BaseModel):
         """Indicates whether a forecasting report is finished."""
         return self.progress.pending == 0
 
-    def print(self, print_prerequisites: bool = True) -> None:
+    def print(self, print_prerequisites: bool = True, print_error_reasons: bool = True) -> None:
         """Prints a summary of the status.
 
         Parameters
         ----------
         print_prerequisites
             Enable or disable printing of prerequisite reports.
+        print_error_reasons
+            Enable or disable printing of error reasons.
         """
         title = f'Status of report "{self.description}" of type "{self.result_type}":'
         run_description = 'time series' if self.result_type in ['forecast', 'matcher'] else 'runs'
         if print_prerequisites:
             for prerequisite in self.prerequisites:
-                prerequisite.print()
+                prerequisite.print(print_error_reasons=print_error_reasons)
 
         if self.progress.requested == 0:
             print(f'{title}\n  No {run_description} created')
@@ -109,6 +137,16 @@ class ReportStatus(pydantic.BaseModel):
         noeval_txt = f'{self.results.no_evaluation} {run_description} without evaluation'
         error_txt = f'{self.results.error} {run_description} ran into an error'
         print(f'{title}\n {pct_txt} \n {overall} \n {finished_txt} \n {noeval_txt} \n {error_txt}')
+
+        if print_error_reasons and self.error_reasons is not None and len(self.error_reasons) > 0:
+            print('\nError reasons:')
+            for error_reason in self.error_reasons:
+                ts_count = len(error_reason.timeseries)
+                ts_names = ', '.join(error_reason.timeseries[:3])  # Show first 3 time series
+                if ts_count > 3:
+                    ts_names += f' ... and {ts_count - 3} more'
+                print(f'  [{error_reason.status}] {error_reason.error_message if error_reason.error_message else ""}')
+                print(f'    Affected time series ({ts_count}): {ts_names}')
 
 
 class ReportIdentifier(pydantic.BaseModel):
@@ -206,8 +244,8 @@ class ExpertClient:
         self.is_analyst = 'analyst' in self.api_client.user_roles
         self.forecast_core_id = 'forecast-batch-internal' if self.is_analyst else 'forecast-batch'
         self.matcher_core_id = 'cov-selection-internal' if self.is_analyst else 'cov-selection'
-        self.associator_core_id = 'associator'
-        self.hcfc_core_id = 'hcfc'
+        self.associator_core_id = 'associator-internal' if self.is_analyst else 'associator'
+        self.hcfc_core_id = 'hcfc-internal' if self.is_analyst else 'hcfc'
 
     def __enter__(self) -> ExpertClient:
         return self
@@ -689,18 +727,21 @@ class ExpertClient:
             Configuration of the forecasting report.
         reconciliation_config
             Configuration to make forecasts consistent over hierarchical levels.
+            Reconciliation assumes time series are measured in comparable units.
 
         Returns
         -------
         The identifier of the forecasting report.
         """
+        if not self.is_analyst and (config.db_name is not None or config.priority is not None):
+            raise ValueError('Only users with the role analyst are allowed to use the parameters db_name and priority.')
+        if reconciliation_config is not None and reconciliation_config.enforce_forecast_minimum_constraint:
+            raise ValueError('Minimum constraints for forecasts are only available via start_making_forecast_consistent.')
         version_data = self.api_client.get_ts_version(self.group, version)
         config.max_ts_len = calculate_max_ts_len(max_ts_len=config.max_ts_len,
                                                  granularity=version_data['customer_specific']['granularity'])
 
         logger.info('Preparing data for forecast...')
-        if not self.is_analyst and (config.db_name is not None or config.priority is not None):
-            raise ValueError('Only users with the role analyst are allowed to use the parameters db_name and priority.')
         payload = self._create_forecast_payload(version, config)
         logger.info('Finished data preparation for forecast.')
 
@@ -825,12 +866,19 @@ class ExpertClient:
         customer_specific = raw_result.get('customer_specific', None)
         assert (customer_specific is None
                 or isinstance(customer_specific, dict)), 'unexpected type of customer_specific property'
+
+        if include_error_reason:
+            assert customer_specific is not None, 'missing customer_specific property in report status'
+            error_reasons = ErrorReason.parse_error_reasons(customer_specific)
+        else:
+            error_reasons = None
+
         return ReportStatus(id=report_identifier,
                             description=raw_result['description'],
                             result_type=raw_result['result_type'],
                             progress=summary,
                             results=results,
-                            error_reasons=None if customer_specific is None else customer_specific.get('log_messages', None))
+                            error_reasons=error_reasons)
 
     def get_report_status(self, id: Union[ReportIdentifier, int], include_error_reason: bool = True) -> ReportStatus:
         """Gets the current status of a report.
@@ -935,7 +983,7 @@ class ExpertClient:
         report_id = id.report_id if isinstance(id, ReportIdentifier) else id
 
         result: dict[str, Any] = self.api_client.get_associator_results(group_id=self.group,
-                                                        report_id=report_id)
+                                                                        report_id=report_id)
 
         actuals_version = result.pop('actuals')
         result['input'] = self.api_client.get_ts_data(self.group, actuals_version)

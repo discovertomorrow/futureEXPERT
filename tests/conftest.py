@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import Any
 
 import pytest
+from notebook_execution.utility import extract_report_ids_from_notebook
 
 from futureexpert import ExpertClient
 from futureexpert.forecast import (ComparisonDetails,
@@ -119,44 +119,64 @@ def sample_fc_result_3() -> ForecastResult:
     )
 
 
-DEMAND_PLANNING_REPORT_NAMES = [
-    'Monthly Demand Forecast on Material Level NOW+EXPERT',
-    'Monthly Demand Forecast on Material Level'
+DEMAND_PLANNING_NOTEBOOK_PATHS = [
+    './use_cases/demand_planning/demand_planning.ipynb',
+    './use_cases/demand_planning/demand_planning_NOW+EXPERT.ipynb',
 ]
 
 
+@pytest.fixture(params=DEMAND_PLANNING_NOTEBOOK_PATHS, scope='session')
+def demand_planning_results(request: pytest.FixtureRequest) -> ForecastResults:
+    [report_id] = extract_report_ids_from_notebook(path=request.param)
+    client = ExpertClient()
+    return client.get_fc_results(
+        id=report_id,
+        include_k_best_models=20,
+        include_discarded_models=True
+    )
+
+
 @pytest.fixture(scope='session')
-def _all_demand_planning_results_cache():
-    """Fetch results for all demand planning reports once and cache them."""
+def demand_planning_reference_result() -> ForecastResults:
+    reference_report_id = 150698
+    reference_report_group = 'gitlab-ci-futureexpert'
+    reference_report_environment = 'development'
 
-    client = ExpertClient()
-    report_names = DEMAND_PLANNING_REPORT_NAMES
-    all_reports = client.get_reports(limit=100)
-    results_dict = {}
-    for report_name in report_names:
-        demand_planning_report = all_reports[all_reports['description'] == report_name].iloc[0]
-        results = client.get_fc_results(
-            id=demand_planning_report['report_id'],
-            include_k_best_models=3
+    with ExpertClient(group=reference_report_group,
+                      environment=reference_report_environment) as client:
+        return client.get_fc_results(
+            id=reference_report_id,
+            include_k_best_models=20,
+            include_discarded_models=True
         )
-        results_dict[report_name] = results
-    return results_dict
 
 
-@pytest.fixture(params=DEMAND_PLANNING_REPORT_NAMES)
-def demand_planning_results(request, _all_demand_planning_results_cache) -> ForecastResults:
-    """Provide results for a single demand planning report, parametrized over all reports."""
-    report_name = request.param
-    return _all_demand_planning_results_cache[report_name]
-
-
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def sales_forecasting_result() -> ForecastResults:
+    notebook_path = './use_cases/sales_forecasting/sales_forecasting.ipynb'
+    report_ids = extract_report_ids_from_notebook(path=notebook_path)
     client = ExpertClient()
-    all_reports = client.get_reports(limit=100)
-    sales_forecasting_report = all_reports[all_reports['description'] ==
-                                           'Monthly Sales Forecast on Country Level'].iloc[0]
-    return client.get_fc_results(id=sales_forecasting_report['report_id'], include_k_best_models=3)
+    [report_id] = [report_id for report_id in report_ids if client.get_report_type(report_id) == 'forecast']
+    return client.get_fc_results(
+        id=report_id,
+        include_k_best_models=3,
+        include_discarded_models=True
+    )
+
+
+@pytest.fixture(scope='session')
+def sales_forecasting_reference_result() -> ForecastResults:
+    reference_report_id = 150707
+    reference_report_group = 'gitlab-ci-futureexpert'
+    reference_report_environment = 'development'
+
+    with ExpertClient(group=reference_report_group,
+                      environment=reference_report_environment) as client:
+        return client.get_fc_results(
+            id=reference_report_id,
+            include_k_best_models=3,
+            include_discarded_models=True
+        )
 
 
 @pytest.fixture(scope='module')

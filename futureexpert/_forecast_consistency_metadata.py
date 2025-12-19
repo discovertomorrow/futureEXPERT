@@ -15,10 +15,33 @@ logger = logging.getLogger(__name__)
 
 class ReconciliationMethod(str, Enum):
     """Reconciliation methods for hierarchical forecasting."""
-    BOTTOM_UP = "bottom_up"
-    TOP_DOWN_PROPORTION_AVERAGES = "top_down_proportion_averages"
-    TOP_DOWN_FORECAST_PROPORTION = "top_down_forecast_proportion"
-    MIN_TRACE_WLS_STRUCT = "min_trace_wls_struct"
+
+    BOTTOM_UP = 'bottom_up'
+    """Sums forecasts from the base level of the hierarchy up to the top.
+
+    Uses `hierarchicalforecast.methods.BottomUp`.
+    """
+
+    TOP_DOWN_PROPORTION_AVERAGES = 'top_down_proportion_averages'
+    """Disaggregates the top-level forecast based on historical average proportions.
+
+    Uses `hierarchicalforecast.methods.TopDown(method='proportion_averages')`.
+    """
+
+    TOP_DOWN_FORECAST_PROPORTION = 'top_down_forecast_proportion'
+    """Disaggregates the top-level forecast based on the proportions of the base forecasts for each forecast step.
+
+    Uses `hierarchicalforecast.methods.TopDown(method='forecast_proportions')`.
+    """
+
+    TOP_DOWN_AVERAGE_FORECAST_PROPORTION = 'top_down_average_forecast_proportion'
+    """Disaggregates the top-level forecast based on the average proportions of the base forecasts over the horizon."""
+
+    MIN_TRACE_WLS_STRUCT = 'min_trace_wls_struct'
+    """Weights are based on the number of aggregated base series (Structural).
+
+    Uses `hierarchicalforecast.methods.MinTrace(method='wls_struct')`.
+    """
 
 
 class HierarchyMetadata(BaseModel):

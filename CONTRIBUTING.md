@@ -1,4 +1,4 @@
-# Contributing to futureEXPERT client librarz
+# Contributing to futureEXPERT client library
 
 ## Documentation requirements
 

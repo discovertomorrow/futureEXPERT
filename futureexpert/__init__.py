@@ -6,7 +6,7 @@ from futureexpert.associator import (AssociatorConfig,
                                      DataSelection,
                                      TrendDetectionConfiguration)
 from futureexpert.checkin import DataDefinition, FileSpecification, FilterSettings, TsCreationConfig
-from futureexpert.expert_client import ExpertClient
+from futureexpert.expert_client import ErrorReason, ExpertClient
 from futureexpert.forecast import ForecastingConfig, MethodSelectionConfig, PreprocessingConfig, ReportConfig
 from futureexpert.forecast_consistency import (MakeForecastConsistentConfiguration,
                                                MakeForecastConsistentDataSelection,
@@ -17,6 +17,7 @@ from futureexpert.shared_models import MAX_TS_LEN_CONFIG, CovariateRef
 
 __all__ = [
     'DataDefinition',
+    'ErrorReason',
     'ExpertClient',
     'FileSpecification',
     'FilterSettings',

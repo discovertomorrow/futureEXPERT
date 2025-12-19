@@ -172,6 +172,8 @@ class WorkingDayAdaptionsConfig(BaseConfig):
         If true, saturdays are treated as working days if they are not a holiday.
     consider_bridging_days
         If True, a working day between two non-working days will be counted as a non-working day.
+    use_off_days
+        If True, the time series adaption targets off days (non-working days) instead of working days.
     """
     calendar_iso_code: Literal['AT', 'BY', 'BE', 'BG', 'KY', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'GE', 'GR', 'GG',
                                'HU', 'IS', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'MC', 'NL', 'NO', 'PL', 'PT', 'RO', 'RU',
@@ -197,6 +199,7 @@ class WorkingDayAdaptionsConfig(BaseConfig):
                                'AU-TAS', 'AU-VIC', 'AU-WA', 'MH', 'NZ']
     is_saturday_working_day: bool = True
     consider_bridging_days: bool = False
+    use_off_days: bool = False
 
 
 ForecastingMethods = Literal['AdaBoost', 'Aft4Sporadic', 'AutoArima', 'AutoEsCov', 'CART',
@@ -260,6 +263,12 @@ class MethodSelectionConfig(BaseConfig):
         If not specified, all available forecasting methods will be used by default.
         Given methods are automatically preselected based on time series characteristics of your data.
         If none of the given methods fits your data, a fallback set of forecasting methods will be used instead.
+    forecasting_methods_per_hierarchy_level
+        Mapping from hierarchy level to list of forecasting methods.
+        Keys represent the hierarchy depth, where 0 denotes the global level.
+        If specified, allows different methods to be used at different hierarchy levels.
+        For hierarchy levels not explicitly configured here, forecasting_methods is used per default.
+        This setting does not influence the fallback pipeline.
     phase_out_fc_methods
         List of methods that will be used to forecast phase-out time series.
         Phase-out detection must be enabled in preprocessing configuration to take effect.
@@ -277,6 +286,8 @@ class MethodSelectionConfig(BaseConfig):
     additional_cov_method: Optional[AdditionalCovMethod] = None
     cov_combination: Literal['single', 'joint'] = 'single'
     forecasting_methods: Sequence[ForecastingMethods] = pydantic.Field(default_factory=list)
+    forecasting_methods_per_hierarchy_level: dict[int, Annotated[list[str],
+                                                                 pydantic.Field(min_length=1)]] = Field(default_factory=dict)
     phase_out_fc_methods: Sequence[ForecastingMethods] = pydantic.Field(default_factory=lambda: ['ZeroForecast'])
 
     backtesting_strategy: Literal['standard', 'equal_coverage'] = 'standard'
@@ -555,7 +566,7 @@ class Model(BaseModel):
     forecasts: Sequence[ForecastValue]
     model_selection: ComparisonDetails
     test_period: Optional[ComparisonDetails]
-    covariates: Sequence[Union[CovariateRef]] = Field(default_factory=list)
+    covariates: Sequence[CovariateRef] = Field(default_factory=list)
     method_specific_details: Any = None
 
     model_config = ConfigDict(
@@ -831,6 +842,35 @@ class ForecastResult(BaseModel):
                                if self.ts_characteristics.outliers else np.nan)
         })
         return overview_for_ts
+
+    def get_model(self, name: str, covariates: Sequence[CovariateRef], include_discarded_models: bool = False) -> Model:
+        """Gets the model by name.
+
+        Parameters
+        ----------
+        name
+            The name of the model to get.
+        covariates
+            The covariates used by the model to get.
+        include_discarded_models
+            If true, also search in discarded models.
+
+        Returns
+        -------
+        The model if found in models or discarded models.
+        """
+        def find_model(models: Sequence[Model]) -> Optional[Model]:
+            return next((model for model in models
+                         if model.model_name == name
+                         and model.covariates == covariates), None)
+
+        if successful_model := find_model(models=self.models):
+            return successful_model
+
+        if include_discarded_models and (discarded_model := find_model(models=self.discarded_models)):
+            return discarded_model
+
+        raise ValueError(f'model {name} not found.')
 
     @property
     def best_model(self) -> Model | None:
