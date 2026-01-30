@@ -269,28 +269,3 @@ def test_expert_client___given_forecast_minimums___enforces_minimums() -> None:
 
     assert reconciled_model.model_name == 'FoundationModel - top down average forecast proportion', \
         f"Expected reconciled model, got: {reconciled_model.model_name}"
-
-
-def test_start_forecast___given_enforce_minimum_constraint___raises_value_error() -> None:
-    # Arrange
-    client = ExpertClient()
-    expected_error_message = 'Minimum constraints for forecasts are only available via start_making_forecast_consistent.'
-
-    reconciliation_config = ReconciliationConfig(
-        method=ReconciliationMethod.BOTTOM_UP,
-        enforce_forecast_minimum_constraint=True,
-        round_forecast_to_package_size=True
-    )
-
-    report_config = ReportConfig(
-        title='Test Forecast',
-        forecasting=ForecastingConfig(fc_horizon=1)
-    )
-
-    # Act & Assert
-    with pytest.raises(ValueError, match=expected_error_message):
-        client.start_forecast(
-            version='test_version',
-            config=report_config,
-            reconciliation_config=reconciliation_config
-        )

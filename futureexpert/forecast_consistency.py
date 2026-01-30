@@ -84,7 +84,6 @@ class ReconciliationConfig(BaseConfig):
         Cannot be combined with round_forecast_to_integer.
     enforce_forecast_minimum_constraint
         If True, enforce forecast minimums from open orders or contractual obligations.
-        Only available via client.start_making_forecast_consistent().
         Only available if round_forecast_to_package_size is active.
     """
     method: ReconciliationMethod = ReconciliationMethod.BOTTOM_UP

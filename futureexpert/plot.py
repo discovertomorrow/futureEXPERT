@@ -694,7 +694,7 @@ def _create_static_forecast_plot(title: str,
                         color=prog_color.loc[1, 'greyblue'], alpha=0.30,
                         label=plot_labels['few_observations'] if idx == 0 else None)
 
-    if plot_prediction_intervals and not any(v is None for v in df_concat.lower):
+    if plot_prediction_intervals and df_concat.lower.notna().all():
         ax.fill_between(df_concat.date, df_concat.lower, df_concat.upper,
                         color=prog_color.loc[2, 'cyan'], alpha=0.30, label=plot_labels['pi'])
 
@@ -1198,7 +1198,7 @@ def _create_static_backtesting_plot(title: str,
                         color=prog_color.loc[1, 'greyblue'], alpha=0.30,
                         label=plot_labels['few_observations'] if idx == 0 else None)
 
-    if plot_prediction_intervals and None not in df_bt.lower and None not in df_bt.upper:
+    if plot_prediction_intervals and df_bt.lower.notna().all() :
         ax.fill_between(df_bt.date, df_bt.lower, df_bt.upper,
                         color=prog_color.loc[2, "cyan"], alpha=0.30, label=plot_labels['pi'])
 

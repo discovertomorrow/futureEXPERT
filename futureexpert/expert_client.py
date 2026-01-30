@@ -424,6 +424,8 @@ class ExpertClient:
                            description: Optional[str] = None) -> CheckInPoolResult:
         """Create a new version from a list of pool covariates and version ids.
 
+        Only available in `Standard`, `Premium` and `Enterprise` subscription packages.
+
         Parameters
         ----------
         requested_pool_covs
@@ -735,8 +737,6 @@ class ExpertClient:
         """
         if not self.is_analyst and (config.db_name is not None or config.priority is not None):
             raise ValueError('Only users with the role analyst are allowed to use the parameters db_name and priority.')
-        if reconciliation_config is not None and reconciliation_config.enforce_forecast_minimum_constraint:
-            raise ValueError('Minimum constraints for forecasts are only available via start_making_forecast_consistent.')
         version_data = self.api_client.get_ts_version(self.group, version)
         config.max_ts_len = calculate_max_ts_len(max_ts_len=config.max_ts_len,
                                                  granularity=version_data['customer_specific']['granularity'])
@@ -758,8 +758,9 @@ class ExpertClient:
             return forecast_identifier
 
         # Continue with forecast reconciliation
-        data_selection = MakeForecastConsistentDataSelection(
-            version=version, fc_report_id=forecast_identifier.report_id)
+        data_selection = MakeForecastConsistentDataSelection(version=version,
+                                                             fc_report_id=forecast_identifier.report_id,
+                                                             forecast_minimum_version=config.forecasting.forecast_minimum_version)
         forecast_consistency_config = MakeForecastConsistentConfiguration(db_name=config.db_name,
                                                                           reconciliation=reconciliation_config,
                                                                           data_selection=data_selection,

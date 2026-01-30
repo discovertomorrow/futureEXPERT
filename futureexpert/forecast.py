@@ -12,8 +12,7 @@ from typing import Annotated, Any, Literal, Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
-import pydantic
-from pydantic import BaseModel, ConfigDict, Field, NonNegativeFloat
+from pydantic import BaseModel, ConfigDict, Field, NonNegativeFloat, PositiveFloat, model_validator
 from typing_extensions import NotRequired, Self, TypedDict
 
 from futureexpert._forecast_consistency_metadata import ConsistentForecastMetadata
@@ -84,21 +83,21 @@ class PreprocessingConfig(BaseConfig):
     recent_trend_num_observations: Optional[ValidatedPositiveInt] = PositiveInt(6)
     recent_trend_num_seasons: Optional[ValidatedPositiveInt] = PositiveInt(2)
 
-    @pydantic.model_validator(mode='after')
+    @model_validator(mode='after')
     def _has_no_fixed_seasonalities_if_uses_season_detection(self) -> Self:
         if self.use_season_detection and self.fixed_seasonalities:
             raise ValueError('If fixed seasonalities is enabled, then season detection must be off.')
 
         return self
 
-    @pydantic.model_validator(mode='after')
+    @model_validator(mode='after')
     def _has_detect_changepoints_if_phase_out_method_is_auto_few_obs(self) -> Self:
         if not self.detect_changepoints and self.phase_out_method == 'AUTO_FEW_OBS':
             raise ValueError('If phase_out_method is set to AUTO_FEW_OBS, then detect_changepoints must be on.')
 
         return self
 
-    @pydantic.model_validator(mode='after')
+    @model_validator(mode='after')
     def _has_no_recent_trend_num_observation_nor_num_seasons(self) -> Self:
         if not self.recent_trend_num_observations and not self.recent_trend_num_seasons:
             raise ValueError(
@@ -135,9 +134,13 @@ class ForecastingConfig(BaseConfig):
     working_day_adaptions
         If present, enables optional working day adaptions of the time series and forecasts.
         This is currently not compatible with use_ensemble=True.
+    forecast_minimum_version
+        Optional version ID of time series containing minimum forecast values.
+        Forecast minimums must match time series via grouping columns, granularity.
+        Dates must be within the forecasting horizon.
     """
 
-    fc_horizon: Annotated[ValidatedPositiveInt, pydantic.Field(ge=1, le=60)]
+    fc_horizon: Annotated[ValidatedPositiveInt, Field(ge=1, le=60)]
     round_forecast_to_integer: bool = False
     use_ensemble: bool = False
     lower_bound: Union[float, None] = None
@@ -145,6 +148,7 @@ class ForecastingConfig(BaseConfig):
     confidence_level: float = 0.75
     skip_empirical_prediction_intervals: bool = False
     working_day_adaptions: Optional[WorkingDayAdaptionsConfig] = None
+    forecast_minimum_version: Optional[str] = None
 
     @property
     def numeric_bounds(self) -> tuple[float, float]:
@@ -153,7 +157,7 @@ class ForecastingConfig(BaseConfig):
             self.upper_bound if self.upper_bound is not None else np.inf,
         )
 
-    @pydantic.model_validator(mode='after')
+    @model_validator(mode='after')
     def ensemble_incompatible_with_working_days(self) -> Self:
         """Validator for combination of ensemble model and working day adaptions."""
         if self.use_ensemble and self.working_day_adaptions is not None:
@@ -254,9 +258,13 @@ class MethodSelectionConfig(BaseConfig):
         Define up to one additional method that uses the defined covariates for creating forecasts. Will not be
         calculated if deemed unfit by the preselection. If the parameter forecasting_methods
         is defined, the additional cov method must appear in that list, too.
+
+        Only available in `Standard`, `Premium` and `Enterprise` subscription packages.
     cov_combination
         Create a forecast model for each individual covariate (single)
         or a model using all covariates together (joint).
+
+        `single` is only available in `Standard`, `Premium` and `Enterprise` subscription packages.
     forecasting_methods
         Define specific forecasting methods to be tested for generating forecasts.
         Specifying fewer methods can significantly reduce the runtime of forecast creation.
@@ -274,32 +282,32 @@ class MethodSelectionConfig(BaseConfig):
         Phase-out detection must be enabled in preprocessing configuration to take effect.
     """
 
-    number_iterations: Annotated[ValidatedPositiveInt, pydantic.Field(ge=1, le=24)] = PositiveInt(12)
+    number_iterations: Annotated[ValidatedPositiveInt, Field(ge=1, le=24)] = PositiveInt(12)
     shift_len: ValidatedPositiveInt = PositiveInt(1)
     refit: bool = False
     default_error_metric: Literal['me', 'mpe', 'mse', 'mae', 'mase', 'mape', 'smape'] = 'mse'
     sporadic_error_metric: Literal['pis', 'sapis', 'acr', 'mar', 'msr'] = 'pis'
     additional_accuracy_measures: list[Literal['me', 'mpe', 'mse', 'mae', 'mase', 'mape', 'smape', 'pis', 'sapis',
-                                               'acr', 'mar', 'msr']] = pydantic.Field(default_factory=list)
-    step_weights: Optional[dict[ValidatedPositiveInt, pydantic.PositiveFloat]] = None
+                                               'acr', 'mar', 'msr']] = Field(default_factory=list)
+    step_weights: Optional[dict[ValidatedPositiveInt, PositiveFloat]] = None
 
     additional_cov_method: Optional[AdditionalCovMethod] = None
     cov_combination: Literal['single', 'joint'] = 'single'
-    forecasting_methods: Sequence[ForecastingMethods] = pydantic.Field(default_factory=list)
+    forecasting_methods: Sequence[ForecastingMethods] = Field(default_factory=list)
     forecasting_methods_per_hierarchy_level: dict[int, Annotated[list[str],
-                                                                 pydantic.Field(min_length=1)]] = Field(default_factory=dict)
-    phase_out_fc_methods: Sequence[ForecastingMethods] = pydantic.Field(default_factory=lambda: ['ZeroForecast'])
+                                                                 Field(min_length=1)]] = Field(default_factory=dict)
+    phase_out_fc_methods: Sequence[ForecastingMethods] = Field(default_factory=lambda: ['ZeroForecast'])
 
     backtesting_strategy: Literal['standard', 'equal_coverage'] = 'standard'
     equal_coverage_size: Optional[ValidatedPositiveInt] = None
 
-    @pydantic.model_validator(mode="after")
+    @model_validator(mode="after")
     def shift_length_valid_when_equal_coverage_active(self) -> Self:
         if (self.shift_len != 1 and self.backtesting_strategy == 'equal_coverage'):
             raise ValueError('Equal-Coverage-Backtesting-Strategy only allows a shift length of 1.')
         return self
 
-    @pydantic.model_validator(mode="after")
+    @model_validator(mode="after")
     def step_weights_not_empty(self) -> Self:
         if self.step_weights is not None and len(self.step_weights) == 0:
             raise ValueError('Empty dictionary for step_weights is not allowed.')
@@ -341,7 +349,7 @@ class ReportConfig(BaseConfig):
     method_selection
         Method selection configuration. If not supplied, then a granularity dependent default is used.
     pool_covs
-        List of covariate definitions.
+        List of covariate definitions. Only available in `Standard`, `Premium` and `Enterprise` subscription packages.
     rerun_report_id
         ReportId from which failed runs should be recomputed.
         Ensure to use the same ts_version. Otherwise all time series get computed again.
@@ -366,9 +374,9 @@ class ReportConfig(BaseConfig):
     rerun_report_id: Optional[int] = None
     rerun_status: list[RerunStatus] = ['Error']
     db_name:  Optional[str] = None
-    priority: Annotated[Optional[int], pydantic.Field(ge=0, le=10)] = None
+    priority: Annotated[Optional[int], Field(ge=0, le=10)] = None
 
-    @pydantic.model_validator(mode="after")
+    @model_validator(mode="after")
     def _correctness_of_cov_configurations(self) -> Self:
         if (self.matcher_report_id or self.covs_configuration) and (
                 len(self.covs_versions) == 0 and self.pool_covs is None):
@@ -384,7 +392,7 @@ class ReportConfig(BaseConfig):
                              'Please remove the parameter or set to None.')
         return self
 
-    @pydantic.model_validator(mode="after")
+    @model_validator(mode="after")
     def _only_one_covariate_definition(self) -> Self:
         fields = [
             'matcher_report_id',
@@ -398,7 +406,7 @@ class ReportConfig(BaseConfig):
 
         return self
 
-    @pydantic.model_validator(mode="after")
+    @model_validator(mode="after")
     def _backtesting_step_weights_refer_to_valid_forecast_steps(self) -> Self:
         if (self.method_selection
             and self.method_selection.step_weights
@@ -407,14 +415,14 @@ class ReportConfig(BaseConfig):
 
         return self
 
-    @pydantic.model_validator(mode="after")
+    @model_validator(mode="after")
     def _valid_covs_version(self) -> Self:
         for covs_version in self.covs_versions:
             if re.match('^[0-9a-f]{24}$', covs_version) is None:
                 raise ValueError(f'Given covs_version "{covs_version}" is not a valid ObjectId.')
         return self
 
-    @pydantic.model_validator(mode='after')
+    @model_validator(mode='after')
     def _has_valid_phase_out_detection_method_if_phase_out_fc_method_was_changed(self) -> Self:
         if ((self.method_selection and self.method_selection.phase_out_fc_methods != ['ZeroForecast']) and
                 self.preprocessing.phase_out_method == 'OFF'):
@@ -425,7 +433,7 @@ class ReportConfig(BaseConfig):
                            ' so changes in phase_out_fc_methods in MethodSelectionConfig take effect.')
         return self
 
-    @pydantic.model_validator(mode='after')
+    @model_validator(mode='after')
     def _has_non_empty_phase_out_fc_method_if_phase_out_detection_is_on(self) -> Self:
         if (self.method_selection and
                 not self.method_selection.phase_out_fc_methods and
@@ -491,6 +499,26 @@ class ForecastValue(BaseModel):
     upper_limit_value: Optional[Annotated[float, Field(allow_inf_nan=False)]]
 
 
+class ChangedForecastValue(ForecastValue):
+    """Details about a changed forecast value.
+
+    Parameters
+    ----------
+    original_point_forecast_value
+        The original forecast value.
+    original_lower_limit_value
+        Original lower limit of the prediction interval.
+    original_upper_limit_value
+        Original upper limit of the prediction interval.
+    change_reason
+        The reason of changed value.
+    """
+    original_point_forecast_value: Optional[Annotated[float, Field(allow_inf_nan=False)]]
+    original_lower_limit_value: Optional[Annotated[float, Field(allow_inf_nan=False)]]
+    original_upper_limit_value: Optional[Annotated[float, Field(allow_inf_nan=False)]]
+    change_reason: str
+
+
 class BacktestingValue(ForecastValue):
     """Point forecast value with corridor of a forecast step in backtesting."""
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -550,7 +578,7 @@ class Model(BaseModel):
     forecast_plausibility
         Plausibility status of the forecast.
     forecasts
-        Forecast values from the model.
+        Forecast values from the model including adaptions based on bounds or forecast minimums.
     model_selection
         Details about the model selection.
     test_period
@@ -559,15 +587,21 @@ class Model(BaseModel):
         Information about the covariate if one was used.
     method_specific_details
         Some additional method specific information.
+    raw_model_forecasts
+        The original forecasts from the model without any changed values.
+    changed_forecast_values
+        The forecast values that have been changed.
     """
     model_name: Annotated[str, Field(min_length=1)]
     status: ModelStatus
     forecast_plausibility: Plausibility
     forecasts: Sequence[ForecastValue]
+    raw_model_forecasts: Sequence[ForecastValue]
     model_selection: ComparisonDetails
     test_period: Optional[ComparisonDetails]
     covariates: Sequence[CovariateRef] = Field(default_factory=list)
     method_specific_details: Any = None
+    changed_forecast_values: Sequence[ChangedForecastValue] = Field(default_factory=list)
 
     model_config = ConfigDict(
         protected_namespaces=()  # ignore warnings about field names starting with 'model_'

@@ -14,9 +14,10 @@ class DataSelection(BaseConfig):
     Parameters
     ----------
     version
-        Time series version to be used. If None, then the latest version is used.
+        Time series version to be used. If None, then the latest version is used that matches the given filter.
     filter
-        Filter to select a subset of time series based on their metadata.
+        Filter to select a time series version based on their metadata. e.g. description.
+        Only applies if version is not specified.
     """
 
     version: Optional[str] = None

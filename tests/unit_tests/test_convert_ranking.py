@@ -36,11 +36,13 @@ def test_combine_forecast_ranking_with_matcher_ranking___given_valid_inputs___ru
                                            point_forecast_value=1,
                                            lower_limit_value=None,
                                            upper_limit_value=None, fc_step=1)]
+        forecasts = [fc.ForecastValue(time_stamp_utc=datetime.datetime.strptime('2020-01-01', '%Y-%m-%d'),
+                                      point_forecast_value=1, lower_limit_value=None, upper_limit_value=None)]
         model = fc.Model(model_name=model_name,
                          status='Successful',
                          forecast_plausibility='Plausible',
-                         forecasts=[fc.ForecastValue(time_stamp_utc=datetime.datetime.strptime(
-                             '2020-01-01', '%Y-%m-%d'), point_forecast_value=1, lower_limit_value=None, upper_limit_value=None)],
+                         forecasts=forecasts,
+                         raw_model_forecasts=forecasts,
                          model_selection=fc.ComparisonDetails(backtesting=backtesting,
                                                               accuracy=[fc.AccuracyMeasurement(
                                                                   measure_name='test',

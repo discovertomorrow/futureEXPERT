@@ -122,7 +122,7 @@ class MatcherConfig(BaseConfig):
     fixed_season_length
         An optional parameter specifying the length of a season in the dataset.
     pool_covs
-        List of covariate definitions.
+        List of covariate definitions. Only available in `Standard`, `Premium` and `Enterprise` subscription packages.
     db_name
         Only accessible for internal use. Name of the database to use for storing the results.
     rerun_report_id

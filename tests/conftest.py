@@ -46,22 +46,24 @@ def create_forecast_result(actuals_name: str,
         quantization=quantization
     )
 
+    forecast_values = [ForecastValue(lower_limit_value=0,
+                                     upper_limit_value=0,
+                                     point_forecast_value=0,
+                                     time_stamp_utc=datetime(2020, 2, 1)),
+                       ForecastValue(lower_limit_value=0,
+                                     upper_limit_value=0,
+                                     point_forecast_value=0,
+                                     time_stamp_utc=datetime(2020, 3, 1)),
+                       ForecastValue(lower_limit_value=0,
+                                     upper_limit_value=0,
+                                     point_forecast_value=0,
+                                     time_stamp_utc=datetime(2020, 4, 1))]
     models = [Model(
         model_name=model_name,
         status=ModelStatus.Successful,
         forecast_plausibility=Plausibility('Plausible'),
-        forecasts=[ForecastValue(lower_limit_value=0,
-                                 upper_limit_value=0,
-                                 point_forecast_value=0,
-                                 time_stamp_utc=datetime(2020, 2, 1)),
-                   ForecastValue(lower_limit_value=0,
-                                 upper_limit_value=0,
-                                 point_forecast_value=0,
-                                 time_stamp_utc=datetime(2020, 3, 1)),
-                   ForecastValue(lower_limit_value=0,
-                                 upper_limit_value=0,
-                                 point_forecast_value=0,
-                                 time_stamp_utc=datetime(2020, 4, 1))],
+        forecasts=forecast_values,
+        raw_model_forecasts=forecast_values,
         model_selection=ComparisonDetails(
             backtesting=[],
             plausibility=None,
@@ -166,7 +168,7 @@ def sales_forecasting_result() -> ForecastResults:
 
 @pytest.fixture(scope='session')
 def sales_forecasting_reference_result() -> ForecastResults:
-    reference_report_id = 150707
+    reference_report_id = 170547
     reference_report_group = 'gitlab-ci-futureexpert'
     reference_report_environment = 'development'
 

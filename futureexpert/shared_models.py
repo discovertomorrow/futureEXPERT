@@ -18,7 +18,7 @@ ValidatedPositiveInt = Annotated[PositiveInt,
                                  BeforeValidator(lambda x: PositiveInt(int(x))),
                                  # raises an error without the lambda wrapper
                                  PlainSerializer(lambda x: int(x), return_type=int),
-                                 WithJsonSchema({'type': 'int', 'minimum': 1})]
+                                 WithJsonSchema({'type': 'integer', 'minimum': 1})]
 
 MAX_TS_LEN_CONFIG = {
     'halfhourly': 302,

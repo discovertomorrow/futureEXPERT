@@ -50,6 +50,7 @@ Utilize our use case templates to get started with your own business application
 - [checkin configuration options](./notebooks/checkin_configuration_options.ipynb) - Different options to prepare your data to time series.
 
 - [Advanced workflow FORECAST](./notebooks/advanced_workflow.ipynb) - For more control about the single steps for generating a forecast.
+- [Using open orders for FORECAST](./notebooks/forecast_with_open_orders.ipynb) - Create forecasts with minimum constraints per forecast step.
 - [Using covariates for FORECAST](./notebooks/forecast_with_covariates.ipynb) - Create forecasts with covariates by using your own data of influencing factors.
 - [Using covariates - MATCHER and FORECAST](./notebooks/cov_matcher_and_forecast.ipynb?ref_type=heads) - Using covariates: Leverage MATCHER to identify predictive covariates, get ranking of all covariates with the best time lag & incorporate the result into your FORECAST.
 - [Using covariates from POOL](./notebooks/using_covariates_from_POOL.ipynb) - How to use potential influencing factors from POOL.
