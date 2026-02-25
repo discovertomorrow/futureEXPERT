@@ -1,26 +1,25 @@
 from __future__ import annotations
 
+from functools import cached_property
 from typing import Any, Optional
 from uuid import UUID
 
 import pandas as pd
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 from typing_extensions import Self
 
 
-class PoolCovOverview():
+class PoolCovOverview(BaseModel):
     """Contains all functionality to inspect, view and process the POOL covariates."""
 
-    def __init__(self, overview_json: dict[Any, Any]) -> None:
-        """Initializer.
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
-        Parameters
-        ----------
-        overview_json
-            Covariate raw data.
-        """
-        self.detailed_pool_cov_information = pd.DataFrame(overview_json).rename(
-            columns={"distance": "granularity", 'indicator_id': 'pool_cov_id'})
+    overview_json: list[dict[str, Any]]
+
+    @cached_property
+    def detailed_pool_cov_information(self) -> pd.DataFrame:
+        return pd.DataFrame(self.overview_json).rename(
+            columns={'distance': 'granularity', 'indicator_id': 'pool_cov_id'})
 
     @property
     def pool_cov_information(self) -> pd.DataFrame:
@@ -44,7 +43,7 @@ class PoolCovOverview():
             first_observation: The timestamp of the earliest observation.
             final_observation: The timestamp of the latest oversevation.
         """
-        versions = pd.DataFrame(pool_cov["versions"])
+        versions = pd.DataFrame(pool_cov['versions'])
 
         # Create new columns with 'name' and 'description'
         new_columns = pd.DataFrame({
@@ -71,7 +70,7 @@ class PoolCovOverview():
         queried_df = self.detailed_pool_cov_information.query(expr).reset_index(drop=True)
         if len(queried_df.index) == 0:
             raise ValueError('No data found after applying the filter.')
-        return PoolCovOverview(queried_df.to_records(index=False))
+        return PoolCovOverview(overview_json=queried_df.to_dict(orient='records'))
 
     def create_pool_cov_definitions(self) -> list[PoolCovDefinition]:
         """Creates a list of definitions for all covariates in the data. This list

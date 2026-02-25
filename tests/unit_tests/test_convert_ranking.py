@@ -60,7 +60,7 @@ def test_combine_forecast_ranking_with_matcher_ranking___given_valid_inputs___ru
                                         models=list_models)
     # Forecast without matcher results
     actuals2 = copy.deepcopy(actuals)
-    actuals2.name = "actuals with no matcher"
+    actuals2.name = 'actuals with no matcher'
     forecast_result_2 = fc.ForecastResult(input=fc.ForecastInput(actuals=actuals2, covariates=[]),
                                           changed_values=[],
                                           ts_characteristics=fc.TimeSeriesCharacteristics(),

@@ -95,7 +95,7 @@ class ReconciliationConfig(BaseConfig):
     round_forecast_to_package_size: bool = False
     enforce_forecast_minimum_constraint: bool = False
 
-    @model_validator(mode="after")
+    @model_validator(mode='after')
     def check_package_size_and_integer_rounding_exclusivity(self) -> ReconciliationConfig:
         """Validates that package size rounding and integer rounding cannot be used together."""
         if self.round_forecast_to_package_size and self.round_forecast_to_integer:
@@ -105,7 +105,7 @@ class ReconciliationConfig(BaseConfig):
             )
         return self
 
-    @model_validator(mode="after")
+    @model_validator(mode='after')
     def check_package_size_dependency(self) -> ReconciliationConfig:
         """Validates that package size rounding is active if minimum constraints are enforced."""
         if self.enforce_forecast_minimum_constraint and not self.round_forecast_to_package_size:

@@ -138,6 +138,19 @@ class ForecastingConfig(BaseConfig):
         Optional version ID of time series containing minimum forecast values.
         Forecast minimums must match time series via grouping columns, granularity.
         Dates must be within the forecasting horizon.
+    extension_strategy
+        Determines how to extend the forecast if the provided covariates do not cover the full forecast horizon.
+
+        Options:
+        * "switch":
+          Uses the covariate-based model for as many steps as possible, then switches to the non-covariate model
+          for the remaining fc steps.
+          Note: This joins two independent forecasts, which may result in a visible discontinuity at the switch point.
+
+        * "smooth":
+          Uses the covariate-based predictions to generate the remaining fc steps using the non-covariate model.
+          By treating the initial predictions as historical data for the second model, this strategy ensures
+          a smoother transition between the two phases.
     """
 
     fc_horizon: Annotated[ValidatedPositiveInt, Field(ge=1, le=60)]
@@ -149,6 +162,7 @@ class ForecastingConfig(BaseConfig):
     skip_empirical_prediction_intervals: bool = False
     working_day_adaptions: Optional[WorkingDayAdaptionsConfig] = None
     forecast_minimum_version: Optional[str] = None
+    extension_strategy: Literal['smooth', 'switch'] = 'smooth'
 
     @property
     def numeric_bounds(self) -> tuple[float, float]:
@@ -301,13 +315,13 @@ class MethodSelectionConfig(BaseConfig):
     backtesting_strategy: Literal['standard', 'equal_coverage'] = 'standard'
     equal_coverage_size: Optional[ValidatedPositiveInt] = None
 
-    @model_validator(mode="after")
+    @model_validator(mode='after')
     def shift_length_valid_when_equal_coverage_active(self) -> Self:
         if (self.shift_len != 1 and self.backtesting_strategy == 'equal_coverage'):
             raise ValueError('Equal-Coverage-Backtesting-Strategy only allows a shift length of 1.')
         return self
 
-    @model_validator(mode="after")
+    @model_validator(mode='after')
     def step_weights_not_empty(self) -> Self:
         if self.step_weights is not None and len(self.step_weights) == 0:
             raise ValueError('Empty dictionary for step_weights is not allowed.')
@@ -376,7 +390,7 @@ class ReportConfig(BaseConfig):
     db_name:  Optional[str] = None
     priority: Annotated[Optional[int], Field(ge=0, le=10)] = None
 
-    @model_validator(mode="after")
+    @model_validator(mode='after')
     def _correctness_of_cov_configurations(self) -> Self:
         if (self.matcher_report_id or self.covs_configuration) and (
                 len(self.covs_versions) == 0 and self.pool_covs is None):
@@ -392,7 +406,7 @@ class ReportConfig(BaseConfig):
                              'Please remove the parameter or set to None.')
         return self
 
-    @model_validator(mode="after")
+    @model_validator(mode='after')
     def _only_one_covariate_definition(self) -> Self:
         fields = [
             'matcher_report_id',
@@ -402,11 +416,11 @@ class ReportConfig(BaseConfig):
         set_fields = [field for field in fields if getattr(self, field) is not None]
 
         if len(set_fields) > 1:
-            raise ValueError(f"Only one of {', '.join(fields)} can be set. Found: {', '.join(set_fields)}")
+            raise ValueError(f'Only one of {", ".join(fields)} can be set. Found: {", ".join(set_fields)}')
 
         return self
 
-    @model_validator(mode="after")
+    @model_validator(mode='after')
     def _backtesting_step_weights_refer_to_valid_forecast_steps(self) -> Self:
         if (self.method_selection
             and self.method_selection.step_weights
@@ -415,7 +429,7 @@ class ReportConfig(BaseConfig):
 
         return self
 
-    @model_validator(mode="after")
+    @model_validator(mode='after')
     def _valid_covs_version(self) -> Self:
         for covs_version in self.covs_versions:
             if re.match('^[0-9a-f]{24}$', covs_version) is None:
@@ -738,7 +752,7 @@ class TimeSeriesCharacteristics(BaseModel):
         Number of trailing zero values
     """
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    season_length: Optional[Sequence[ValidatedPositiveInt]] = Field(alias="season_lag", default=None)
+    season_length: Optional[Sequence[ValidatedPositiveInt]] = Field(alias='season_lag', default=None)
     ts_class: Optional[Annotated[str, Field(min_length=1)]] = None
     trend: Optional[Trend] = None
     recent_trend: Optional[Trend] = None
@@ -837,10 +851,10 @@ class ForecastResult(BaseModel):
                 new_models.append(selected_model)
 
         if len(new_models) != len(matcher_rankings[0]):
-            logging.info('''Some MATCHER models are missing in the FORECAST. This could be caused by\n
+            logging.info("""Some MATCHER models are missing in the FORECAST. This could be caused by\n
                             - the model failed in the forecast run\n
                             - not all forecast models were downloaded
-                            (for more model results, adjust parameter include_k_best_models)''')
+                            (for more model results, adjust parameter include_k_best_models)""")
         new_models.sort(key=lambda model: model.model_selection.ranking.rank_position)  # type: ignore
         fc_result.models = new_models
         return fc_result
@@ -856,7 +870,7 @@ class ForecastResult(BaseModel):
         [best_model] = [model for model in self.models
                         if model.model_selection.ranking is not None
                         and model.model_selection.ranking.rank_position == 1]
-        overview_for_ts: dict[str, Any] = {"name": self.input.actuals.name}
+        overview_for_ts: dict[str, Any] = {'name': self.input.actuals.name}
         if self.input.actuals.grouping:
             overview_for_ts.update(self.input.actuals.grouping)
         overview_for_ts.update({
@@ -957,14 +971,11 @@ def combine_forecast_ranking_with_matcher_ranking(forecast_results: list[Forecas
     return new_results
 
 
-class ForecastResults:
+class ForecastResults(BaseModel):
     """Wrapper for the results of a forecasting."""
 
-    def __init__(self,
-                 forecast_results: list[ForecastResult],
-                 consistency: ConsistentForecastMetadata | None = None):
-        self.forecast_results = forecast_results
-        self.consistency = consistency
+    forecast_results: list[ForecastResult]
+    consistency: Optional[ConsistentForecastMetadata] = None
 
     def get_forecast_result(self, actuals_name: str) -> ForecastResult | None:
         """Gets a forecast result for the given time series name.
@@ -981,9 +992,12 @@ class ForecastResults:
         return next((result for result in self.forecast_results if result.input.actuals.name == actuals_name),
                     None)
 
-    def __iter__(self) -> Iterator[ForecastResult]:
+    def __iter__(self) -> Iterator[ForecastResult]:  # type: ignore[override]
         """Make the class iterable over forecast_results."""
         return iter(self.forecast_results)
+
+    def dict(self, **kwargs: Any) -> dict[str, Any]:
+        raise TypeError('Use model_dump() instead of dict(). dict() is not supported because __iter__ is overridden.')
 
     def __getitem__(self, index: Union[int, slice]) -> Union[ForecastResult, list[ForecastResult]]:
         """Support indexing and slicing."""
@@ -1036,6 +1050,6 @@ class ForecastResults:
 
         metadata_df = self.export_result_overview_to_pandas()
         forecasts_df = self.export_forecasts_to_pandas()
-        merged_df = pd.merge(forecasts_df, metadata_df, on='name', how='outer', validate="many_to_one")
+        merged_df = pd.merge(forecasts_df, metadata_df, on='name', how='outer', validate='many_to_one')
 
         return merged_df

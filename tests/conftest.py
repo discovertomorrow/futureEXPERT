@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import pytest
+from dotenv import load_dotenv
 from notebook_execution.utility import extract_report_ids_from_notebook
 
 from futureexpert import ExpertClient
@@ -20,6 +21,8 @@ from futureexpert.shared_models import (Covariate,
                                         TimeSeries,
                                         TimeSeriesValue,
                                         ValidatedPositiveInt)
+
+load_dotenv()
 
 
 def create_forecast_result(actuals_name: str,
@@ -144,13 +147,18 @@ def demand_planning_reference_result() -> ForecastResults:
     reference_report_group = 'gitlab-ci-futureexpert'
     reference_report_environment = 'development'
 
-    with ExpertClient(group=reference_report_group,
-                      environment=reference_report_environment) as client:
-        return client.get_fc_results(
-            id=reference_report_id,
-            include_k_best_models=20,
-            include_discarded_models=True
-        )
+    # ignore explicit EXPERT_API_URL for the reference report if differs from current environment
+    with pytest.MonkeyPatch.context() as patch:
+        if reference_report_environment != ExpertClient().environment:
+            patch.delenv('EXPERT_API_URL', raising=False)
+        client = ExpertClient(group=reference_report_group,
+                              environment=reference_report_environment)
+
+    return client.get_fc_results(
+        id=reference_report_id,
+        include_k_best_models=20,
+        include_discarded_models=True
+    )
 
 
 @pytest.fixture(scope='session')
@@ -158,7 +166,8 @@ def sales_forecasting_result() -> ForecastResults:
     notebook_path = './use_cases/sales_forecasting/sales_forecasting.ipynb'
     report_ids = extract_report_ids_from_notebook(path=notebook_path)
     client = ExpertClient()
-    [report_id] = [report_id for report_id in report_ids if client.get_report_type(report_id) == 'forecast']
+    [report_id] = [report_id for report_id in report_ids if client.get_report_type(
+        report_id) == 'forecast']
     return client.get_fc_results(
         id=report_id,
         include_k_best_models=3,
@@ -172,13 +181,18 @@ def sales_forecasting_reference_result() -> ForecastResults:
     reference_report_group = 'gitlab-ci-futureexpert'
     reference_report_environment = 'development'
 
-    with ExpertClient(group=reference_report_group,
-                      environment=reference_report_environment) as client:
-        return client.get_fc_results(
-            id=reference_report_id,
-            include_k_best_models=3,
-            include_discarded_models=True
-        )
+    # ignore explicit EXPERT_API_URL for the reference report if differs from current environment
+    with pytest.MonkeyPatch.context() as patch:
+        if reference_report_environment != ExpertClient().environment:
+            patch.delenv('EXPERT_API_URL', raising=False)
+        client = ExpertClient(group=reference_report_group,
+                              environment=reference_report_environment)
+
+    return client.get_fc_results(
+        id=reference_report_id,
+        include_k_best_models=3,
+        include_discarded_models=True
+    )
 
 
 @pytest.fixture(scope='module')

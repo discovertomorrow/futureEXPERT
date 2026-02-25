@@ -16,14 +16,14 @@ def extract_overview_table_from_notebook(path: str) -> pd.DataFrame:
     with open(path, 'r') as o:
         data = json.load(o)
 
-    target_cell = next((cell for cell in data.get("cells", []) if cell.get(
-        "metadata", {}).get("result", {}) == "overview"), None)
+    target_cell = next((cell for cell in data.get('cells', []) if cell.get(
+        'metadata', {}).get('result', {}) == 'overview'), None)
     html_list = target_cell['outputs'][0]['data']['text/html']
     html_string = ''.join(html_list)
     dfs = pd.read_html(StringIO(html_string), index_col=0)
     df = dfs[0]
     df['season_length'] = df['season_length'].apply(lambda x: pd.eval(x))
-    return df.sort_values(by="name").reset_index(drop=True)
+    return df.sort_values(by='name').reset_index(drop=True)
 
 
 def extract_report_ids_from_notebook(path: str) -> list[int]:
@@ -31,7 +31,7 @@ def extract_report_ids_from_notebook(path: str) -> list[int]:
     with open(path, 'r') as o:
         data = json.load(o)
     html_string = ''
-    for cell in data.get("cells", []):
+    for cell in data.get('cells', []):
         if cell['cell_type'] == 'markdown':
             continue
         output = [''.join(out.get('text', '')) for out in cell['outputs']]

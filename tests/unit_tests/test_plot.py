@@ -4,12 +4,24 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from futureexpert.forecast import ChangedValue, ChangePoint, MissingValue, Outlier
+from futureexpert.forecast import (BacktestingValue,
+                                   ChangedValue,
+                                   ChangePoint,
+                                   ComparisonDetails,
+                                   ForecastValue,
+                                   MissingValue,
+                                   Model,
+                                   ModelStatus,
+                                   Outlier,
+                                   Plausibility,
+                                   RankingDetails)
 from futureexpert.plot import (_add_level_shifts,
                                _calculate_few_observation_borders,
                                _calculate_replaced_missing_borders,
                                _fill_missing_values_for_plot,
+                               _prepare_backtesting,
                                _prepare_characteristics)
+from futureexpert.shared_models import PositiveInt, ValidatedPositiveInt
 
 granularities = ['yearly', 'quarterly', 'monthly', 'weekly', 'daily', 'hourly', 'halfhourly']
 
@@ -33,7 +45,7 @@ def create_example_df(granularity: str) -> pd.DataFrame:
     })
 
 
-@pytest.mark.parametrize("granularity", granularities)
+@pytest.mark.parametrize('granularity', granularities)
 def test_fill_missing_values___no_missing_values___df_stays_unchanged(granularity):
     # Arrange
     df = create_example_df(granularity)
@@ -44,7 +56,7 @@ def test_fill_missing_values___no_missing_values___df_stays_unchanged(granularit
     assert result_df.equals(df)
 
 
-@pytest.mark.parametrize("granularity", granularities)
+@pytest.mark.parametrize('granularity', granularities)
 def test_fill_missing_values___with_missing_data___fills_missing_data_with_nan(granularity):
     # Arrange
     df = create_example_df(granularity)
@@ -55,7 +67,7 @@ def test_fill_missing_values___with_missing_data___fills_missing_data_with_nan(g
     result_df = _fill_missing_values_for_plot(granularity, df)
 
     # Assert
-    assert result_df.shape[0] == 20, f"Expected 20 rows for {granularity}, but got {result_df.shape[0]}."
+    assert result_df.shape[0] == 20, f'Expected 20 rows for {granularity}, but got {result_df.shape[0]}.'
     assert result_df.loc[missing_indices, 'actuals'].isna().all()
 
 
@@ -267,3 +279,95 @@ def test__prepare_characteristics___some_value_are_within_timeframe___expected_v
     assert fc_result.ts_characteristics.outliers == outliers
     assert fc_result.ts_characteristics.change_points == change_points
     assert fc_result.ts_characteristics.missing_values == missing_values
+
+
+def create_backtesting_value(date: datetime, fc_step: int, fc_value: float) -> BacktestingValue:
+    """Helper to create a BacktestingValue for testing."""
+    return BacktestingValue(
+        time_stamp_utc=date,
+        point_forecast_value=fc_value,
+        lower_limit_value=fc_value - 1,
+        upper_limit_value=fc_value + 1,
+        fc_step=ValidatedPositiveInt(fc_step)
+    )
+
+
+def create_model_with_backtesting(backtesting_values: list[BacktestingValue]) -> Model:
+    """Helper to create a Model with backtesting data."""
+    return Model(
+        model_name='TestModel',
+        status=ModelStatus.Successful,
+        forecast_plausibility=Plausibility('Plausible'),
+        forecasts=[ForecastValue(
+            time_stamp_utc=datetime(2023, 6, 1),
+            point_forecast_value=100.0,
+            lower_limit_value=90.0,
+            upper_limit_value=110.0
+        )],
+        raw_model_forecasts=[ForecastValue(
+            time_stamp_utc=datetime(2023, 6, 1),
+            point_forecast_value=100.0,
+            lower_limit_value=90.0,
+            upper_limit_value=110.0
+        )],
+        model_selection=ComparisonDetails(
+            backtesting=backtesting_values,
+            plausibility=None,
+            accuracy=[],
+            ranking=RankingDetails(rank_position=PositiveInt(1), score=1.0)
+        ),
+        test_period=None
+    )
+
+
+def test__prepare_backtesting___valid_iteration___returns_expected_dataframe():
+    # Arrange
+    # Create backtesting with 3 fc_steps and 2 iterations each
+    backtesting_values = [
+        create_backtesting_value(date=datetime(2023, 1, 1), fc_value=1, fc_step=1),
+        create_backtesting_value(date=datetime(2023, 2, 1), fc_value=1, fc_step=2),
+        create_backtesting_value(date=datetime(2023, 3, 1), fc_value=1, fc_step=3),
+        create_backtesting_value(date=datetime(2023, 2, 1), fc_value=2, fc_step=1),
+        create_backtesting_value(date=datetime(2023, 3, 1), fc_value=2, fc_step=2),
+        create_backtesting_value(date=datetime(2023, 4, 1), fc_value=2, fc_step=3)
+    ]
+    model = create_model_with_backtesting(backtesting_values)
+
+    # Act
+    result = _prepare_backtesting(model, iteration=1)
+
+    # Assert
+    assert len(result) == 3
+    assert list(result.columns) == ['date', 'fc', 'lower', 'upper']
+    assert result['date'].tolist() == [datetime(2023, 1, 1), datetime(2023, 2, 1), datetime(2023, 3, 1)]
+    assert result['fc'].tolist() == [1, 1, 1]
+
+
+def test__prepare_backtesting___iteration_too_high___raises_value_error():
+    # Arrange
+    backtesting_values = [
+        create_backtesting_value(date=datetime(2023, 1, 1), fc_value=1, fc_step=1),
+        create_backtesting_value(date=datetime(2023, 2, 1), fc_value=1, fc_step=2),
+    ]
+    model = create_model_with_backtesting(backtesting_values)
+
+    # Act & Assert
+    with pytest.raises(ValueError, match='Selected iteration was not calculated.'):
+        _prepare_backtesting(model, iteration=2)
+
+
+def test__prepare_backtesting___single_fc_step_multiple_iterations___returns_expected_dataframe():
+    # Arrange
+    backtesting_values = [
+        create_backtesting_value(date=datetime(2023, 1, 1), fc_value=1, fc_step=1),
+        create_backtesting_value(date=datetime(2023, 2, 1), fc_value=2, fc_step=1),
+        create_backtesting_value(date=datetime(2023, 3, 1), fc_value=3, fc_step=1),
+    ]
+    model = create_model_with_backtesting(backtesting_values)
+
+    # Act
+    result = _prepare_backtesting(model, iteration=2)
+
+    # Assert
+    assert len(result) == 1
+    assert result['fc'].tolist() == [2]

@@ -85,11 +85,11 @@ class MatcherConfig(BaseConfig):
         Configuration of covariate lag selection.
     evaluation_start_date
         Optional start date for the evaluation. The input should be in the ISO format
-        with date and time, "YYYY-mm-DDTHH-MM-SS", e.g., "2024-01-01T16:40:00".
+        with date and time, 'YYYY-mm-DDTHH-MM-SS', e.g., '2024-01-01T16:40:00'.
         Actuals and covariate observations prior to this start date are dropped.
     evaluation_end_date
         Optional end date for the evaluation. The input should be in the ISO format
-        with date and time, "YYYY-mm-DDTHH-MM-SS", e.g., "2024-01-01T16:40:00".
+        with date and time, 'YYYY-mm-DDTHH-MM-SS', e.g., '2024-01-01T16:40:00'.
         Actuals and covariate observations after this end date are dropped.
     max_publication_lag
         Maximal publication lag for the covariates. The publication lag of a covariate
@@ -170,8 +170,8 @@ class MatcherConfig(BaseConfig):
                 invalid_queries.append(postselection_query)
 
         if len(invalid_queries):
-            raise ValueError("The following post-selection queries are invalidly formatted: "
-                             f"{', '.join(invalid_queries)}. ")
+            raise ValueError('The following post-selection queries are invalidly formatted: '
+                             f'{", ".join(invalid_queries)}. ')
 
         return self
 

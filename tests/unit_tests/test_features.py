@@ -1,10 +1,7 @@
-import math
 import time
 from pathlib import Path
 
 import pandas as pd
-import pytest
-from dotenv import load_dotenv
 
 import futureexpert.checkin as checkin
 from futureexpert import (DataDefinition,
@@ -22,23 +19,20 @@ from futureexpert.forecast_consistency import (MakeForecastConsistentConfigurati
                                                ReconciliationConfig,
                                                ReconciliationMethod)
 
-load_dotenv()
 
-
-def test_expert_client___given_save_hierarchy___returns_all_hierarchy() -> None:
+def test_expert_client___given_save_hierarchy___returns_all_hierarchy(expert_client: ExpertClient) -> None:
     # Arrange
-    client = ExpertClient()
-    raw_data_source = Path("tests") / 'unit_tests/test_data/demo_demand_planning_data.csv'
+    raw_data_source = Path('tests') / 'unit_tests/test_data/demo_demand_planning_data.csv'
     data_definition = DataDefinition(date_column=checkin.DateColumn(name='DATE', format='%d.%m.%Y', name_new='Date'),
                                      value_columns=[checkin.ValueColumn(
                                          name='DEMAND', name_new='Demand')],
-                                     group_columns=[checkin.GroupColumn(name="CUSTOMER", name_new='Customer'),
-                                                    checkin.GroupColumn(name="MATERIAL", name_new="Material"),
-                                                    checkin.GroupColumn(name="REGION", name_new="Region")])
+                                     group_columns=[checkin.GroupColumn(name='CUSTOMER', name_new='Customer'),
+                                                    checkin.GroupColumn(name='MATERIAL', name_new='Material'),
+                                                    checkin.GroupColumn(name='REGION', name_new='Region')])
 
     config_ts_creation = TsCreationConfig(time_granularity='monthly',
-                                          start_date="2007-10-01",
-                                          end_date="2024-06-01",
+                                          start_date='2007-10-01',
+                                          end_date='2024-06-01',
                                           value_columns_to_save=[
                                               'Demand'],
                                           grouping_level=[
@@ -46,13 +40,14 @@ def test_expert_client___given_save_hierarchy___returns_all_hierarchy() -> None:
                                           save_hierarchy=True,
                                           missing_value_handler='setToZero')
     # Act
-    check_in_version_id = client.check_in_time_series(raw_data_source=raw_data_source,
-                                                      file_specification=FileSpecification(delimiter=';', decimal='.'),
-                                                      data_definition=data_definition,
-                                                      config_ts_creation=config_ts_creation)
+    check_in_version_id = expert_client.check_in_time_series(raw_data_source=raw_data_source,
+                                                             file_specification=FileSpecification(delimiter=';',
+                                                                                                  decimal='.'),
+                                                             data_definition=data_definition,
+                                                             config_ts_creation=config_ts_creation)
 
     # Assert
-    check_in_result = client.get_time_series(version_id=check_in_version_id)
+    check_in_result = expert_client.get_time_series(version_id=check_in_version_id)
     hierarchy_levels = list(set([tuple(ts.grouping.keys()) for ts in check_in_result.time_series]))
     assert len(check_in_result.time_series) == 9
     assert len(hierarchy_levels) == 3
@@ -61,7 +56,9 @@ def test_expert_client___given_save_hierarchy___returns_all_hierarchy() -> None:
     assert ('Region', 'Customer') in hierarchy_levels or ('Customer', 'Region') in hierarchy_levels
 
 
-def test_expert_client___given_different_methods_per_hierachical_level___uses_correct_methods() -> None:
+def test_expert_client___given_different_methods_per_hierachical_level___uses_correct_methods(
+    expert_client: ExpertClient
+) -> None:
     # Arrange
     fc_methods = ['MA(3)']
     fc_methods_per_level = {2: ['FoundationModel']}
@@ -70,18 +67,17 @@ def test_expert_client___given_different_methods_per_hierachical_level___uses_co
         level: fc_methods_per_level.get(level, fc_methods)
         for level in range(num_levels)
     }
-    client = ExpertClient()
-    raw_data_source = Path("tests") / 'unit_tests/test_data/demo_demand_planning_data.csv'
+    raw_data_source = Path('tests') / 'unit_tests/test_data/demo_demand_planning_data.csv'
     data_definition = DataDefinition(date_column=checkin.DateColumn(name='DATE', format='%d.%m.%Y', name_new='Date'),
                                      value_columns=[checkin.ValueColumn(
                                          name='DEMAND', name_new='Demand')],
-                                     group_columns=[checkin.GroupColumn(name="CUSTOMER", name_new='Customer'),
-                                                    checkin.GroupColumn(name="MATERIAL", name_new="Material"),
-                                                    checkin.GroupColumn(name="REGION", name_new="Region")])
+                                     group_columns=[checkin.GroupColumn(name='CUSTOMER', name_new='Customer'),
+                                                    checkin.GroupColumn(name='MATERIAL', name_new='Material'),
+                                                    checkin.GroupColumn(name='REGION', name_new='Region')])
 
     config_ts_creation = TsCreationConfig(time_granularity='monthly',
-                                          start_date="2007-10-01",
-                                          end_date="2024-06-01",
+                                          start_date='2007-10-01',
+                                          end_date='2024-06-01',
                                           value_columns_to_save=[
                                               'Demand'],
                                           grouping_level=[
@@ -89,10 +85,11 @@ def test_expert_client___given_different_methods_per_hierachical_level___uses_co
                                           save_hierarchy=True,
                                           missing_value_handler='setToZero')
 
-    check_in_version_id = client.check_in_time_series(raw_data_source=raw_data_source,
-                                                      file_specification=FileSpecification(delimiter=';', decimal='.'),
-                                                      data_definition=data_definition,
-                                                      config_ts_creation=config_ts_creation)
+    check_in_version_id = expert_client.check_in_time_series(raw_data_source=raw_data_source,
+                                                             file_specification=FileSpecification(
+                                                                 delimiter=';', decimal='.'),
+                                                             data_definition=data_definition,
+                                                             config_ts_creation=config_ts_creation)
     fc_report_config = ReportConfig(title='Unit Test: Method Selection per hierarchical Level',
                                     preprocessing=PreprocessingConfig(),
                                     forecasting=ForecastingConfig(fc_horizon=1,
@@ -104,21 +101,21 @@ def test_expert_client___given_different_methods_per_hierachical_level___uses_co
                                     ),
                                     max_ts_len=72)
     # Act
-    forecast_identifier = client.start_forecast(version=check_in_version_id, config=fc_report_config)
-    while not (client.get_report_status(id=forecast_identifier)).is_finished:
+    forecast_identifier = expert_client.start_forecast(version=check_in_version_id, config=fc_report_config)
+    while not (expert_client.get_report_status(id=forecast_identifier)).is_finished:
         time.sleep(20)
 
     # Assert
-    results = client.get_fc_results(id=forecast_identifier, include_backtesting=True, include_k_best_models=10)
+    results = expert_client.get_fc_results(
+        id=forecast_identifier, include_backtesting=True, include_k_best_models=10)
     for result in results.forecast_results:
         hierarchical_depth = len(result.input.actuals.name.split('-')) - 1
         model_names = [model.model_name for model in result.models]
         assert model_names == expected_fc_methods_per_level[hierarchical_depth]
 
 
-def test_expert_client___given_forecast_minimums___enforces_minimums() -> None:
+def test_expert_client___given_forecast_minimums___enforces_minimums(expert_client: ExpertClient) -> None:
     # Arrange
-    client = ExpertClient()
     minimum_sale = 110
     target_series_name = 'Sales-Europe-Italy'
     project_root = Path(__file__).parent.parent.parent
@@ -126,7 +123,7 @@ def test_expert_client___given_forecast_minimums___enforces_minimums() -> None:
     csv_path = project_root / 'use_cases' / 'sales_forecasting' / 'demo_sales_data.csv'
     df = pd.read_csv(csv_path, sep=';', decimal='.')
 
-    actuals_version_id = client.check_in_time_series(
+    actuals_version_id = expert_client.check_in_time_series(
         raw_data_source=df,
         data_definition=DataDefinition(
             date_column=checkin.DateColumn(name='Date', format='%d.%m.%Y'),
@@ -158,7 +155,7 @@ def test_expert_client___given_forecast_minimums___enforces_minimums() -> None:
         'MinSales': [minimum_sale]
     })
 
-    min_sales_version_id = client.check_in_time_series(
+    min_sales_version_id = expert_client.check_in_time_series(
         raw_data_source=min_sales_df,
         data_definition=DataDefinition(
             date_column=checkin.DateColumn(name='Date', format='%d.%m.%Y'),
@@ -208,11 +205,11 @@ def test_expert_client___given_forecast_minimums___enforces_minimums() -> None:
         max_ts_len=72
     )
 
-    forecast_identifier = client.start_forecast(version=actuals_version_id, config=fc_report_config)
-    print(f"Forecast report ID: {forecast_identifier}")
+    forecast_identifier = expert_client.start_forecast(version=actuals_version_id, config=fc_report_config)
+    print(f'Forecast report ID: {forecast_identifier}')
 
     # Wait for forecast completion
-    while not (current_status := client.get_report_status(id=forecast_identifier)).is_finished:
+    while not (current_status := expert_client.get_report_status(id=forecast_identifier)).is_finished:
         time.sleep(20)
 
     assert current_status.results.error == 0, \
@@ -236,17 +233,17 @@ def test_expert_client___given_forecast_minimums___enforces_minimums() -> None:
     )
 
     # Act
-    consistent_report = client.start_making_forecast_consistent(reconciliation_config)
-    print(f"HCFC report ID: {consistent_report}")
+    consistent_report = expert_client.start_making_forecast_consistent(reconciliation_config)
+    print(f'HCFC report ID: {consistent_report}')
 
-    while not (hcfc_status := client.get_report_status(id=consistent_report)).is_finished:
+    while not (hcfc_status := expert_client.get_report_status(id=consistent_report)).is_finished:
         time.sleep(20)
 
     # Assert
     assert hcfc_status.results.error == 0, \
         f'HCFC reconciliation failed with {hcfc_status.results.error} errors'
 
-    results = client.get_fc_results(id=consistent_report, include_backtesting=True, include_k_best_models=10)
+    results = expert_client.get_fc_results(id=consistent_report, include_backtesting=True, include_k_best_models=10)
 
     italy_forecast = None
     for forecast_result in results.forecast_results:
@@ -255,17 +252,17 @@ def test_expert_client___given_forecast_minimums___enforces_minimums() -> None:
             break
 
     assert italy_forecast is not None, \
-        f"Could not find forecast for '{target_series_name}' in results. " \
-        f"Available series: {[fr.input.actuals.name for fr in results.forecast_results]}"
+        f'Could not find forecast for "{target_series_name}" in results. ' \
+        f'Available series: {[fr.input.actuals.name for fr in results.forecast_results]}'
 
     reconciled_model = italy_forecast.models[0]
     first_forecast_value = reconciled_model.forecasts[0].point_forecast_value
 
     assert first_forecast_value >= minimum_sale, \
-        f"Forecast value {first_forecast_value} is below minimum {minimum_sale}"
+        f'Forecast value {first_forecast_value} is below minimum {minimum_sale}'
 
     assert first_forecast_value.is_integer(), \
-        f"Forecast value {first_forecast_value} is not an integer (package size rounding should enforce this)"
+        f'Forecast value {first_forecast_value} is not an integer (package size rounding should enforce this)'
 
     assert reconciled_model.model_name == 'FoundationModel - top down average forecast proportion', \
-        f"Expected reconciled model, got: {reconciled_model.model_name}"
+        f'Expected reconciled model, got: {reconciled_model.model_name}'

@@ -4,12 +4,7 @@ import pandas as pd
 import pydantic
 import pytest
 
-from futureexpert import (MAX_TS_LEN_CONFIG,
-                          ExpertClient,
-                          ForecastingConfig,
-                          MethodSelectionConfig,
-                          PreprocessingConfig,
-                          ReportConfig)
+from futureexpert import MAX_TS_LEN_CONFIG, ForecastingConfig, MethodSelectionConfig, PreprocessingConfig, ReportConfig
 from futureexpert._helpers import calculate_max_ts_len
 from futureexpert.forecast import ForecastResults
 
@@ -116,23 +111,7 @@ def test_method_selection_config___with_empty_methods_list_for_hierarchy_level__
         )
 
 
-def test_create_forecast_payload___given_lower_upper_bound_None___returns_payload_with_lower_upper_bound_none() -> None:
-
-    # Arrange
-    dummy_version = '12345678'
-    config = ReportConfig(title="Test", forecasting=ForecastingConfig(fc_horizon=5))
-    client = ExpertClient.from_dotenv()
-
-    # Act
-    payload = client._create_forecast_payload(version=dummy_version, config=config)
-
-    # Assert
-    assert payload['payload']['forecasting']['lower_bound'] is None
-    assert payload['payload']['forecasting']['upper_bound'] is None
-
-
 def test_calculate_max_ts_len___given_no_ts_len___returns_default_value() -> None:
-
     # Arrange
     max_ts_len = None
     granularity = 'daily'
@@ -145,7 +124,6 @@ def test_calculate_max_ts_len___given_no_ts_len___returns_default_value() -> Non
 
 
 def test_calculate_max_ts_len___given_ts_len___returns_given_ts_len() -> None:
-
     # Arrange
     max_ts_len = 120
     granularity = 'daily'
@@ -158,7 +136,6 @@ def test_calculate_max_ts_len___given_ts_len___returns_given_ts_len() -> None:
 
 
 def test_calculate_max_ts_len___given_ts_len_out_of_range___returns_error() -> None:
-
     # Arrange
     max_ts_len = 1400
     granularity = 'daily'
@@ -174,9 +151,9 @@ def test_export_result_overview_to_pandas___given_simple_results___runs_without_
         sample_fc_result_1,
         sample_fc_result_2,
         sample_fc_result_3):
-    sample_results = ForecastResults([sample_fc_result_1,
-                                      sample_fc_result_2,
-                                      sample_fc_result_3])
+    sample_results = ForecastResults(forecast_results=[sample_fc_result_1,
+                                                       sample_fc_result_2,
+                                                       sample_fc_result_3])
 
     df = sample_results.export_result_overview_to_pandas()
     assert isinstance(df, pd.DataFrame)
@@ -186,9 +163,9 @@ def test_export_result_overview_to_pandas___given_simple_results___is_of_expecte
         sample_fc_result_1,
         sample_fc_result_2,
         sample_fc_result_3):
-    sample_results = ForecastResults([sample_fc_result_1,
-                                     sample_fc_result_2,
-                                     sample_fc_result_3])
+    sample_results = ForecastResults(forecast_results=[sample_fc_result_1,
+                                                       sample_fc_result_2,
+                                                       sample_fc_result_3])
 
     df = sample_results.export_result_overview_to_pandas()
     assert df.shape == (3, 12)
@@ -200,9 +177,9 @@ def test_export_forecasts_to_pandas___given_simple_results___is_of_expected_stru
         sample_fc_result_1,
         sample_fc_result_2,
         sample_fc_result_3):
-    sample_results = ForecastResults([sample_fc_result_1,
-                                      sample_fc_result_2,
-                                      sample_fc_result_3])
+    sample_results = ForecastResults(forecast_results=[sample_fc_result_1,
+                                                       sample_fc_result_2,
+                                                       sample_fc_result_3])
 
     df = sample_results.export_forecasts_to_pandas()
     assert df.shape == (9, 5)
@@ -214,9 +191,9 @@ def test_export_forecasts_with_metadata___given_simple_results___is_of_expected_
         sample_fc_result_1,
         sample_fc_result_2,
         sample_fc_result_3):
-    sample_results = ForecastResults([sample_fc_result_1,
-                                      sample_fc_result_2,
-                                      sample_fc_result_3])
+    sample_results = ForecastResults(forecast_results=[sample_fc_result_1,
+                                                       sample_fc_result_2,
+                                                       sample_fc_result_3])
 
     df = sample_results.export_forecasts_with_overview_to_pandas()
     assert df.shape == (9, 16)

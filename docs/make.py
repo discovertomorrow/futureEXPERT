@@ -74,7 +74,7 @@ def module_paths(package_dir) -> Generator[str, None, None]:
         for file in files:
             filepath = subdir + os.sep + file
 
-            if filepath.endswith(".py") and not file.startswith('__'):
+            if filepath.endswith('.py') and not file.startswith('__'):
                 yield filepath
 
 
@@ -118,12 +118,12 @@ class DocstringRefiner:
         # usually Union, Sequence, or Optional. With very few exceptions (Hashable), they
         # contain more attributes, such as Sequence[int] or Optional[float].
         if not hasattr(type_hint, '__origin__'):
-            return f"{type_hint.__module__}.{type_hint.__name__}"
+            return f'{type_hint.__module__}.{type_hint.__name__}'
         args = get_args(type_hint)
         if len(args) == 0:
-            return f"{type_hint.__module__}.{type_hint.__origin__.__name__}"
-        # Optional fields are treated as Unions[RelevantType, None]. Make sure we report "Optional"
-        # instead of "Union" and only the relevant type, not the "None" of that Union.
+            return f'{type_hint.__module__}.{type_hint.__origin__.__name__}'
+        # Optional fields are treated as Unions[RelevantType, None]. Make sure we report 'Optional'
+        # instead of 'Union' and only the relevant type, not the 'None' of that Union.
         is_optional = (type_hint.__origin__ is Union and
                        len(args) == 2 and
                        args[1] is type(None))
@@ -133,7 +133,7 @@ class DocstringRefiner:
             self.get_type_hint_expression(arg)
             for arg in relevant_args
         )
-        return f"{type_hint.__module__}.{origin_name}[{args_str}]"
+        return f'{type_hint.__module__}.{origin_name}[{args_str}]'
 
     def refine_docstrings(self):
         """Refine docstrings of module."""

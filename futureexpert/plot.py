@@ -1,8 +1,10 @@
 """Contains all the functionality to plot the checked in time series and the forecast and backtesting results."""
 import copy
 import datetime
+import logging
 import math
 from collections import defaultdict
+from itertools import chain
 from typing import Any, Final, Hashable, Optional, Sequence, Union
 
 import matplotlib as mpl
@@ -15,10 +17,14 @@ from futureexpert.forecast import (ChangedStartDate,
                                    ChangedValue,
                                    ChangePoint,
                                    ForecastResult,
+                                   ForecastValue,
                                    Model,
                                    Outlier,
                                    TimeSeriesCharacteristics)
-from futureexpert.shared_models import Covariate, CovariateRef, TimeSeries
+from futureexpert.shaper import ResultScenario, Scenario, ShaperResult
+from futureexpert.shared_models import Covariate, CovariateRef, TimeSeries, TimeSeriesValue
+
+logger = logging.getLogger(__name__)
 
 prog_color = pd.DataFrame({
     'darkblue': ['#003652', '#34506c', '#62738a', '#949cae', '#c8cad5'],
@@ -51,7 +57,8 @@ plot_labels = {'time_series': 'Time Series',
                'few_observations': 'Few Observations',
                'pi': 'Prediction Interval'}
 
-granularity_to_pd_alias: Final[dict[str, str]] = {
+
+GRANULARITY_TO_PD_ALIAS: Final[dict[str, str]] = {
     'yearly': 'YS',
     'quarterly': 'QS',
     'monthly': 'MS',
@@ -60,10 +67,29 @@ granularity_to_pd_alias: Final[dict[str, str]] = {
     'hourly': 'h',
     'halfhourly': '30min'
 }
+
+
 # set the font globally
 # plt.rcParams.update({'font.sans-serif':'Regular'})
 mpl.rcParams['axes.titlesize'] = 12
 plt.style.use('seaborn-v0_8-whitegrid')
+
+
+def create_subtitle(model: Model, is_discarded: bool) -> str:
+    """Create subtitle for backtesting and forecasting plots.
+
+    Parameters
+    ----------
+    model
+        Model.
+    is_discarded
+        Is Model part of the active ranking or not.
+    """
+    if not is_discarded and model.model_selection.ranking:
+        subtitle = f'using {model.model_name} (Rank {model.model_selection.ranking.rank_position})'
+    else:
+        subtitle = f'using {model.model_name} (discarded)'
+    return subtitle
 
 
 def filter_models(models: list[Model],
@@ -223,7 +249,7 @@ def _calculate_max_covariate_date(granularity: str, start_date: datetime.datetim
     """
     result: list[datetime.datetime] = pd.date_range(start=start_date,
                                                     periods=60,
-                                                    freq=granularity_to_pd_alias.get(granularity))
+                                                    freq=GRANULARITY_TO_PD_ALIAS.get(granularity))
 
     return result[-1]
 
@@ -247,7 +273,7 @@ def _fill_missing_values_for_plot(granularity: str,
     """
     full_date_range = pd.date_range(start=df['date'].min(),
                                     end=df['date'].max(),
-                                    freq=granularity_to_pd_alias.get(granularity))
+                                    freq=GRANULARITY_TO_PD_ALIAS.get(granularity))
 
     # Reindex the dataframe to fill in missing dates, leaving actuals as NaN for missing entries
     return df.set_index('date').reindex(full_date_range).reset_index().rename(columns={'index': 'date'})
@@ -495,6 +521,11 @@ def _add_covariates_to_static_plot(ax: mpl.axes.Axes, covariate_column: list[Has
     ax.legend(lines, labels, bbox_to_anchor=(1, 1), loc=legend_position['loc'])
 
 
+def _has_prediction_intervals(df: pd.DataFrame) -> bool:
+    """Check whether the DataFrame contains valid (non-None) prediction interval bounds."""
+    return not any(v is None for v in df['lower'])
+
+
 def _prepare_actuals(actuals: TimeSeries, plot_last_x_data_points_only: Optional[int] = None) -> pd.DataFrame:
     """Converts the actual data into a pandas DataFrame.
 
@@ -574,9 +605,10 @@ def _prepare_backtesting(model: Model, iteration: int) -> pd.DataFrame:
 
     highest_calculated_iteration = max([len(fc_step_dict[x]) for x in fc_step_dict])
     if iteration > highest_calculated_iteration:
-        raise ValueError('Selected iteration was not calculated.')
+        raise ValueError(
+            f'Selected iteration was not calculated. Highest available iteration is {highest_calculated_iteration}')
 
-    bt_round = [fc_step_dict[x][iteration] for x in fc_step_dict]
+    bt_round = [fc_step_dict[x][(iteration-1)] for x in fc_step_dict]
 
     backtesting_dates = [ac.time_stamp_utc for ac in bt_round]
     backtesting_fc = [ac.point_forecast_value for ac in bt_round]
@@ -694,7 +726,7 @@ def _create_static_forecast_plot(title: str,
                         color=prog_color.loc[1, 'greyblue'], alpha=0.30,
                         label=plot_labels['few_observations'] if idx == 0 else None)
 
-    if plot_prediction_intervals and df_concat.lower.notna().all():
+    if plot_prediction_intervals and _has_prediction_intervals(df_concat):
         ax.fill_between(df_concat.date, df_concat.lower, df_concat.upper,
                         color=prog_color.loc[2, 'cyan'], alpha=0.30, label=plot_labels['pi'])
 
@@ -771,7 +803,7 @@ def _create_interactive_forecast_plot(title: str,
                                  connectgaps=False,
                                  mode='lines', name=plot_labels['removed_values'], line={'color': prog_color.loc[3, 'greyblue']}))
 
-    if plot_prediction_intervals and not any(v is None for v in df_concat.lower):
+    if plot_prediction_intervals and _has_prediction_intervals(df_concat):
         fig.add_trace(go.Scatter(x=df_concat.date, y=df_concat.upper,
                                  line_color=transparent_rgba,
                                  mode='lines',
@@ -924,7 +956,7 @@ def plot_forecast(result: ForecastResult,
     model_names
         Names of the models to plot.
     ranks
-        Ranks of the models to plot.
+        Ranks of the models to plot. If this filter is active no discarded models are plotted.
     plot_prediction_intervals
         Shows prediction intervals.
     plot_outliers
@@ -938,12 +970,17 @@ def plot_forecast(result: ForecastResult,
     as_interactive
         Plots the data in an interactive plot or as static image.
     """
+    if ranks and model_names:
+        logger.warning('Both filters `ranks` and `model_names` are used. This could cause no results.')
 
     df_ac = _prepare_actuals(actuals=result.input.actuals,
                              plot_last_x_data_points_only=plot_last_x_data_points_only)
     characteristics = _prepare_characteristics(result, df_ac)
     name = result.input.actuals.name
     plot_models = filter_models(result.models, ranks, model_names)
+    discarded_plot_models = []
+    if not ranks:
+        discarded_plot_models = filter_models(result.discarded_models, ranks, model_names)
 
     plot_few_observations = []
     if plot_change_points:
@@ -967,11 +1004,19 @@ def plot_forecast(result: ForecastResult,
         if 'replaced_missing' in df_ac.columns:
             missing_borders = _calculate_replaced_missing_borders(df_ac)
 
-    for model in plot_models:
-        assert model.model_selection.ranking, 'No ranking, plotting not possible.'
+    if len(plot_models) == 0 and len(discarded_plot_models) == 0:
+        logger.warning('No models left for plotting with the current filter. Adjust `ranks` or `model_names`.')
+
+    for i, model in enumerate(chain(plot_models, discarded_plot_models)):
+        is_discarded = False if i < len(plot_models) else True
+
+        if not model.forecasts:
+            logger.warning(f'Cannot create forecast plot, {model.model_name} has no forecasting results available.')
+            continue
+
         df_concat = _add_forecast(df_ac, model)
         title = f'Forecast for {name}'
-        subtitle = f'using {model.model_name} (Rank {model.model_selection.ranking.rank_position})'
+        subtitle = create_subtitle(model, is_discarded)
 
         if plot_covariates and len(model.covariates) > 0:
             df_concat = _add_covariates(df_concat, model.covariates, result.input.covariates, df_concat.date.max())
@@ -1052,7 +1097,7 @@ def _create_interactive_backtesting_plot(title: str,
                                  connectgaps=False,
                                  mode='lines', name=plot_labels['removed_values'], line={'color': prog_color.loc[0, 'greyblue']}))
 
-    if plot_prediction_intervals and not any(v is None for v in df_bt.lower):
+    if plot_prediction_intervals and _has_prediction_intervals(df_bt):
         fig.add_trace(go.Scatter(x=df_bt.date, y=df_bt.upper,
                                  line_color=transparent_rgba,
                                  mode='lines',
@@ -1198,7 +1243,7 @@ def _create_static_backtesting_plot(title: str,
                         color=prog_color.loc[1, 'greyblue'], alpha=0.30,
                         label=plot_labels['few_observations'] if idx == 0 else None)
 
-    if plot_prediction_intervals and df_bt.lower.notna().all() :
+    if plot_prediction_intervals and _has_prediction_intervals(df_bt):
         ax.fill_between(df_bt.date, df_bt.lower, df_bt.upper,
                         color=prog_color.loc[2, "cyan"], alpha=0.30, label=plot_labels['pi'])
 
@@ -1233,13 +1278,13 @@ def plot_backtesting(result: ForecastResult,
     result
         Forecasting and backtesting results of a single time series and model.
     iteration
-        Iteration of the backtesting forecast.
+        Iteration of the backtesting forecast. Starting from 1.
     plot_last_x_data_points_only
         Number of data points of the actuals that should be shown in the plot.
     model_names
         Names of the models to plot.
     ranks
-        Ranks of the models to plot.
+        Ranks of the models to plot. If this filter is active no discarded models are plotted.
     plot_prediction_intervals
         Shows prediction intervals.
     plot_outliers
@@ -1253,7 +1298,18 @@ def plot_backtesting(result: ForecastResult,
     as_interactive
         Plots the data in an interactive plot or as static image.
     """
+    if ranks and model_names:
+        logger.warning('Both filters `ranks` and `model_names` are used. This could cause no results.')
+
+    if iteration <= 0:
+        raise ValueError('`iteration` needs to be a positive Integer.')
+
     plot_models = filter_models(result.models, ranks, model_names)
+
+    discarded_plot_models = []
+    if not ranks:
+        discarded_plot_models = filter_models(result.discarded_models, ranks, model_names)
+
     df_ac = _prepare_actuals(result.input.actuals, plot_last_x_data_points_only)
     characteristics = _prepare_characteristics(result, df_ac)
 
@@ -1280,15 +1336,19 @@ def plot_backtesting(result: ForecastResult,
         if 'replaced_missing' in df_ac.columns:
             missing_borders = _calculate_replaced_missing_borders(df_ac)
 
-    for model in plot_models:
+    if len(plot_models) == 0 and len(discarded_plot_models) == 0:
+        logger.warning('No models left for plotting with the current filter. Adjust `ranks` or `model_names`')
 
-        assert model.model_selection.backtesting, \
-            'Cannot create backtesting plot, at least one model has no backtesting results available.'
-        assert model.model_selection.ranking, 'No ranking, plotting not possible.'
+    for i, model in enumerate(chain(plot_models, discarded_plot_models)):
+        is_discarded = False if i < len(plot_models) else True
+
+        if not model.model_selection.backtesting:
+            logger.warning(f'Cannot create backtesting plot, {model.model_name} has no backtesting results available.')
+            continue
         df_bt = _prepare_backtesting(model, iteration)
 
         title = f'Backtesting of {result.input.actuals.name} - Iteration: {iteration}'
-        subtitle = f'using {model.model_name} (Rank {model.model_selection.ranking.rank_position})'
+        subtitle = create_subtitle(model, is_discarded)
 
         if plot_covariates and len(model.covariates) > 0:
             df_concat = _add_covariates(df_ac, model.covariates, result.input.covariates,
@@ -1310,3 +1370,683 @@ def plot_backtesting(result: ForecastResult,
                                             df_bt=df_bt,
                                             plot_prediction_intervals=plot_prediction_intervals,
                                             plot_few_observations=plot_few_observations)
+
+
+def _create_interactive_scenario_plot(scenario: Scenario,
+                                      title: str,
+                                      df_cov: pd.DataFrame) -> None:
+    """Creates an interactive plot for a scenario.
+
+    Parameters
+    ----------
+    scenario
+        Scenario containing covariate time series with high/low projections.
+    title
+        Title of the plot.
+    df_cov
+        DataFrame with covariate actuals prepared by _prepare_actuals.
+    """
+    assert isinstance(scenario.ts, Covariate), 'Cannot plot scenario with CovariateRef instance.'
+    fig = go.Figure()
+
+    cov_dates = df_cov['date'].tolist()
+    cov_values = df_cov['actuals'].tolist()
+
+    # Add covariate time series
+    fig.add_trace(go.Scatter(
+        x=cov_dates,
+        y=cov_values,
+        mode='lines',
+        name=f"{scenario.ts.ts.name} (lag: {scenario.ts.lag})",
+        line={'color': prog_color.loc[0, 'darkblue'], 'width': 2},
+        marker={'size': 4}
+    ))
+
+    # Prepare high/low data
+    high_dates = [v.time_stamp_utc for v in scenario.high]
+    high_values = [v.value for v in scenario.high]
+    low_dates = [v.time_stamp_utc for v in scenario.low]
+    low_values = [v.value for v in scenario.low]
+
+    # Connect high/low lines to the last covariate point if available and not NaN
+    if cov_dates and high_dates and not pd.isna(cov_values[-1]):
+        last_cov_date = cov_dates[-1]
+        last_cov_value = cov_values[-1]
+        high_dates = [last_cov_date] + high_dates
+        high_values = [last_cov_value] + high_values
+        low_dates = [last_cov_date] + low_dates
+        low_values = [last_cov_value] + low_values
+
+    # Add high projection line
+    fig.add_trace(go.Scatter(
+        x=high_dates,
+        y=high_values,
+        mode='lines',
+        name='High',
+        line={'color': prog_color.loc[0, 'cyan'], 'width': 2, 'dash': 'dash'},
+        marker={'size': 4}
+    ))
+
+    # Add low projection line
+    fig.add_trace(go.Scatter(
+        x=low_dates,
+        y=low_values,
+        mode='lines',
+        name='Low',
+        line={'color': prog_color.loc[0, 'cyan'], 'width': 2, 'dash': 'dash'},
+        marker={'size': 4}
+    ))
+
+    # Add custom scenario if available
+    if scenario.custom:
+        custom_dates = [v.time_stamp_utc for v in scenario.custom]
+        custom_values = [v.value for v in scenario.custom]
+
+        # Connect to last covariate point if not NaN
+        if cov_dates and not pd.isna(cov_values[-1]):
+            custom_dates = [cov_dates[-1]] + custom_dates
+            custom_values = [cov_values[-1]] + custom_values
+
+        fig.add_trace(go.Scatter(
+            x=custom_dates,
+            y=custom_values,
+            mode='lines',
+            name='Custom',
+            line={'color': prog_color.loc[0, 'yellow'], 'width': 2},
+            marker={'size': 4}
+        ))
+
+    fig.update_layout(
+        plot_bgcolor='white',
+        title=title,
+        title_x=0.5,
+        xaxis_title='Date',
+        yaxis_title='Value',
+        hovermode='x unified'
+    )
+    fig.update_xaxes(
+        mirror=True,
+        ticks='outside',
+        showline=False,
+        gridcolor='lightgrey'
+    )
+    fig.update_yaxes(
+        mirror=True,
+        ticks='outside',
+        showline=False,
+        gridcolor='lightgrey'
+    )
+
+    fig.show()
+
+
+def _create_static_scenario_plot(scenario: Scenario,
+                                 title: str,
+                                 df_cov: pd.DataFrame) -> None:
+    """Creates a static plot for a scenario.
+
+    Parameters
+    ----------
+    scenario
+        Scenario containing covariate time series with high/low projections.
+    title
+        Title of the plot.
+    df_cov
+        DataFrame with covariate actuals prepared by _prepare_actuals.
+    """
+    assert isinstance(scenario.ts, Covariate), 'Cannot plot scenario with CovariateRef instance.'
+    fig, ax = plt.subplots(figsize=(12, 6))
+    fig.suptitle(title, fontsize=16)
+
+    cov_dates = df_cov['date'].tolist()
+    cov_values = df_cov['actuals'].tolist()
+
+    # Plot covariate time series
+    ax.plot(cov_dates, cov_values,
+            color=prog_color.loc[0, 'darkblue'],
+            label=f"{scenario.ts.ts.name} (lag: {scenario.ts.lag})")
+
+    # Prepare high/low data
+    high_dates = [v.time_stamp_utc for v in scenario.high]
+    high_values = [v.value for v in scenario.high]
+    low_dates = [v.time_stamp_utc for v in scenario.low]
+    low_values = [v.value for v in scenario.low]
+
+    # Connect high/low lines to the last covariate point if available and not NaN
+    if cov_dates and not pd.isna(cov_values[-1]):
+        last_cov_date = cov_dates[-1]
+        last_cov_value = cov_values[-1]
+        high_dates = [last_cov_date] + high_dates
+        high_values = [last_cov_value] + high_values
+        low_dates = [last_cov_date] + low_dates
+        low_values = [last_cov_value] + low_values
+
+    # Plot high projection
+    ax.plot(high_dates, high_values,
+            linestyle='--',
+            color=prog_color.loc[0, 'cyan'],
+            label='High')
+
+    # Plot low projection
+    ax.plot(low_dates, low_values,
+            linestyle='--',
+            color=prog_color.loc[0, 'cyan'],
+            label='Low')
+
+    # Plot custom scenario if available
+    if scenario.custom:
+        custom_dates = [v.time_stamp_utc for v in scenario.custom]
+        custom_values = [v.value for v in scenario.custom]
+
+        # Connect to last covariate point if not NaN
+        if cov_dates and not pd.isna(cov_values[-1]):
+            custom_dates = [cov_dates[-1]] + custom_dates
+            custom_values = [cov_values[-1]] + custom_values
+
+        ax.plot(custom_dates, custom_values,
+                marker='.', markersize=4,
+                color=prog_color.loc[0, 'yellow'],
+                label='Custom')
+
+    ax.legend(loc=legend_position['loc'], bbox_to_anchor=(1, 1))
+    ax.set_frame_on(False)
+    ax.tick_params(axis='both', labelsize=10)
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Value')
+
+    plt.subplots_adjust(left=0.1, right=0.85, top=0.9, bottom=0.1)
+    plt.show()
+
+
+def plot_scenario(scenario: Scenario,
+                  plot_last_x_data_points_only: Optional[int] = None,
+                  as_interactive: bool = False) -> None:
+    """Plots a scenario with covariate time series and high/low projections.
+
+    Parameters
+    ----------
+    scenario
+        Scenario containing covariate time series with high and low projections.
+    plot_last_x_data_points_only
+        Number of data points of the covariate that should be shown in the plot.
+    as_interactive
+        Plots the data in an interactive plot or as static image.
+    """
+    assert isinstance(scenario.ts, Covariate), 'Cannot plot scenario with CovariateRef instance.'
+    cov_name = scenario.ts.ts.name
+    lag = scenario.ts.lag
+    title = f'Scenario: Covariate {cov_name} (lag: {lag})'
+
+    df_cov = _prepare_actuals(scenario.ts.ts, plot_last_x_data_points_only)
+
+    if as_interactive:
+        _create_interactive_scenario_plot(scenario, title, df_cov)
+    else:
+        _create_static_scenario_plot(scenario, title, df_cov)
+
+
+def _shift_scenario_dates(values: Sequence[TimeSeriesValue], lag: int, freq: Optional[str]) -> list[datetime.datetime]:
+    """Shift scenario dates by the given lag and frequency."""
+    dates = [v.time_stamp_utc for v in values]
+    if freq and lag > 0:
+        offset = lag * pd.tseries.frequencies.to_offset(freq)
+        dates = [(pd.Timestamp(d) + offset) for d in dates]
+    return dates
+
+
+def _prepare_covariate_data(scenarios: Sequence[ResultScenario],
+                            plot_last_x_data_points_only: Optional[int]) -> list[dict[str, Any]]:
+    """Prepare covariate historical data and scenario projections for plotting.
+
+    Parameters
+    ----------
+    scenarios
+        Sequence of scenarios containing covariate references and projections.
+    plot_last_x_data_points_only
+        Number of data points of the actuals that should be shown in the plot.
+
+    Returns
+    -------
+    List of dicts, one per scenario, each containing:
+        idx, cov_name, lag, color, cov_dates, cov_actuals,
+        high_dates, high_values, low_dates, low_values,
+        custom_dates, custom_values (last two are None if no custom scenario).
+    """
+    result = []
+    for idx, scenario in enumerate(scenarios):
+        cov = scenario.ts
+        cov_name = cov.ts.name
+        lag = cov.lag
+        cov_ts = cov.ts
+        color = cov_column_color[idx % len(cov_column_color)]
+
+        # Prepare lag-shifted covariate historical data
+        df_cov = _prepare_actuals(cov_ts, plot_last_x_data_points_only)
+        cov_dates = pd.DatetimeIndex(df_cov['date'])
+        freq = GRANULARITY_TO_PD_ALIAS.get(cov_ts.granularity)
+        if freq and lag > 0:
+            cov_dates = cov_dates + lag * pd.tseries.frequencies.to_offset(freq)
+        cov_dates = cov_dates.tolist()
+
+        last_cov_date = cov_dates[-1] if cov_dates else None
+        last_cov_value = df_cov['actuals'].iloc[-1] if not df_cov.empty else None
+
+        # High scenario
+        high_dates = _shift_scenario_dates(scenario.high, lag, freq)
+        high_values = [v.value for v in scenario.high]
+        if last_cov_date is not None and not pd.isna(last_cov_value):
+            high_dates = [last_cov_date] + high_dates
+            high_values = [last_cov_value] + high_values
+
+        # Low scenario
+        low_dates = _shift_scenario_dates(scenario.low, lag, freq)
+        low_values = [v.value for v in scenario.low]
+        if last_cov_date is not None and not pd.isna(last_cov_value):
+            low_dates = [last_cov_date] + low_dates
+            low_values = [last_cov_value] + low_values
+
+        # Custom scenario
+        custom_dates = None
+        custom_values = None
+        if scenario.custom:
+            custom_dates = _shift_scenario_dates(scenario.custom, lag, freq)
+            custom_values = [v.value for v in scenario.custom]
+            if last_cov_date is not None and not pd.isna(last_cov_value):
+                custom_dates = [last_cov_date] + custom_dates
+                custom_values = [last_cov_value] + custom_values
+
+        result.append({
+            'idx': idx,
+            'cov_name': cov_name,
+            'lag': lag,
+            'color': color,
+            'cov_dates': cov_dates,
+            'cov_actuals': df_cov['actuals'],
+            'high_dates': high_dates,
+            'high_values': high_values,
+            'low_dates': low_dates,
+            'low_values': low_values,
+            'custom_dates': custom_dates,
+            'custom_values': custom_values,
+        })
+    return result
+
+
+def _forecast_values_to_df(forecast_values: Sequence[ForecastValue],
+                           last_actual_date: Any,
+                           last_actual_value: Any) -> pd.DataFrame:
+    """Convert a sequence of ForecastValue to a DataFrame, prepending the last actual data point.
+
+    Parameters
+    ----------
+    forecast_values
+        Sequence of forecast values.
+    last_actual_date
+        Date of the last actual data point, used to connect forecast to actuals.
+    last_actual_value
+        Value of the last actual data point.
+
+    Returns
+    -------
+    DataFrame with columns: date, value, lower, upper. The first row contains the last actual data point.
+    """
+    return pd.concat([
+        pd.DataFrame({'date': [last_actual_date], 'value': [last_actual_value],
+                      'lower': [last_actual_value], 'upper': [last_actual_value]}),
+        pd.DataFrame({
+            'date': [fv.time_stamp_utc for fv in forecast_values],
+            'value': [fv.point_forecast_value for fv in forecast_values],
+            'lower': [fv.lower_limit_value for fv in forecast_values],
+            'upper': [fv.upper_limit_value for fv in forecast_values],
+        }),
+    ], ignore_index=True)
+
+
+def _create_interactive_shaper_results_plot(result: ShaperResult,
+                                            title: str,
+                                            df_ac: pd.DataFrame,
+                                            fc_high_df: pd.DataFrame,
+                                            fc_low_df: pd.DataFrame,
+                                            fc_custom_df: Optional[pd.DataFrame],
+                                            plot_last_x_data_points_only: Optional[int],
+                                            plot_prediction_intervals: bool) -> None:
+    """Creates an interactive plot for the shaper forecast results.
+
+    Parameters
+    ----------
+    result
+        ShaperResult containing actuals and forecast scenarios.
+    title
+        Title of the plot.
+    df_ac
+        Prepared actuals DataFrame with 'date' and 'actuals' columns.
+    fc_high_df
+        DataFrame with high forecast values.
+    fc_low_df
+        DataFrame with low forecast values.
+    fc_custom_df
+        DataFrame with custom forecast values, or None if not available.
+    plot_last_x_data_points_only
+        Number of data points of the actuals that should be shown in the plot.
+    plot_prediction_intervals
+        Shows prediction intervals.
+    """
+    fig = go.Figure()
+
+    # Plot actuals
+    fig.add_trace(go.Scatter(
+        x=df_ac.date,
+        y=df_ac.actuals,
+        mode='lines',
+        name=plot_labels['time_series'],
+        line={'color': prog_color.loc[0, 'darkblue'], 'width': 2},
+        marker={'color': prog_color.loc[0, 'darkblue'], 'size': 2},
+        connectgaps=False,
+    ))
+
+    # Add forecast region shading
+    fig.add_vrect(
+        x0=fc_high_df['date'].iloc[0],
+        x1=fc_high_df['date'].iloc[-1],
+        fillcolor=prog_color.loc[4, 'greyblue'],
+        opacity=0.3,
+        layer='below',
+        line_width=0,
+    )
+
+    # High forecast
+    fig.add_trace(go.Scatter(
+        x=fc_high_df['date'], y=fc_high_df['value'],
+        mode='lines', name='Forecast High',
+        line={'color': prog_color.loc[0, 'cyan'], 'width': 2},
+    ))
+
+    if plot_prediction_intervals and _has_prediction_intervals(fc_high_df):
+        pi_color = mpl.colors.to_rgba(prog_color.loc[2, 'cyan'], alpha=0.3)
+        pi_color_str = f'rgba({pi_color[0]}, {pi_color[1]}, {pi_color[2]}, {pi_color[3]})'
+        fig.add_trace(go.Scatter(
+            x=fc_high_df['date'], y=fc_high_df['upper'],
+            mode='lines', line_color=transparent_rgba,
+            showlegend=False,  name='PI High',
+        ))
+        fig.add_trace(go.Scatter(
+            x=fc_high_df['date'], y=fc_high_df['lower'],
+            mode='lines', fill='tonexty',
+            line_color=transparent_rgba,
+            name='PI High', fillcolor=pi_color_str,
+        ))
+
+    # Low forecast
+    fig.add_trace(go.Scatter(
+        x=fc_low_df['date'], y=fc_low_df['value'],
+        mode='lines', name='Forecast Low',
+        line={'color': prog_color.loc[0, 'cyan'], 'width': 2},
+    ))
+
+    if plot_prediction_intervals and _has_prediction_intervals(fc_low_df):
+        pi_color_low = mpl.colors.to_rgba(prog_color.loc[2, 'cyan'], alpha=0.15)
+        pi_color_low_str = f'rgba({pi_color_low[0]}, {pi_color_low[1]}, {pi_color_low[2]}, {pi_color_low[3]})'
+        fig.add_trace(go.Scatter(
+            x=fc_low_df['date'], y=fc_low_df['upper'],
+            mode='lines', line_color=transparent_rgba,
+            showlegend=False, name='PI Low',
+        ))
+        fig.add_trace(go.Scatter(
+            x=fc_low_df['date'], y=fc_low_df['lower'],
+            mode='lines', fill='tonexty',
+            line_color=transparent_rgba,
+            name='PI Low', fillcolor=pi_color_low_str,
+        ))
+
+    # Custom forecast
+    if fc_custom_df is not None:
+        fig.add_trace(go.Scatter(
+            x=fc_custom_df['date'], y=fc_custom_df['value'],
+            mode='lines', name='Forecast Custom',
+            line={'color': prog_color.loc[0, 'yellow'], 'width': 2},
+        ))
+
+        if plot_prediction_intervals and _has_prediction_intervals(fc_custom_df):
+            pi_color_custom = mpl.colors.to_rgba(prog_color.loc[0, 'yellow'], alpha=0.15)
+            pi_color_custom_str = f'rgba({pi_color_custom[0]}, {pi_color_custom[1]}, {pi_color_custom[2]}, {pi_color_custom[3]})'
+            fig.add_trace(go.Scatter(
+                x=fc_custom_df['date'], y=fc_custom_df['upper'],
+                mode='lines', line_color=transparent_rgba,
+                showlegend=False, name='PI Custom upper bound',
+            ))
+            fig.add_trace(go.Scatter(
+                x=fc_custom_df['date'], y=fc_custom_df['lower'],
+                mode='lines', fill='tonexty',
+                line_color=transparent_rgba,
+                name='PI Custom lower bound', fillcolor=pi_color_custom_str,
+            ))
+
+    # Plot covariates with their scenario projections on secondary y-axes
+    scenarios = result.input.scenarios or []
+    cov_data = _prepare_covariate_data(scenarios, plot_last_x_data_points_only)
+
+    for cov in cov_data:
+        yaxis_name = f'y{cov["idx"] + 2}'
+
+        fig.add_trace(go.Scatter(
+            x=cov['cov_dates'],
+            y=cov['cov_actuals'],
+            mode='lines',
+            name=f'{cov["cov_name"]} (lag: {cov["lag"]})',
+            line={'color': cov['color'], 'width': 2},
+            marker={'size': 2},
+            yaxis=yaxis_name,
+            visible='legendonly',
+            legendgroup=cov['cov_name'],
+        ))
+
+        if cov['custom_dates'] is not None:
+            fig.add_trace(go.Scatter(
+                x=cov['custom_dates'], y=cov['custom_values'],
+                mode='lines',
+                name=f'{cov["cov_name"]} Custom',
+                line={'color': cov['color'], 'width': 2},
+                marker={'size': 4},
+                yaxis=yaxis_name,
+                visible='legendonly',
+                legendgroup=cov['cov_name'],
+            ))
+        else:
+            fig.add_trace(go.Scatter(
+                x=cov['high_dates'], y=cov['high_values'],
+                mode='lines',
+                name=f'{cov["cov_name"]} High',
+                line={'color': cov['color'], 'width': 2, 'dash': 'dash'},
+                marker={'size': 4},
+                yaxis=yaxis_name,
+                visible='legendonly',
+                legendgroup=cov['cov_name'],
+            ))
+
+            fig.add_trace(go.Scatter(
+                x=cov['low_dates'], y=cov['low_values'],
+                mode='lines',
+                name=f'{cov["cov_name"]} Low',
+                line={'color': cov['color'], 'width': 2, 'dash': 'dash'},
+                marker={'size': 4},
+                yaxis=yaxis_name,
+                visible='legendonly',
+                legendgroup=cov['cov_name'],
+            ))
+
+    # Build layout with secondary y-axes for covariates
+    yaxis_layout: dict[str, Any] = {}
+    for idx, scenario in enumerate(scenarios):
+        axis_key = f'yaxis{idx + 2}'
+        yaxis_layout[axis_key] = {
+            'title': 'Covariates' if idx == 0 else None,
+            'overlaying': 'y',
+            'side': 'right',
+            'showticklabels': False,
+        }
+
+    fig.update_layout(
+        plot_bgcolor='white',
+        title=title,
+        title_x=0.5,
+        xaxis_title='Date',
+        yaxis_title='Value',
+        hovermode='x unified',
+        **yaxis_layout,
+    )
+    fig.update_xaxes(mirror=True, ticks='outside', showline=False, gridcolor='lightgrey')
+    fig.update_yaxes(mirror=True, ticks='outside', showline=False, gridcolor='lightgrey')
+    fig.update_layout(
+        showlegend=True,
+        legend={
+            'x': 0.5, 'y': -0.25,
+            'xanchor': 'center', 'yanchor': 'top',
+            'traceorder': 'normal', 'orientation': 'h',
+        },
+        margin={'b': 150},
+    )
+
+    fig.show()
+
+
+def _create_static_shaper_results_plot(result: ShaperResult,
+                                       title: str,
+                                       df_ac: pd.DataFrame,
+                                       fc_high_df: pd.DataFrame,
+                                       fc_low_df: pd.DataFrame,
+                                       fc_custom_df: Optional[pd.DataFrame],
+                                       plot_last_x_data_points_only: Optional[int],
+                                       plot_prediction_intervals: bool) -> None:
+    """Creates a static plot for the shaper forecast results.
+
+    Parameters
+    ----------
+    result
+        ShaperResult containing actuals and forecast scenarios.
+    title
+        Title of the plot.
+    df_ac
+        Prepared actuals DataFrame with 'date' and 'actuals' columns.
+    fc_high_df
+        DataFrame with high forecast values.
+    fc_low_df
+        DataFrame with low forecast values.
+    fc_custom_df
+        DataFrame with custom forecast values, or None if not available.
+    plot_last_x_data_points_only
+        Number of data points of the actuals that should be shown in the plot.
+    plot_prediction_intervals
+        Shows prediction intervals.
+    """
+    fig, ax = plt.subplots(figsize=(12, 6))
+    fig.suptitle(title, fontsize=16)
+
+    # Plot actuals
+    ax.plot(df_ac.date, df_ac.actuals,
+            color=prog_color.loc[0, 'darkblue'],
+            label=plot_labels['time_series'])
+
+    # High forecast
+    ax.plot(fc_high_df['date'], fc_high_df['value'], color=prog_color.loc[0, 'cyan'], label='Forecast High')
+
+    if plot_prediction_intervals and _has_prediction_intervals(fc_high_df):
+        ax.fill_between(fc_high_df['date'], fc_high_df['lower'], fc_high_df['upper'],
+                        color=prog_color.loc[2, 'cyan'], alpha=0.3, label='PI High')
+
+    # Low forecast
+    ax.plot(fc_low_df['date'], fc_low_df['value'],
+            color=prog_color.loc[0, 'cyan'], linestyle='--', label='Forecast Low')
+
+    if plot_prediction_intervals and _has_prediction_intervals(fc_low_df):
+        ax.fill_between(fc_low_df['date'], fc_low_df['lower'], fc_low_df['upper'],
+                        color=prog_color.loc[2, 'cyan'], alpha=0.15, label='PI Low')
+
+    # Custom forecast
+    if fc_custom_df is not None:
+        ax.plot(fc_custom_df['date'], fc_custom_df['value'], color=prog_color.loc[0, 'yellow'], label='Forecast Custom')
+
+        if plot_prediction_intervals and _has_prediction_intervals(fc_custom_df):
+            ax.fill_between(fc_custom_df['date'], fc_custom_df['lower'], fc_custom_df['upper'],
+                            color=prog_color.loc[0, 'yellow'], alpha=0.15, label='PI Custom')
+
+    # Plot covariates with their scenario projections on secondary y-axes
+    scenarios = result.input.scenarios or []
+    cov_data = _prepare_covariate_data(scenarios, plot_last_x_data_points_only)
+    cov_axes: dict[int, mpl.axes.Axes] = {}
+    lines, labels = ax.get_legend_handles_labels()
+
+    for cov in cov_data:
+        idx = cov['idx']
+        cov_axes[idx] = ax.twinx()
+        cov_axes[idx].grid(False)
+        cov_axes[idx].set_frame_on(False)
+        cov_axes[idx].tick_params(axis='both', labelsize=10)
+        if idx == 0:
+            cov_axes[idx].set_ylabel('Covariates')
+            cov_axes[idx].yaxis.label.set_visible(True)
+            cov_axes[idx].tick_params(right=False, labelright=False)
+        else:
+            cov_axes[idx].set_axis_off()
+
+        cov_axes[idx].plot(cov['cov_dates'], cov['cov_actuals'],
+                           color=cov['color'],
+                           label=f'{cov["cov_name"]} (lag: {cov["lag"]})')
+
+        if cov['custom_dates'] is not None:
+            cov_axes[idx].plot(cov['custom_dates'], cov['custom_values'],
+                               color=cov['color'], label=f'{cov["cov_name"]} Custom')
+        else:
+            cov_axes[idx].plot(cov['high_dates'], cov['high_values'],
+                               linestyle='--',
+                               color=cov['color'], label=f'{cov["cov_name"]} High')
+
+            cov_axes[idx].plot(cov['low_dates'], cov['low_values'],
+                               linestyle='--',
+                               color=cov['color'], label=f'{cov["cov_name"]} Low')
+
+        cov_lines, cov_labels = cov_axes[idx].get_legend_handles_labels()
+        lines = lines + cov_lines
+        labels = labels + cov_labels
+
+    ax.legend(lines, labels, loc='upper center', bbox_to_anchor=(0.5, -0.18), ncol=3)
+    ax.set_frame_on(False)
+    ax.tick_params(axis='both', labelsize=10)
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Value')
+
+    plt.subplots_adjust(left=0.1, right=0.95, top=0.9, bottom=0.3)
+    plt.show()
+
+
+def plot_shaper_results(result: ShaperResult,
+                        plot_last_x_data_points_only: Optional[int] = None,
+                        plot_prediction_intervals: bool = True,
+                        as_interactive: bool = False) -> None:
+    """Plots the shaper forecast results including high, low, and optional custom scenarios.
+
+    Parameters
+    ----------
+    result
+        ShaperResult containing actuals and the different scenario forecasts.
+    plot_last_x_data_points_only
+        Number of data points of the actuals that should be shown in the plot.
+    plot_prediction_intervals
+        Shows prediction intervals for each forecast scenario.
+    as_interactive
+        Plots the data in an interactive plot or as static image.
+    """
+    title = f'Shaper Forecast for {result.input.actuals.name}'
+    df_ac = _prepare_actuals(result.input.actuals, plot_last_x_data_points_only)
+    last_actual_date = df_ac.date.iloc[-1]
+    last_actual_value = df_ac.actuals.iloc[-1]
+    fc_high_df = _forecast_values_to_df(result.forecast_high, last_actual_date, last_actual_value)
+    fc_low_df = _forecast_values_to_df(result.forecast_low, last_actual_date, last_actual_value)
+    fc_custom_df = (_forecast_values_to_df(result.forecast_custom, last_actual_date, last_actual_value)
+                    if result.forecast_custom else None)
+
+    if as_interactive:
+        _create_interactive_shaper_results_plot(result, title, df_ac, fc_high_df, fc_low_df, fc_custom_df,
+                                                plot_last_x_data_points_only, plot_prediction_intervals)
+    else:
+        _create_static_shaper_results_plot(result, title, df_ac, fc_high_df, fc_low_df, fc_custom_df,
+                                           plot_last_x_data_points_only, plot_prediction_intervals)
