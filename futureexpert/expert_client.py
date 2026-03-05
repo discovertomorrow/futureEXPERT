@@ -5,8 +5,9 @@ import json
 import logging
 import os
 import pprint
+import tempfile
+from datetime import datetime
 from pathlib import Path
-from types import TracebackType
 from typing import Any, Dict, List, Literal, Mapping, Optional, Type, Union, cast
 
 import httpx
@@ -69,7 +70,7 @@ class ExpertClient:
 
             You can retrieve a long-lived refresh token (offline token) in the user settings of the futureEXPERT Dashboard
             or using the Open ID Connect token endpoint of our identity provider.
-            
+
             Example for calling the token endpoint with scope `offline_access`:
             curl -s -X POST "https://future-auth.prognostica.de/realms/future/protocol/openid-connect/token" \
                     -H "Content-Type: application/x-www-form-urlencoded" \
@@ -393,12 +394,6 @@ class ExpertClient:
         form_data: Dict[str, Any] = {}
         files: Dict[str, Any] = {}
 
-        if isinstance(raw_data_source, pd.DataFrame):
-            data_json = raw_data_source.to_dict(orient='records')
-            form_data['data'] = json.dumps(data_json)
-        else:
-            files['file'] = open(raw_data_source, 'rb')
-
         if data_definition:
             form_data['data_definition'] = json.dumps(data_definition.model_dump())
         if config_ts_creation:
@@ -409,7 +404,22 @@ class ExpertClient:
             form_data['file_specification'] = json.dumps(file_specification.model_dump())
 
         try:
-            result = self._request('POST', '/api/v1/check-in', files=files or None, data=form_data)
+
+            if isinstance(raw_data_source, pd.DataFrame):
+
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    time_stamp = datetime.now().strftime('%Y-%m-%d-%H%M%S')
+                    file_path = os.path.join(tmpdir, f'expert-{time_stamp}.csv')
+                    date_format = data_definition.date_column.format if data_definition else None
+                    raw_data_source.to_csv(path_or_buf=file_path, index=False, sep=file_specification.delimiter,
+                                           decimal=file_specification.decimal, encoding='utf-8-sig',
+                                           date_format=date_format)
+                    files['file'] = open(file_path, 'rb')
+                    result = self._request('POST', '/api/v1/check-in', files=files or None, data=form_data)
+
+            else:
+                files['file'] = open(raw_data_source, 'rb')
+                result = self._request('POST', '/api/v1/check-in', files=files or None, data=form_data)
             return str(result['version_id'])
         finally:
             for f in files.values():

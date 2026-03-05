@@ -265,7 +265,7 @@ def main(argv: Optional[Sequence[str]] = None):
             refiner.write()
 
         # Generate API docs with pdoc.
-        command = f'pdoc --force --html -o {export_directory} {os.path.join(tmp_manager.tmp_directory, "futureexpert")}'
+        command = f'pdoc --force --html -o {export_directory} {os.path.join(tmp_manager.tmp_directory, 'futureexpert')}'
         os.system(command)
 
 

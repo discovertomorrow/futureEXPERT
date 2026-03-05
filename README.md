@@ -6,16 +6,46 @@ It is built upon a **Smart Build** principle: a clear division of tasks that mak
 * **_futureEXPERT_ handles the "how"**: The complex methodological and technical details, from data preparation to forecast generation, are abstracted away for you.
 
 
-The workflow is handled by four distinct modules:
+In case you don't want to use this Python client or access futureEXPERT via [API](https://expert.future-forecasting.de/apidoc), check out our frontend solutions [futureNOW](https://www.future-forecasting.de/) and [futureEXPERT Dashboard](https://expert.future-forecasting.de).
 
-1. *CHECK-IN*: Prepares your time series data. This module validates, cleans, and transforms your input data to ensure it's ready for forecasting.
-2. *POOL*: Provides a library of curated external variables (e.g., economic indicators, weather data). You can search this continuously updated collection to find useful covariates for your forecast.
-3. *MATCHER*: Ranks covariates to find the most impactful ones for your data. It takes your own covariates or variables from the *POOL*, determines their optimal time lag, and measures their predictive value against a baseline model.
-4. *FORECAST*: Generates the final forecast. This module automatically selects the best model (from statistical, ML, and AI methods) for each time series and can incorporate the top-performing covariates identified by *MATCHER*.
+## Modules
 
-The simplest workflow only contains *CHECK-IN* and *FORECAST* is described in the jupyter notebook [getting started](./notebooks/getting_started.ipynb).
+futureEXPERT provides six modules that cover every step from data preparation to forecast generation.
 
-In case you don't want to use this Python client or access futureEXPERT via API, check out our frontend solution [futureNOW](https://www.future-forecasting.de/).
+- *CHECK-IN*: Prepares your time series data. This module validates, cleans, and transforms your input data to ensure it's ready for forecasting.
+- *POOL*: Provides a library of curated external variables (e.g., economic indicators, weather data). You can search this continuously updated collection to find useful covariates for your forecast.
+- *ASSOCIATOR*: Creates clusters of similar time series patterns and trend behaviour of a set of time series.
+- *MATCHER*: Ranks covariates to find the most impactful ones for your data. It takes your own covariates or variables from the *POOL*, determines their optimal time lag, and measures their predictive value against a baseline model.
+- *FORECAST*: Generates the final forecast. This module automatically selects the best model (from statistical, ML, and AI methods) for each time series and can incorporate the top-performing covariates identified by *MATCHER*.
+- *SHAPER*: Enables "what if" analyses. It generates a base forecast along with best-case and worst-case scenarios by letting experts shape their assumptions about influencing variables — from the *POOL* or imported via *CHECK-IN*.
+
+## Workflows
+
+These modules support two main workflows for generating forecasts.
+
+### Forecasting with or without covariates
+
+```mermaid
+flowchart LR
+    CHECK-IN --> ASSOCIATOR -.-> MATCHER -.-> FORECAST
+    POOL -.-> ASSOCIATOR
+    classDef optional stroke-dasharray: 5 5
+    class POOL,ASSOCIATOR,MATCHER optional
+```
+
+The simplest version of this workflow only needs *CHECK-IN* → *FORECAST* and is described in the jupyter notebook [getting started](./notebooks/getting_started.ipynb).
+
+### Scenario-based Forecasting
+
+```mermaid
+flowchart LR
+    CHECK-IN --> SHAPER
+    POOL -.-> SHAPER
+    classDef optional stroke-dasharray: 5 5
+    class POOL optional
+```
+
+Experts shape their assumptions about covariates — from the *POOL* or imported via *CHECK-IN* — and *SHAPER* generates a base forecast along with best-case and worst-case scenarios.
 
 ## Registration
 
@@ -55,6 +85,7 @@ Utilize our use case templates to get started with your own business application
 - [Using covariates - MATCHER and FORECAST](./notebooks/cov_matcher_and_forecast.ipynb?ref_type=heads) - Using covariates: Leverage MATCHER to identify predictive covariates, get ranking of all covariates with the best time lag & incorporate the result into your FORECAST.
 - [Using covariates from POOL](./notebooks/using_covariates_from_POOL.ipynb) - How to use potential influencing factors from POOL.
 - [Cluster time series with ASSOCIATOR](./notebooks/associator.ipynb) - Identifying clusters of similar time series patterns and trend behaviour.
+- [Build scenarios with SHAPER](./notebooks/shaper.ipynb) - Create scenario-based forecasts by defining how covariates (influencing variables) evolve in the future.
 - [Working with results](./notebooks/working_with_results.ipynb) - Overview of forecast result functions (e.g. export, plotting) and how to use them; further detailed information about the results (e.g. summary of forecasting methods).
 
 - [API documentation](https://discovertomorrow.github.io/futureEXPERT) - Further information about all features and configurations.

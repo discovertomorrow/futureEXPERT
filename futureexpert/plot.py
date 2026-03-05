@@ -336,7 +336,7 @@ def _add_level_shifts(df_ac: pd.DataFrame, level_shifts: list[ChangePoint]) -> p
         return df_ac
     index_last_actual = len(df_ac.index)-1
     df_level_shift = pd.DataFrame({'date': [x.time_stamp_utc for x in level_shifts],
-                                   'level_shift':  'x'})
+                                   'level_shift':  0.0})
 
     df_ac = df_ac.merge(df_level_shift, on='date', how='left')
     shift_index = df_ac[df_ac.level_shift.notnull()].index.tolist()

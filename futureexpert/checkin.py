@@ -228,13 +228,15 @@ class TimeSeriesVersion(BaseModel):
     """
     version_id: str
     description: Optional[str]
-    creation_time_utc: datetime
-    keep_until_utc: datetime
+    creation_time_utc: Optional[datetime]
+    keep_until_utc: Optional[datetime]
 
     @pydantic.model_validator(mode='after')
     def fix_time_stamps(self) -> Self:
-        last_day = self.keep_until_utc.date()
-        self.creation_time_utc = self.creation_time_utc.replace(microsecond=0)
-        self.keep_until_utc = datetime.combine(last_day, datetime.min.time())
+        if self.keep_until_utc:
+            last_day = self.keep_until_utc.date()
+            self.keep_until_utc = datetime.combine(last_day, datetime.min.time())
+        if self.creation_time_utc:
+            self.creation_time_utc = self.creation_time_utc.replace(microsecond=0)
 
         return self
