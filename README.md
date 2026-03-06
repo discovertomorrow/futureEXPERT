@@ -6,7 +6,28 @@ It is built upon a **Smart Build** principle: a clear division of tasks that mak
 * **_futureEXPERT_ handles the "how"**: The complex methodological and technical details, from data preparation to forecast generation, are abstracted away for you.
 
 
-In case you don't want to use this Python client or access futureEXPERT via [API](https://expert.future-forecasting.de/apidoc), check out our frontend solutions [futureNOW](https://www.future-forecasting.de/) and [futureEXPERT Dashboard](https://expert.future-forecasting.de).
+In case you don't want to use this Python client or access futureEXPERT via [API](https://expert.future-forecasting.de/apidoc), check out our frontend solutions [futureNOW](https://now.future-forecasting.de/) and [futureEXPERT Dashboard](https://expert.future-forecasting.de).
+
+
+## Registration
+
+If you do not have an account for [future](https://now.future-forecasting.de) yet, click [here](https://launch.future-forecasting.de/) to register for a free account.
+
+## Installation
+
+In order to use futureEXPERT, you need a Python environment with Python 3.9 or higher.
+
+The futureEXPERT package can be directly installed with `pip` from our GitHub repository.
+
+```
+pip install -U futureexpert
+```
+
+## Getting started
+
+If you want to explore the workflow of futureEXPERT without diving directly into code, check out our [dashboard](https://expert.future-forecasting.de). It visually guides you through the capabilities of the futureEXPERT client. While it does not contain the full capabilities of the library, it offers a hands-on way to experience what futureEXPERT can do.
+
+To get started with futureEXPERT we recommend checking out the jupyter notebook [getting started](./notebooks/getting_started.ipynb) to help you with your first steps. Also check our [quick start video tutorial](https://www.future-forecasting.de/video/getting-started/).
 
 ## Modules
 
@@ -47,27 +68,6 @@ flowchart LR
 
 Experts shape their assumptions about covariates — from the *POOL* or imported via *CHECK-IN* — and *SHAPER* generates a base forecast along with best-case and worst-case scenarios.
 
-## Registration
-
-If you do not have an account for [future](https://now.future-forecasting.de) yet, click [here](https://launch.future-forecasting.de/) to register for a free account.
-
-## Installation
-
-In order to use futureEXPERT, you need a Python environment with Python 3.9 or higher.
-
-The futureEXPERT package can be directly installed with `pip` from our GitHub repository.
-
-```
-pip install -U futureexpert
-```
-
-## Getting started
-
-If you want to explore the workflow of futureEXPERT without diving directly into code, check out our [dashboard](https://expert.future-forecasting.de). It visually guides you through the capabilities of the futureEXPERT client. While it does not contain the full capabilities of the library, it offers a hands-on way to experience what futureEXPERT can do.
-
-To get started with futureEXPERT we recommend checking out the jupyter notebook [getting started](./notebooks/getting_started.ipynb) to help you with your first steps. Also check our [quick start video tutorial](https://www.future-forecasting.de/video/getting-started/).
-
-
 ## Ready-made use case templates
 
 Utilize our use case templates to get started with your own business application right away.
@@ -78,24 +78,28 @@ Utilize our use case templates to get started with your own business application
 ## Advanced usage
 
 - [checkin configuration options](./notebooks/checkin_configuration_options.ipynb) - Different options to prepare your data to time series.
-
+- [AI-assisted Data Transformation for CHECK-IN](./notebooks/ai_assisted_data_transformation_for_checkin.ipynb)
 - [Advanced workflow FORECAST](./notebooks/advanced_workflow.ipynb) - For more control about the single steps for generating a forecast.
 - [Using open orders for FORECAST](./notebooks/forecast_with_open_orders.ipynb) - Create forecasts with minimum constraints per forecast step.
 - [Using covariates for FORECAST](./notebooks/forecast_with_covariates.ipynb) - Create forecasts with covariates by using your own data of influencing factors.
 - [Using covariates - MATCHER and FORECAST](./notebooks/cov_matcher_and_forecast.ipynb?ref_type=heads) - Using covariates: Leverage MATCHER to identify predictive covariates, get ranking of all covariates with the best time lag & incorporate the result into your FORECAST.
+- [Hierarchically consistent forecasting](./notebooks/make_forecasts_consistent.ipynb) - How to make forecasts consistent over hierachical levels.
 - [Using covariates from POOL](./notebooks/using_covariates_from_POOL.ipynb) - How to use potential influencing factors from POOL.
 - [Cluster time series with ASSOCIATOR](./notebooks/associator.ipynb) - Identifying clusters of similar time series patterns and trend behaviour.
 - [Build scenarios with SHAPER](./notebooks/shaper.ipynb) - Create scenario-based forecasts by defining how covariates (influencing variables) evolve in the future.
 - [Working with results](./notebooks/working_with_results.ipynb) - Overview of forecast result functions (e.g. export, plotting) and how to use them; further detailed information about the results (e.g. summary of forecasting methods).
 
-- [API documentation](https://discovertomorrow.github.io/futureEXPERT) - Further information about all features and configurations.
+Further details about available configuration parameters can be found in the [client's API documentation](https://discovertomorrow.github.io/futureEXPERT).
 
 ## Video tutorials
 
 Check out our video tutorials for a quick introduction to various aspects of futureEXPERT.
 
-- [Getting started](https://www.future-forecasting.de/video/getting-started/) from registration to first forecasts within minutes.
-- [CHECK-IN](https://www.future-forecasting.de/video/check-in/) your data and create time series for your forecasting use case.
+- [Quickstart](https://www.future-forecasting.de/en/video/quickstart-with-future-creating-forecasts/): First Forecasts in Minutes
+- [CHECK-IN](https://www.future-forecasting.de/en/video/preparing-time-series-with-check-in/) your data and create time series for your forecasting use case.
+- Forecasting Workflow without Code: The [futureEXPERT Dashboard](https://www.future-forecasting.de/en/video/expert-dashboard/)
+- [AI-assisted Data Transformation](https://www.future-forecasting.de/en/video/data-preparation-with-ai/) for easily preparing your data for CHECK-IN
+- [Build Custom Forecast Pipelines with futureEXPERT & Copilot](https://www.future-forecasting.de/en/video/custom-forecasting-configuration-with-github-copilot/)
 
 ## Contributing
 

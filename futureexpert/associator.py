@@ -41,7 +41,7 @@ class TrendDetectionConfiguration(BaseConfig):
     """
     end_time: Optional[datetime] = None
     max_number_of_obs: int = Field(default=6, gt=0)
-    number_of_nans_tolerated: int = 2
+    number_of_nans_tolerated: int = Field(default=2, ge=0)
 
 
 class ClusteringConfiguration(BaseConfig):
