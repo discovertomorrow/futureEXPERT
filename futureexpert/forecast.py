@@ -294,6 +294,9 @@ class MethodSelectionConfig(BaseConfig):
     phase_out_fc_methods
         List of methods that will be used to forecast phase-out time series.
         Phase-out detection must be enabled in preprocessing configuration to take effect.
+    enable_preselection
+        If true, then the list of forecasting_methods is filtered according to time series characteristics.
+        Must be true, if more than three forecasting methods are used.
     """
 
     number_iterations: Annotated[ValidatedPositiveInt, Field(ge=1, le=24)] = PositiveInt(12)
@@ -314,6 +317,28 @@ class MethodSelectionConfig(BaseConfig):
 
     backtesting_strategy: Literal['standard', 'equal_coverage'] = 'standard'
     equal_coverage_size: Optional[ValidatedPositiveInt] = None
+    enable_preselection: bool = True
+
+    @model_validator(mode="after")
+    def number_forecast_methods_valid_when_preselection_disabled(self) -> Self:
+        if self.enable_preselection:
+            return self
+
+        max_num_forecasting_methods = 3
+        # Check global forecasting_methods
+        if len(self.forecasting_methods) > max_num_forecasting_methods:
+            raise ValueError(
+                'Too many forecasting_methods: To preserve performance enable_preselection must be set true'
+                f' or the number of forecasting_methods must be reduced to {max_num_forecasting_methods} or lower.')
+        # Check each hierarchy level in forecasting_methods_per_hierarchy_level
+        for level, methods in self.forecasting_methods_per_hierarchy_level.items():
+            if len(methods) > max_num_forecasting_methods:
+                raise ValueError(
+                    f'Too many forecasting methods for hierarchy level {level}: '
+                    f'To preserve performance enable_preselection must be set true'
+                    f' or the number of forecasting methods must be reduced to {max_num_forecasting_methods} or lower.')
+        return self
+
 
     @model_validator(mode='after')
     def shift_length_valid_when_equal_coverage_active(self) -> Self:

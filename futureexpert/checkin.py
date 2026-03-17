@@ -185,6 +185,8 @@ class TsCreationConfig(BaseConfig):
         New value column that is a combination of two other value columns.
     missing_value_handler
         Strategy how to handle missing values during time series creation.
+    aggregation_operator
+        The operator that should be used to aggregate the time series.
     """
     value_columns_to_save: list[str]
     time_granularity: Literal['yearly', 'quarterly', 'monthly', 'weekly', 'daily', 'hourly', 'halfhourly']
@@ -196,7 +198,7 @@ class TsCreationConfig(BaseConfig):
     filter: list[FilterSettings] = []
     new_variables: list[NewValue] = []
     missing_value_handler: Literal['keepNaN', 'setToZero'] = 'keepNaN'
-
+    aggregation_operator: Literal['sum', 'min', 'max', 'median', 'mean', 'std'] = 'sum'
 
 class CheckInResult(BaseModel):
     """Result of the CHECK-IN.
