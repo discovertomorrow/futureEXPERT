@@ -296,7 +296,9 @@ class MethodSelectionConfig(BaseConfig):
         Phase-out detection must be enabled in preprocessing configuration to take effect.
     enable_preselection
         If true, then the list of forecasting_methods is filtered according to time series characteristics.
-        Must be true, if more than three forecasting methods are used.
+        This means that specified methods may be excluded for certain time series.
+        Set to false to guarantee that all specified methods are used.
+        Cannot be set to false if more than three forecasting methods are used.
     """
 
     number_iterations: Annotated[ValidatedPositiveInt, Field(ge=1, le=24)] = PositiveInt(12)

@@ -208,14 +208,26 @@ class ExpertClient:
                 return response.json()
             return None
 
-        except httpx.HTTPStatusError as e:
-            logger.error(
-                f'API request {method} {path} failed with status code {e.response.status_code}: {e.response.text}')
-            if e.response.status_code == 400:
-                raise ValueError(e.response.text)
-            if e.response.status_code == 500:
-                raise RuntimeError(e.response.text)
-            raise
+        except httpx.HTTPStatusError as http_status_error:
+            error_mapping = {400: ValueError, 500: RuntimeError}
+            error_type = error_mapping.get(http_status_error.response.status_code)
+            if error_type is not None:
+                try:
+                    json_response = cast(dict[str, Any], http_status_error.response.json())
+                    # property 'error' is contained if wrapped from a ValueError or RuntimeError
+                    # property 'detail' is contained if HTTP 400 occered in FastAPI parameter deserialization
+                    # property 'details' is contained if HTTP 500 on server side
+                    error_message = json_response.get('details') or json_response.get('detail') or json_response.get('error')
+                    assert error_message is not None, 'expecting property error or detail'
+                except Exception:
+                    # just logging the inner exception, but raising the outer HTTP exception in the end
+                    logger.exception('Failed to handle server exception properly.')
+                else:
+                    # else block of the try...except statement - be careful with indentation
+                    raise error_type(error_message)
+            logger.error(f'API request {method} {path} failed with status code '
+                         f'{http_status_error.response.status_code}: {http_status_error.response.text}')
+            raise http_status_error
 
     # ==================== Data Upload and Check-in ====================
 
