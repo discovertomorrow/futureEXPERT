@@ -4,7 +4,7 @@ from __future__ import annotations
 import enum
 import logging
 import re
-from collections.abc import Iterator
+from collections.abc import Collection, Iterator
 from copy import deepcopy
 from datetime import datetime
 from enum import Enum
@@ -340,7 +340,6 @@ class MethodSelectionConfig(BaseConfig):
                     f'To preserve performance enable_preselection must be set true'
                     f' or the number of forecasting methods must be reduced to {max_num_forecasting_methods} or lower.')
         return self
-
 
     @model_validator(mode='after')
     def shift_length_valid_when_equal_coverage_active(self) -> Self:
@@ -886,6 +885,19 @@ class ForecastResult(BaseModel):
         fc_result.models = new_models
         return fc_result
 
+    @staticmethod
+    def _add_grouping_columns_to_overview(overview: dict[str, Any],
+                                          reserved_keywords: Collection[str],
+                                          grouping: dict[str, Any]) -> None:
+        """Adds grouping columns without name clashes with reserved keywords to the given overview."""
+        prefix = 'grouping-'
+        grouping_keys = set(grouping.keys())
+        if any(reserved_keyword in grouping_keys for reserved_keyword in reserved_keywords):
+            logger.warning(
+                f'Found reserved keywords in grouping keys. Added prefix "{prefix}" to all grouping columns.')
+            grouping = {prefix+key: value for key, value in grouping.items()}
+        overview.update(grouping)
+
     def export_overview(self) -> dict[str, Any]:
         """Extracts various time series insights, metadata, and other information and compiles them into an overview.
         Contains model information about the best model.
@@ -898,9 +910,7 @@ class ForecastResult(BaseModel):
                         if model.model_selection.ranking is not None
                         and model.model_selection.ranking.rank_position == 1]
         overview_for_ts: dict[str, Any] = {'name': self.input.actuals.name}
-        if self.input.actuals.grouping:
-            overview_for_ts.update(self.input.actuals.grouping)
-        overview_for_ts.update({
+        result_overview = {
             'model': best_model.model_name,
             'cov': best_model.covariates[0].name if best_model.covariates else np.nan,
             'cov_lag': best_model.covariates[0].lag if best_model.covariates else np.nan,
@@ -915,7 +925,14 @@ class ForecastResult(BaseModel):
                                      if self.ts_characteristics.missing_values else np.nan),
             'outliers_count': (len(self.ts_characteristics.outliers)
                                if self.ts_characteristics.outliers else np.nan)
-        })
+        }
+        # first add grouping columns before adding result columns because ordering matters
+        if self.input.actuals.grouping:
+            reserved_keywords = overview_for_ts.keys() ^ result_overview.keys()
+            self._add_grouping_columns_to_overview(overview=overview_for_ts,
+                                                   reserved_keywords=reserved_keywords,
+                                                   grouping=self.input.actuals.grouping)
+        overview_for_ts.update(result_overview)
         return overview_for_ts
 
     def get_model(self, name: str, covariates: Sequence[CovariateRef], include_discarded_models: bool = False) -> Model:
