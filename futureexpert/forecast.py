@@ -1,4 +1,5 @@
-"""Contains the models with the configuration for the forecast and the result format."""
+"""Based on various forecasting methods and automation, identifies the most suitable forecasting technique
+to provide the best predictions for your data."""
 from __future__ import annotations
 
 import enum
@@ -30,7 +31,8 @@ logger = logging.getLogger(__name__)
 
 
 class PreprocessingConfig(BaseConfig):
-    """Preprocessing configuration.
+    """Analyzes and prepares each time series before forecasting. Controls detection of outliers, seasonal patterns,
+    structural breaks (change points), and end-of-life behavior (phase-out).
 
     Parameters
     ----------
@@ -107,12 +109,13 @@ class PreprocessingConfig(BaseConfig):
 
 
 class ForecastingConfig(BaseConfig):
-    """Forecasting configuration.
+    """Controls the forecast output, including how many periods ahead to forecast, numerical bounds, rounding,
+    and prediction interval settings.
 
     Parameters
     ----------
     fc_horizon
-        Forecast horizon.
+        Number of future time steps to forecast.
     round_forecast_to_integer
         If true, then forecasts are rounded to the nearest integer (also applied during backtesting).
     use_ensemble
@@ -233,7 +236,8 @@ AdditionalCovMethod = Literal['AdaBoost', 'AutoArima', 'CART', 'CatBoost', 'Extr
 
 
 class MethodSelectionConfig(BaseConfig):
-    """Method selection configuration.
+    """Controls how forecasting methods are evaluated and ranked. Each candidate method is tested against historical data
+    (backtesting) using the configured error metric, and the best-performing one is identified.
 
     Parameters
     ----------
@@ -361,7 +365,8 @@ class PipelineKwargs(TypedDict):
 
 
 class ReportConfig(BaseConfig):
-    """Forecast run configuration.
+    """Top-level configuration for a forecast run. Combines data selection, preprocessing, forecasting parameters,
+    and method selection into a single run setup.
 
     Parameters
     ----------
@@ -383,11 +388,11 @@ class ReportConfig(BaseConfig):
         At most this number of most recent observations is used. Check the variable MAX_TS_LEN_CONFIG
         for allowed configuration.
     preprocessing
-        Preprocessing configuration.
+        Controls how each time series is analyzed and cleaned before forecasting.
     forecasting
-        Forecasting configuration.
+        Controls the forecast output, including horizon and bounds.
     method_selection
-        Method selection configuration. If not supplied, then a granularity dependent default is used.
+        Controls backtesting and method ranking. If not supplied, then a granularity dependent default is used.
     pool_covs
         List of covariate definitions. Only available in `Standard`, `Premium` and `Enterprise` subscription packages.
     rerun_report_id
@@ -1016,7 +1021,7 @@ def combine_forecast_ranking_with_matcher_ranking(forecast_results: list[Forecas
 
 
 class ForecastResults(BaseModel):
-    """Wrapper for the results of a forecasting."""
+    """Collection of forecast results for all computed time series, with helpers to export and filter results."""
 
     forecast_results: list[ForecastResult]
     consistency: Optional[ConsistentForecastMetadata] = None

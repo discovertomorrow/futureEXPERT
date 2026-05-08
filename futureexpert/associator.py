@@ -1,4 +1,4 @@
-"""Contains the models with the configuration for the associator and the result format."""
+"""Identifies clusters of similar time series by analyzing their patterns and categorizing their trend behavior."""
 from datetime import datetime
 from typing import Any, Optional
 
@@ -9,7 +9,7 @@ from futureexpert.shared_models import BaseConfig, TimeSeries
 
 
 class DataSelection(BaseConfig):
-    """Time series selection.
+    """Specifies which time series version to use as input for the ASSOCIATOR run.
 
     Parameters
     ----------
@@ -25,7 +25,7 @@ class DataSelection(BaseConfig):
 
 
 class TrendDetectionConfiguration(BaseConfig):
-    """Configuration for trend detection.
+    """Controls the observation window and missing-value tolerance used during trend detection.
 
     Parameters
     ----------
@@ -45,17 +45,16 @@ class TrendDetectionConfiguration(BaseConfig):
 
 
 class ClusteringConfiguration(BaseConfig):
-    """Configuration for clustering.
-
-    If start_time or end_time is not provided, then the missing(s) of the two will be
-    determined automatically; the final four parameters govern this process.
+    """Controls whether clustering is performed, how many clusters to create, and which time window of data to consider.
+    If start_time or end_time is not provided, it is determined automatically from the data.
 
     Parameters
     ----------
     create_clusters
         If True, then the service will attempt clustering.
     n_clusters
-        Number of clusters of complete and non-constant time series.
+        Number of clusters of complete and non-constant time series. Additional clusters can be created for time series
+        with special characteristics (too short, outdated, ....).
     start_time
         Observations from start_time (inclusive) onwards will be considered during clustering.
     end_time
@@ -74,16 +73,16 @@ class ClusteringConfiguration(BaseConfig):
 
 
 class AssociatorConfig(BaseConfig):
-    """Service configuration.
+    """Specifies the input data, trend detection and clustering settings for the ASSOCIATOR run.
 
     Parameters
     ----------
     data_selection
-        Configuration on the selection of time series used for carrying out the service.
+        Selects the time series version to use as input.
     trend_detection
-        Configuration for trend detection.
+        Controls the observation window and tolerance settings for trend detection.
     clustering
-        Configuration for clustering.
+        Controls whether clustering is performed and how many clusters to create.
     report_note
         User-defined string to be included in the report.
     db_name
@@ -186,7 +185,7 @@ class ClusteringResult(BaseConfig):
 
 
 class AssociatorResult(BaseConfig):
-    """Result of the associator service.
+    """Result of the ASSOCIATOR service.
 
     Parameters
     ----------
@@ -203,7 +202,7 @@ class AssociatorResult(BaseConfig):
 
 
 def export_associator_results_to_pandas(results: AssociatorResult) -> pd.DataFrame:
-    """Export associator results to a pandas DataFrame.
+    """Export ASSOCIATOR results to a pandas DataFrame.
 
     Parameters
     ----------

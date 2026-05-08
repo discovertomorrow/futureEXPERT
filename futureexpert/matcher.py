@@ -1,4 +1,4 @@
-"""Contains the models with the configuration for the matcher and the result format."""
+"""Tests potential influencing factors and indicators for their correlation with your time series."""
 from __future__ import annotations
 
 from typing import Annotated, Any, Optional
@@ -18,7 +18,8 @@ from futureexpert.shared_models import (BaseConfig,
 
 
 class LagSelectionConfig(BaseModel):
-    """Configures covariate lag selection.
+    """Specifies which time offsets (lags) to test for each covariate. A lag of n shifts the covariate
+    n data points into the future relative to the actuals.
 
     Parameters
     ----------
@@ -58,7 +59,7 @@ class LagSelectionConfig(BaseModel):
 
 
 class MatcherConfig(BaseConfig):
-    """Configuration for a MATCHER run.
+    """Specifies the actuals, candidate covariates, and evaluation parameters for a single MATCHER run.
 
     Parameters
     ----------
@@ -82,7 +83,7 @@ class MatcherConfig(BaseConfig):
         At most this number of most recent observations of the actuals time series is used. Check the variable MAX_TS_LEN_CONFIG
         for allowed configuration.
     lag_selection
-        Configuration of covariate lag selection.
+        Controls which time offsets to test for each covariate.
     evaluation_start_date
         Optional start date for the evaluation. The input should be in the ISO format
         with date and time, 'YYYY-mm-DDTHH-MM-SS', e.g., '2024-01-01T16:40:00'.
@@ -201,21 +202,22 @@ class CovariateRankingDetails(BaseModel):
 
 
 class ActualsCovsConfiguration(BaseModel):
-    """Configuration of actuals and covariates via name and lag.
+    """Maps a specific actuals time series to a set of covariates with their lags. Use this to pass custom covariate
+    assignments directly to FORECAST instead of relying on MATCHER results.
 
     Parameters
     ----------
     actuals_name
-        Name of the time series.
+        Name of the actuals time series.
     covs_configurations
-        List of Covariates.
+        List of covariates with their assigned lags.
     """
     actuals_name: str
     covs_configurations: list[CovariateRef]
 
 
 class MatcherResult(BaseModel):
-    """Result of a covariate matcher run and the corresponding input data.
+    """Result of a covariate MATCHER run and the corresponding input data.
 
     Parameters
     ----------
@@ -228,7 +230,7 @@ class MatcherResult(BaseModel):
     ranking: list[CovariateRankingDetails]
 
     def convert_ranking_to_forecast_config(self) -> ActualsCovsConfiguration:
-        """Converts MATCHER results into the input format for the FORECAST."""
+        """Converts MATCHER results into the input format for FORECAST."""
         covs_config = [CovariateRef(name=cov.ts.name, lag=cov.lag) for r in self.ranking for cov in r.covariates]
         return ActualsCovsConfiguration(actuals_name=self.actuals.name,
                                         covs_configurations=covs_config)

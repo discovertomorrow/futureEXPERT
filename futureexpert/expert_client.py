@@ -1,3 +1,4 @@
+"""Connects to and interacts with the futureEXPERT API."""
 from __future__ import annotations
 
 import copy

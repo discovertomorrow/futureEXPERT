@@ -1,3 +1,4 @@
+"""Creates scenario forecasts and what-if analyses based on influencing factors."""
 from typing import Optional, Sequence, Union
 
 from pydantic import BaseModel
@@ -83,7 +84,7 @@ class ShaperConfig(BaseConfig):
 
 
 class ResultScenario(BaseConfig):
-    """Configuration of scenarios for one covariate.
+    """Scenario values for one covariate as returned by the shaper service.
 
     Parameters
     ----------
@@ -111,7 +112,7 @@ class ShaperInput(BaseModel):
     actuals
         Time series for which the forecasts where performed.
     scenarios
-        The Scenario Information.
+        Covariate scenarios with high, low, and custom value sets.
     """
     actuals: TimeSeries
     scenarios: list[ResultScenario]
@@ -123,7 +124,7 @@ class ShaperResult(BaseModel):
    Parameters
     ----------
     input
-        Input Information.
+        Actuals and covariate scenarios used as input.
     forecast_low
         Forecast values of the low scenario.
     forecast_high

@@ -1,3 +1,5 @@
+"""Lets you access a variety of potential influencing factors, like local weather data, economic and business indicators,
+or raw material prices, ready for use in your analyses."""
 from __future__ import annotations
 
 from functools import cached_property

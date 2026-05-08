@@ -1,4 +1,5 @@
-"""Contains the models with the configuration for CHECK-IN."""
+"""Prepares your raw data for forecasting. Allows you to decide how to handle implausible and missing data,
+then aggregates it to the desired temporal granularity."""
 from datetime import datetime
 from typing import Literal, Optional
 
@@ -10,7 +11,7 @@ from futureexpert.shared_models import TimeSeries
 
 
 class BaseConfig(BaseModel):
-    """Basic Configuaration for all models."""
+    """Base configuration for all checkin models."""
     model_config = ConfigDict(extra='forbid')
 
 
@@ -199,6 +200,7 @@ class TsCreationConfig(BaseConfig):
     new_variables: list[NewValue] = []
     missing_value_handler: Literal['keepNaN', 'setToZero'] = 'keepNaN'
     aggregation_operator: Literal['sum', 'min', 'max', 'median', 'mean', 'std'] = 'sum'
+
 
 class CheckInResult(BaseModel):
     """Result of the CHECK-IN.
