@@ -13,7 +13,7 @@ from typing import Annotated, Any, Literal, Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, ConfigDict, Field, NonNegativeFloat, PositiveFloat, model_validator
+from pydantic import BaseModel, ConfigDict, Field, NonNegativeFloat, PositiveFloat, StringConstraints, model_validator
 from typing_extensions import NotRequired, Self, TypedDict
 
 from futureexpert._forecast_consistency_metadata import ConsistentForecastMetadata
@@ -406,7 +406,7 @@ class ReportConfig(BaseConfig):
         Only accessible for internal use. Higher value indicate higher priority.
     """
 
-    title: str
+    title: Annotated[str, StringConstraints(max_length=255)]
     forecasting: ForecastingConfig
     matcher_report_id: Optional[int] = None
     covs_versions: list[str] = Field(default_factory=list)

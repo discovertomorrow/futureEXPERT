@@ -1,9 +1,9 @@
 """Identifies clusters of similar time series by analyzing their patterns and categorizing their trend behavior."""
 from datetime import datetime
-from typing import Any, Optional
+from typing import Annotated, Any, Optional
 
 import pandas as pd
-from pydantic import Field, model_validator
+from pydantic import Field, StringConstraints, model_validator
 
 from futureexpert.shared_models import BaseConfig, TimeSeries
 
@@ -92,7 +92,7 @@ class AssociatorConfig(BaseConfig):
     data_selection: DataSelection = Field(default_factory=DataSelection)
     trend_detection: TrendDetectionConfiguration = Field(default_factory=TrendDetectionConfiguration)
     clustering: ClusteringConfiguration = Field(default_factory=ClusteringConfiguration)
-    report_note: str
+    report_note: Annotated[str, StringConstraints(max_length=255)]
     db_name: Optional[str] = None
 
 

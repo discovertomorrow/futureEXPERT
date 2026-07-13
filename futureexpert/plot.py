@@ -1389,7 +1389,12 @@ def _create_interactive_scenario_plot(scenario: Scenario,
     assert isinstance(scenario.ts, Covariate), 'Cannot plot scenario with CovariateRef instance.'
     fig = go.Figure()
 
-    cov_dates = df_cov['date'].tolist()
+    cov_dates = pd.DatetimeIndex(df_cov['date'])
+    lag = scenario.ts.lag
+    freq = GRANULARITY_TO_PD_ALIAS.get(scenario.ts.ts.granularity)
+    if freq and lag > 0:
+        cov_dates = cov_dates + lag * pd.tseries.frequencies.to_offset(freq)
+    cov_dates = cov_dates.tolist()
     cov_values = df_cov['actuals'].tolist()
 
     # Add covariate time series
@@ -1498,7 +1503,12 @@ def _create_static_scenario_plot(scenario: Scenario,
     fig, ax = plt.subplots(figsize=(12, 6))
     fig.suptitle(title, fontsize=16)
 
-    cov_dates = df_cov['date'].tolist()
+    cov_dates = pd.DatetimeIndex(df_cov['date'])
+    lag = scenario.ts.lag
+    freq = GRANULARITY_TO_PD_ALIAS.get(scenario.ts.ts.granularity)
+    if freq and lag > 0:
+        cov_dates = cov_dates + lag * pd.tseries.frequencies.to_offset(freq)
+    cov_dates = cov_dates.tolist()
     cov_values = df_cov['actuals'].tolist()
 
     # Plot covariate time series
@@ -1585,15 +1595,6 @@ def plot_scenario(scenario: Scenario,
         _create_static_scenario_plot(scenario, title, df_cov)
 
 
-def _shift_scenario_dates(values: Sequence[TimeSeriesValue], lag: int, freq: Optional[str]) -> list[datetime.datetime]:
-    """Shift scenario dates by the given lag and frequency."""
-    dates = [v.time_stamp_utc for v in values]
-    if freq and lag > 0:
-        offset = lag * pd.tseries.frequencies.to_offset(freq)
-        dates = [(pd.Timestamp(d) + offset) for d in dates]
-    return dates
-
-
 def _prepare_covariate_data(scenarios: Sequence[ResultScenario],
                             plot_last_x_data_points_only: Optional[int]) -> list[dict[str, Any]]:
     """Prepare covariate historical data and scenario projections for plotting.
@@ -1632,14 +1633,14 @@ def _prepare_covariate_data(scenarios: Sequence[ResultScenario],
         last_cov_value = df_cov['actuals'].iloc[-1] if not df_cov.empty else None
 
         # High scenario
-        high_dates = _shift_scenario_dates(scenario.high, lag, freq)
+        high_dates = [v.time_stamp_utc for v in scenario.high]
         high_values = [v.value for v in scenario.high]
         if last_cov_date is not None and not pd.isna(last_cov_value):
             high_dates = [last_cov_date] + high_dates
             high_values = [last_cov_value] + high_values
 
         # Low scenario
-        low_dates = _shift_scenario_dates(scenario.low, lag, freq)
+        low_dates =[v.time_stamp_utc for v in scenario.low]
         low_values = [v.value for v in scenario.low]
         if last_cov_date is not None and not pd.isna(last_cov_value):
             low_dates = [last_cov_date] + low_dates
@@ -1649,7 +1650,7 @@ def _prepare_covariate_data(scenarios: Sequence[ResultScenario],
         custom_dates = None
         custom_values = None
         if scenario.custom:
-            custom_dates = _shift_scenario_dates(scenario.custom, lag, freq)
+            custom_dates =[v.time_stamp_utc for v in scenario.custom]
             custom_values = [v.value for v in scenario.custom]
             if last_cov_date is not None and not pd.isna(last_cov_value):
                 custom_dates = [last_cov_date] + custom_dates

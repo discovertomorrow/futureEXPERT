@@ -56,3 +56,8 @@ def test_create_matcher_payload___given_mixed_post_selection_parameters___raises
 
     # Assert
     assert 'The following post-selection queries are invalidly formatted' in str(exc_info.value)
+
+
+def test_MatcherConfig___given_too_long_title___raises_error() -> None:
+    with pytest.raises(ValidationError, match='String should have at most 255 characters'):
+        MatcherConfig(title='x' * 256, actuals_version='v1')

@@ -10,6 +10,7 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Mapping, Optional, Type, Union, cast
+from urllib.parse import quote
 
 import httpx
 import pandas as pd
@@ -481,7 +482,7 @@ class ExpertClient:
         -------
         CheckInResult with time series data
         """
-        result = self._request('GET', f'/api/v1/ts/{version_id}')
+        result = self._request('GET', f'/api/v1/ts/{quote(version_id)}')
         return CheckInResult(**result)
 
     @validate_call

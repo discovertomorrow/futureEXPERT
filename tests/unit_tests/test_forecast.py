@@ -258,3 +258,8 @@ def test_export_forecasts_with_metadata___given_simple_results___is_of_expected_
     assert set(df.columns.to_list()) == {'name', 'level', 'model', 'cov', 'cov_lag', 'season_length', 'ts_class',
                                          'quantization', 'trend', 'recent_trend', 'missing_values_count', 'outliers_count',
                                          'time_stamp_utc', 'point_forecast_value', 'lower_limit_value', 'upper_limit_value'}
+
+
+def test_ReportConfig___given_too_long_title___raises_error() -> None:
+    with pytest.raises(pydantic.ValidationError, match='String should have at most 255 characters'):
+        ReportConfig(title='x' * 256, forecasting=ForecastingConfig(fc_horizon=5))

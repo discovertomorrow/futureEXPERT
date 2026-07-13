@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import pytest
+from pydantic import ValidationError
 
 import futureexpert.checkin as checkin
 from futureexpert import DataDefinition, ExpertClient, TsCreationConfig
@@ -10,6 +12,11 @@ def test_CheckinConfig___given_minimum_input_parameter___runs_without_error() ->
     assert DataDefinition(date_column=checkin.DateColumn(name='test_a', format='%Y-%b-%d'),
                           value_columns=[checkin.ValueColumn(name='test_b')],
                           group_columns=[checkin.GroupColumn(name='test_c')])
+
+
+def test_TsCreationConfig___given_too_long_description___raises_error() -> None:
+    with pytest.raises(ValidationError, match='String should have at most 255 characters'):
+        TsCreationConfig(value_columns_to_save=['value'], time_granularity='daily', description='x' * 256)
 
 
 def test_check_in_time_series___given_data_frame___runs_without_error(expert_client: ExpertClient) -> None:

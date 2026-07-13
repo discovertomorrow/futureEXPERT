@@ -1,10 +1,10 @@
 """Prepares your raw data for forecasting. Allows you to decide how to handle implausible and missing data,
 then aggregates it to the desired temporal granularity."""
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Annotated, Literal, Optional
 
 import pydantic
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, StringConstraints
 from typing_extensions import Self
 
 from futureexpert.shared_models import TimeSeries
@@ -191,7 +191,7 @@ class TsCreationConfig(BaseConfig):
     """
     value_columns_to_save: list[str]
     time_granularity: Literal['yearly', 'quarterly', 'monthly', 'weekly', 'daily', 'hourly', 'halfhourly']
-    description: Optional[str] = None
+    description: Optional[Annotated[str, StringConstraints(max_length=255)]] = None
     grouping_level: list[str] = []
     start_date: Optional[str] = None
     end_date: Optional[str] = None
@@ -231,7 +231,7 @@ class TimeSeriesVersion(BaseModel):
         Last day where the data is stored until it is deleted.
     """
     version_id: str
-    description: Optional[str]
+    description: Optional[Annotated[str, StringConstraints(max_length=255)]]
     creation_time_utc: Optional[datetime]
     keep_until_utc: Optional[datetime]
 

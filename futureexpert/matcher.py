@@ -5,7 +5,7 @@ from typing import Annotated, Any, Optional
 
 import pandas as pd
 import pydantic
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 from typing_extensions import Self
 
 from futureexpert.pool import PoolCovDefinition
@@ -132,7 +132,7 @@ class MatcherConfig(BaseConfig):
     rerun_status
         Status of the runs that should be computed again. `Error` and/or `NoEvaluation`.
     """
-    title: str
+    title: Annotated[str, StringConstraints(max_length=255)]
     actuals_version: str
     covs_versions: list[str] = Field(default_factory=list)
     actuals_filter: dict[str, Any] = Field(default_factory=dict)

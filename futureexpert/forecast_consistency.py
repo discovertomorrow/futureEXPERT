@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import Annotated, Optional
 
-from pydantic import Field, model_validator
+from pydantic import Field, StringConstraints, model_validator
 
 from futureexpert._forecast_consistency_metadata import (ConsistencyCheckResult,
                                                          ConsistentForecastMetadata,
@@ -131,6 +131,6 @@ class MakeForecastConsistentConfiguration(BaseConfig):
         Optional reconciliation configuration. If not provided, defaults will be used.
     """
     data_selection: MakeForecastConsistentDataSelection
-    report_note: str
+    report_note: Annotated[str, StringConstraints(max_length=255)]
     db_name: Optional[str] = None
     reconciliation: Optional[ReconciliationConfig] = None

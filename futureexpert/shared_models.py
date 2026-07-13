@@ -249,6 +249,8 @@ class ReportSummary(BaseModel):
     report_id: int
     description: str
     result_type: str
+    actuals_version: list[str]
+    covs_version: list[str]
 
 
 TBaseModel = TypeVar('TBaseModel', bound=BaseModel)

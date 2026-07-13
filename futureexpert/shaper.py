@@ -1,7 +1,7 @@
 """Creates scenario forecasts and what-if analyses based on influencing factors."""
-from typing import Optional, Sequence, Union
+from typing import Annotated, Optional, Sequence, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, StringConstraints
 
 from futureexpert.forecast import ForecastValue
 from futureexpert.shared_models import BaseConfig, Covariate, CovariateRef, TimeSeries, TimeSeriesValue
@@ -76,7 +76,7 @@ class ShaperConfig(BaseConfig):
     db_name
         Only accessible for internal use. Name of the database to use for storing the results.
     """
-    report_note: str
+    report_note: Annotated[str, StringConstraints(max_length=255)]
     actuals_version: str
     actuals_name: str
     scenarios: list[Scenario]

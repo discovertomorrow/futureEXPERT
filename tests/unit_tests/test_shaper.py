@@ -2,8 +2,9 @@ import math
 from datetime import datetime
 
 import pytest
+from pydantic import ValidationError
 
-from futureexpert.shaper import Scenario
+from futureexpert.shaper import Scenario, ShaperConfig
 from futureexpert.shared_models import Covariate, TimeSeries, TimeSeriesValue
 
 
@@ -74,3 +75,8 @@ def test_add_custom_values___called_twice___overwrites_previous_custom() -> None
     assert scenario.custom is not None
     assert math.isclose(scenario.custom[0].value, 10.0)
     assert math.isclose(scenario.custom[1].value, 20.0)
+
+
+def test_ShaperConfig___given_too_long_report_note___raises_error() -> None:
+    with pytest.raises(ValidationError, match='String should have at most 255 characters'):
+        ShaperConfig(report_note='x' * 256, actuals_version='v1', actuals_name='test', scenarios=[])
